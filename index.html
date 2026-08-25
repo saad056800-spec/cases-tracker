@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>index.html</title>
+<title>سجل الجلسات القضائية</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Amiri:wght@400;700&family=Cairo:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <style>
@@ -356,7 +356,7 @@
 // ---------- Storage adapter (JSONBin.io — works on any hosted site, not just inside Claude) ----------
 const JSONBIN_KEY = '$2a$10$jZROjPQjlzailtbhDoxlHeEmnS93kd/qjN5gLz4/X81hgFTTpcyhu';
 // After the one-time setup below, replace this placeholder with the real Bin ID and it's done permanently.
-let JSONBIN_BIN_ID = 'PASTE_BIN_ID_HERE';
+let JSONBIN_BIN_ID = '6a8dc4b9f5f4af5e2940f6dd';
 
 async function jsonbinReadAll(){
   const res = await fetch(`https://api.jsonbin.io/v3/b/${JSONBIN_BIN_ID}/latest`, {
@@ -406,7 +406,7 @@ async function createStorageBin(){
   const res = await fetch('https://api.jsonbin.io/v3/b', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json', 'X-Master-Key': JSONBIN_KEY, 'X-Bin-Name': 'cases-tracker' },
-    body: JSON.stringify({})
+    body: JSON.stringify({ _init: true })
   });
   const text = await res.text();
   if(!res.ok) throw new Error(`(${res.status}) ${text}`);
