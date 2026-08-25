@@ -362,7 +362,7 @@ async function jsonbinReadAll(){
   const res = await fetch(`https://api.jsonbin.io/v3/b/${JSONBIN_BIN_ID}/latest`, {
     headers: { 'X-Master-Key': JSONBIN_KEY }
   });
-  if(!res.ok) throw new Error('JSONBin read failed: ' + res.status);
+  if(!res.ok) throw new Error(`JSONBin read failed (${res.status}): ${await res.text()}`);
   const data = await res.json();
   return data.record || {};
 }
@@ -372,7 +372,7 @@ async function jsonbinWriteAll(obj){
     headers: { 'Content-Type': 'application/json', 'X-Master-Key': JSONBIN_KEY },
     body: JSON.stringify(obj)
   });
-  if(!res.ok) throw new Error('JSONBin write failed: ' + res.status);
+  if(!res.ok) throw new Error(`JSONBin write failed (${res.status}): ${await res.text()}`);
 }
 
 // Drop-in replacement for the old window.storage API used throughout the app below.
@@ -405,10 +405,12 @@ const storage = {
 async function createStorageBin(){
   const res = await fetch('https://api.jsonbin.io/v3/b', {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json', 'X-Master-Key': JSONBIN_KEY, 'X-Bin-Name': 'سجل_الجلسات_القضائية' },
+    headers: { 'Content-Type': 'application/json', 'X-Master-Key': JSONBIN_KEY, 'X-Bin-Name': 'cases-tracker' },
     body: JSON.stringify({})
   });
-  const data = await res.json();
+  const text = await res.text();
+  if(!res.ok) throw new Error(`(${res.status}) ${text}`);
+  const data = JSON.parse(text);
   return data.metadata.id;
 }
 function initSetupBanner(){
@@ -425,8 +427,9 @@ function initSetupBanner(){
         `تم الإنشاء بنجاح. انسخ هذا المعرف وأرسله لإتمام التثبيت النهائي في الملف:<br><code>${id}</code>`;
       document.getElementById('setupResult').style.display = 'block';
     }catch(e){
-      document.getElementById('setupResult').textContent = 'حدث خطأ أثناء الإنشاء. تحقق من المفتاح وحاول مجددًا.';
+      document.getElementById('setupResult').textContent = 'حدث خطأ أثناء الإنشاء: ' + e.message;
       document.getElementById('setupResult').style.display = 'block';
+      console.error(e);
     }
     document.getElementById('setupBtn').disabled = false;
     document.getElementById('setupBtn').textContent = 'إنشاء المخزن الآن';
