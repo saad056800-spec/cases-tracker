@@ -1,0 +1,911 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>سجل الجلسات القضائية</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Amiri:wght@400;700&family=Cairo:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --paper:#F6F4EE;
+    --paper-dim:#EAEAE4;
+    --ink:#1A2432;
+    --ink-soft:#57626D;
+    --green-deep:#14243B;
+    --green-deeper:#0B1626;
+    --green-mist:#E7ECF2;
+    --gold:#AD8A3B;
+    --gold-light:#C9A854;
+    --line:#DAD6C8;
+    --card-bg:#FFFFFF;
+    --amber:#8C5A2B;
+    --amber-bg:#F6EBDB;
+    --shadow: 0 1px 2px rgba(11,22,38,0.07), 0 8px 24px -12px rgba(11,22,38,0.22);
+  }
+
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    background:var(--paper);
+    color:var(--ink);
+    font-family:'Cairo',sans-serif;
+    min-height:100vh;
+    background-image:
+      repeating-linear-gradient(45deg, rgba(20,36,59,0.035) 0 3px, transparent 3px 26px),
+      repeating-linear-gradient(-45deg, rgba(20,36,59,0.035) 0 3px, transparent 3px 26px);
+  }
+
+  ::selection{ background: var(--gold-light); color:var(--green-deeper); }
+
+  a{color:var(--green-deep);}
+
+  /* ===== Top bar ===== */
+  .topbar{
+    background: linear-gradient(180deg, var(--green-deep), var(--green-deeper));
+    background-image:
+      repeating-linear-gradient(45deg, rgba(255,255,255,0.05) 0 10px, transparent 10px 34px),
+      linear-gradient(180deg, var(--green-deep), var(--green-deeper));
+    border-bottom: 3px solid var(--gold);
+    padding: 22px 20px 0;
+    position: sticky; top:0; z-index: 20;
+  }
+  .topbar-inner{
+    max-width: 980px; margin: 0 auto;
+    display:flex; flex-direction:column; gap:14px;
+  }
+  .brand{ display:flex; align-items:center; gap:14px; }
+  .brand-seal{
+    width:44px; height:44px; border-radius:50%;
+    border:2px solid var(--gold-light);
+    display:flex; align-items:center; justify-content:center;
+    color:var(--gold-light); flex-shrink:0;
+    background: rgba(255,255,255,0.03);
+  }
+  .mark{
+    display:inline-block; width:16px; height:16px; background:currentColor;
+    clip-path: polygon(50% 0%, 100% 30%, 100% 100%, 62% 100%, 62% 52%, 38% 52%, 38% 100%, 0% 100%, 0% 30%);
+  }
+  .brand-seal .mark{ width:20px; height:20px; }
+  .brand h1{
+    font-family:'Amiri',serif; font-weight:700;
+    font-size: clamp(20px,3vw,28px);
+    color:#F4F1E4; margin:0; letter-spacing:0.3px;
+  }
+  .brand p{ margin:2px 0 0; color:#B9C3CE; font-size:13px; }
+  .brand-firm{
+    font-family:'Amiri',serif; color:var(--gold-light); font-size:14.5px; font-weight:700; margin:0 0 2px;
+  }
+  .brand-license{ color:#8FA0B0; font-size:11.5px; margin:0; }
+
+  .tabs{ display:flex; gap:6px; }
+  .tab-btn{
+    flex:1; text-align:center;
+    padding:12px 10px 14px;
+    background:transparent; border:none;
+    color:#CFE0D6; font-family:'Cairo',sans-serif;
+    font-size:15px; font-weight:600; cursor:pointer;
+    border-radius:10px 10px 0 0;
+    position:relative; transition: background .15s, color .15s;
+  }
+  .tab-btn:hover{ background: rgba(255,255,255,0.06); }
+  .tab-btn.active{ background: var(--paper); color: var(--green-deeper); }
+  .tab-btn .count{
+    display:inline-block; margin-inline-start:6px;
+    background: var(--gold); color:#fff; border-radius:999px;
+    font-size:11px; padding:1px 7px; font-weight:700;
+  }
+  .tab-btn.active .count{ background: var(--green-deep); }
+
+  main{ max-width: 980px; margin: 0 auto; padding: 28px 20px 60px; }
+
+  .view{ display:none; animation: rise .35s ease; }
+  .view.active{ display:block; }
+  @keyframes rise{ from{opacity:0; transform:translateY(6px);} to{opacity:1; transform:translateY(0);} }
+  @media (prefers-reduced-motion: reduce){ .view{ animation:none; } .card{ animation:none !important; } }
+
+  /* ===== Intake view ===== */
+  .intake-grid{ display:grid; gap:22px; }
+  .panel{
+    background: var(--card-bg); border:1px solid var(--line);
+    border-radius:14px; padding:22px; box-shadow: var(--shadow);
+  }
+  .panel h2{
+    font-family:'Amiri',serif; font-size:20px; margin:0 0 4px;
+    color:var(--green-deeper);
+  }
+  .panel .hint{ color:var(--ink-soft); font-size:13.5px; margin:0 0 16px; line-height:1.7;}
+
+  textarea{
+    width:100%; min-height:190px; resize:vertical;
+    font-family:'Cairo',sans-serif; font-size:14.5px; line-height:1.9;
+    padding:14px 16px; border-radius:10px;
+    border:1.5px dashed var(--gold);
+    background: var(--green-mist);
+    color: var(--ink);
+  }
+  textarea:focus{ outline:2px solid var(--green-deep); outline-offset:2px; background:#fff; }
+  textarea::placeholder{ color:#7C8B81; }
+
+  .btn-row{ display:flex; gap:10px; margin-top:14px; flex-wrap:wrap; }
+  button{ font-family:'Cairo',sans-serif; cursor:pointer; }
+  .btn{
+    padding:11px 20px; border-radius:9px; border:none;
+    font-size:14.5px; font-weight:700; transition: transform .1s, opacity .15s;
+  }
+  .btn:active{ transform: scale(0.97); }
+  .btn-primary{ background: var(--green-deep); color:#fff; }
+  .btn-primary:hover{ background: var(--green-deeper); }
+  .btn-ghost{ background:transparent; color:var(--green-deep); border:1.5px solid var(--line); }
+  .btn-ghost:hover{ border-color:var(--green-deep); }
+  .btn-gold{ background: var(--gold); color:#fff; }
+  .btn-gold:hover{ background: var(--gold-light); }
+  .btn:focus-visible, .tab-btn:focus-visible, input:focus-visible{ outline:2px solid var(--gold); outline-offset:2px; }
+
+  .parse-note{ font-size:13px; margin-top:10px; padding:10px 12px; border-radius:8px; display:none; }
+  .parse-note.show{ display:block; }
+  .parse-note.err{ background:#FBEBE6; color:#8C3A2B; border:1px solid #E9C6BA; }
+  .parse-note.ok{ background:var(--green-mist); color:var(--green-deeper); border:1px solid #C8DBCF; }
+
+  .field-grid{ display:grid; grid-template-columns: 1fr 1fr; gap:14px; margin-top:6px;}
+  .field-grid .full{ grid-column: 1 / -1; }
+  @media (max-width:640px){ .field-grid{ grid-template-columns: 1fr; } }
+  .field label{ display:block; font-size:12.5px; color:var(--ink-soft); margin-bottom:5px; font-weight:600; }
+  .field input{
+    width:100%; padding:10px 12px; border-radius:8px;
+    border:1px solid var(--line); font-family:'Cairo',sans-serif; font-size:14px;
+    background:#fff; color:var(--ink);
+  }
+  .field input:focus{ outline:2px solid var(--green-deep); outline-offset:1px; border-color:var(--green-deep); }
+
+  .update-flag{
+    margin-top:14px; font-size:13px; background:var(--amber-bg); color:var(--amber);
+    border:1px solid #E9D6B8; padding:10px 12px; border-radius:8px; display:none;
+  }
+  .update-flag.show{ display:block; }
+
+  /* ===== List view ===== */
+  .list-toolbar{
+    display:flex; gap:10px; margin-bottom:20px; flex-wrap:wrap; align-items:center;
+  }
+  .search-box{
+    flex:1; min-width:200px; position:relative;
+  }
+  .search-box input{
+    width:100%; padding:10px 14px; border-radius:9px; border:1px solid var(--line);
+    font-family:'Cairo',sans-serif; font-size:14px; background:#fff;
+  }
+  select.sort-select{
+    padding:10px 12px; border-radius:9px; border:1px solid var(--line);
+    font-family:'Cairo',sans-serif; font-size:13.5px; background:#fff; color:var(--ink);
+  }
+
+  .cases-grid{ display:grid; grid-template-columns: repeat(auto-fill, minmax(310px,1fr)); gap:18px; }
+
+  .card{
+    background:var(--card-bg); border:1px solid var(--line); border-radius:14px;
+    box-shadow: var(--shadow); overflow:hidden; animation: rise .3s ease;
+    display:flex; flex-direction:column;
+  }
+  .card-top{ padding:18px 18px 14px; position:relative; }
+  .seal{
+    position:absolute; top:16px; left:16px;
+    width:38px; height:38px; border-radius:50%;
+    border:2px solid var(--gold); color:var(--gold);
+    display:flex; align-items:center; justify-content:center; font-size:17px;
+  }
+  .case-number{
+    font-family:'Amiri',serif; font-weight:700; font-size:22px; color:var(--green-deeper);
+    letter-spacing:0.5px; direction:ltr; display:inline-block; unicode-bidi:isolate;
+  }
+  .case-number-label{ font-size:11.5px; color:var(--ink-soft); display:block; margin-bottom:2px;}
+  .status-badge{
+    display:inline-block; margin-top:10px; font-size:12px; font-weight:700;
+    padding:4px 11px; border-radius:999px;
+  }
+  .status-badge.scheduled{ background: var(--green-mist); color: var(--green-deeper); }
+  .status-badge.rescheduled{ background: var(--amber-bg); color: var(--amber); }
+  .countdown-chip{
+    display:inline-block; margin-top:10px; margin-inline-start:8px; font-size:12px; font-weight:700;
+    padding:4px 11px; border-radius:999px;
+  }
+  .countdown-chip.upcoming{ background:var(--green-mist); color:var(--green-deep); }
+  .countdown-chip.today{ background:#FDECEC; color:#B0463A; }
+  .countdown-chip.past{ background:#F1EFE9; color:#8A8272; }
+
+  .parties{ padding: 4px 18px 16px; font-size:14px; line-height:1.8; }
+  .party-row{ display:flex; gap:8px; }
+  .party-role{ color:var(--ink-soft); flex-shrink:0; min-width:64px; font-size:12.5px; padding-top:2px;}
+  .party-name{ font-weight:600; }
+  .vs-divider{ text-align:center; color:var(--gold); font-size:11px; font-weight:800; margin:2px 0; letter-spacing:1px; }
+
+  .stub{
+    height:0; border-top:2px dashed var(--gold);
+    margin:0 18px; position:relative;
+  }
+  .stub::before, .stub::after{
+    content:''; position:absolute; top:-9px; width:18px; height:18px; border-radius:50%;
+    background: var(--paper); border:1px solid var(--line);
+  }
+  .stub::before{ right:-27px; }
+  .stub::after{ left:-27px; }
+
+  .session-info{ padding:16px 18px 18px; display:flex; justify-content:space-between; gap:10px; }
+  .session-block{ font-size:13px; }
+  .session-block .lbl{ color:var(--ink-soft); font-size:11.5px; display:block; margin-bottom:3px;}
+  .session-block .val{ font-weight:700; font-size:15px; color:var(--ink); direction:ltr; display:inline-block; unicode-bidi:isolate;}
+  .greg-sub{ display:block; font-size:11.5px; color:var(--ink-soft); direction:ltr; unicode-bidi:isolate; margin-top:2px; }
+  .field-note{ display:block; font-size:11.5px; color:var(--ink-soft); margin-top:5px; direction:ltr; unicode-bidi:isolate; }
+  .prev-date{ text-decoration:line-through; color:#B7ABA0; font-size:12px; display:block; direction:ltr; }
+
+  .card-footer{
+    padding:10px 18px; border-top:1px solid var(--paper-dim);
+    display:flex; justify-content:space-between; align-items:center;
+  }
+  .id-holder{ font-size:11.5px; color:var(--ink-soft); direction:ltr; unicode-bidi:isolate;}
+  .delete-btn{
+    background:none; border:none; color:#B0463A; font-size:12.5px; font-weight:700;
+    padding:4px 8px; border-radius:6px;
+  }
+  .delete-btn:hover{ background:#FBEBE6; }
+
+  /* ===== Empty state ===== */
+  .empty{
+    text-align:center; padding: 60px 20px; color:var(--ink-soft);
+  }
+  .empty .glyph{ color:var(--gold); margin-bottom:14px; }
+  .empty .glyph .mark{ width:40px; height:40px; }
+  .empty h3{ font-family:'Amiri',serif; color:var(--green-deeper); font-size:20px; margin:0 0 8px; }
+  .empty p{ font-size:14px; margin:0 0 18px; }
+
+  .toast{
+    position:fixed; bottom:24px; right:50%; transform:translateX(50%);
+    background:var(--green-deeper); color:#fff; padding:12px 22px; border-radius:10px;
+    font-size:14px; box-shadow:0 10px 30px rgba(0,0,0,0.25); opacity:0; pointer-events:none;
+    transition: opacity .2s, transform .2s; z-index:50;
+  }
+  .toast.show{ opacity:1; transform:translateX(50%) translateY(-6px); }
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="topbar-inner">
+    <div class="brand">
+      <div class="brand-seal"><span class="mark"></span></div>
+      <div>
+        <h1>سجل الجلسات القضائية</h1>
+      </div>
+    </div>
+    <div class="tabs">
+      <button class="tab-btn active" data-view="add" id="tabAdd">إضافة قضية</button>
+      <button class="tab-btn" data-view="list" id="tabList">القضايا <span class="count" id="caseCount">0</span></button>
+    </div>
+  </div>
+</div>
+
+<main>
+
+  <!-- ===== ADD VIEW ===== -->
+  <section class="view active" id="view-add">
+    <div class="panel" id="setupBanner" style="display:none; margin-bottom:20px; border-color:var(--gold);">
+      <h2>إعداد أولي للتخزين (مرة واحدة فقط)</h2>
+      <p class="hint">هذي الأداة تحتاج مخزن بيانات مرتبط بها. اضغط الزر أدناه مرة واحدة فقط لإنشائه، وأرسل لي المعرّف الناتج لأثبته نهائيًا في الملف.</p>
+      <button class="btn btn-gold" id="setupBtn">إنشاء المخزن الآن</button>
+      <div class="parse-note show ok" id="setupResult" style="display:none;"></div>
+    </div>
+    <div class="intake-grid">
+      <div class="panel">
+        <h2>لصق نص الرسالة</h2>
+        <p class="hint">الصق نص إشعار ناجز كاملاً كما وصلك (سواء إشعار جلسة جديدة أو إشعار تغيير موعد)، ثم اضغط «تحليل الرسالة».</p>
+        <textarea id="rawMessage" placeholder="صاحب الهوية:&#10;******8595&#10;نبلغكم بتفعيل الجلسة المرئية للقضية رقم:&#10;...."></textarea>
+        <div class="btn-row">
+          <button class="btn btn-primary" id="parseBtn">تحليل الرسالة</button>
+          <button class="btn btn-ghost" id="clearBtn">مسح</button>
+        </div>
+        <div class="parse-note" id="parseNote"></div>
+      </div>
+
+      <div class="panel" id="previewPanel" style="display:none;">
+        <h2>مراجعة البيانات</h2>
+        <p class="hint">تحقق من الحقول أدناه وعدّل ما يلزم قبل الإضافة إلى السجل.</p>
+        <div class="update-flag" id="updateFlag"></div>
+        <div class="field-grid">
+          <div class="field"><label>رقم القضية</label><input id="f_caseNumber" dir="ltr"></div>
+          <div class="field"><label>رقم الهوية (المُبلَّغ)</label><input id="f_idHolder" dir="ltr"></div>
+          <div class="field full"><label>نوع القضية (إن وُجد بدل الأطراف)</label><input id="f_caseType" placeholder="مثال: إقامة ولاية على قاصر عقلاً"></div>
+          <div class="field full"><label>المدعي</label><input id="f_plaintiff"></div>
+          <div class="field full"><label>المدعى عليه</label><input id="f_defendant"></div>
+          <div class="field"><label>تاريخ الجلسة (هـ)</label><input id="f_date" dir="ltr" placeholder="DD/MM/YYYY"><span class="field-note" id="dateGregorianHint"></span></div>
+          <div class="field"><label>وقت الجلسة</label><input id="f_time" dir="ltr"></div>
+        </div>
+        <div class="btn-row">
+          <button class="btn btn-gold" id="saveBtn">حفظ في السجل</button>
+          <button class="btn btn-ghost" id="discardBtn">إلغاء</button>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===== LIST VIEW ===== -->
+  <section class="view" id="view-list">
+    <div class="list-toolbar">
+      <div class="search-box">
+        <input type="text" id="searchInput" placeholder="ابحث برقم القضية أو اسم أحد الأطراف...">
+      </div>
+      <select class="sort-select" id="sortSelect">
+        <option value="added">الأحدث إضافة</option>
+        <option value="date">ترتيب حسب تاريخ الجلسة</option>
+        <option value="case">رقم القضية</option>
+      </select>
+    </div>
+    <div class="cases-grid" id="casesGrid"></div>
+    <div class="empty" id="emptyState" style="display:none;">
+      <div class="glyph"><span class="mark"></span></div>
+      <h3>لا توجد قضايا في السجل بعد</h3>
+      <p>ابدأ بلصق أول إشعار جلسة لإضافته إلى السجل.</p>
+      <button class="btn btn-primary" id="emptyAddBtn">إضافة أول قضية</button>
+    </div>
+  </section>
+
+</main>
+
+<div class="toast" id="toast"></div>
+
+<script>
+// ---------- Storage adapter (JSONBin.io — works on any hosted site, not just inside Claude) ----------
+const JSONBIN_KEY = '$2a$10$jZROjPQjlzailtbhDoxlHeEmnS93kd/qjN5gLz4/X81hgFTTpcyhu';
+// After the one-time setup below, replace this placeholder with the real Bin ID and it's done permanently.
+let JSONBIN_BIN_ID = 'PASTE_BIN_ID_HERE';
+
+async function jsonbinReadAll(){
+  const res = await fetch(`https://api.jsonbin.io/v3/b/${JSONBIN_BIN_ID}/latest`, {
+    headers: { 'X-Master-Key': JSONBIN_KEY }
+  });
+  if(!res.ok) throw new Error('JSONBin read failed: ' + res.status);
+  const data = await res.json();
+  return data.record || {};
+}
+async function jsonbinWriteAll(obj){
+  const res = await fetch(`https://api.jsonbin.io/v3/b/${JSONBIN_BIN_ID}`, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json', 'X-Master-Key': JSONBIN_KEY },
+    body: JSON.stringify(obj)
+  });
+  if(!res.ok) throw new Error('JSONBin write failed: ' + res.status);
+}
+
+// Drop-in replacement for the old window.storage API used throughout the app below.
+const storage = {
+  async get(key){
+    const all = await jsonbinReadAll();
+    if(!(key in all)) throw new Error('key not found');
+    return { key, value: all[key] };
+  },
+  async set(key, value){
+    const all = await jsonbinReadAll();
+    all[key] = value;
+    await jsonbinWriteAll(all);
+    return { key, value };
+  },
+  async delete(key){
+    const all = await jsonbinReadAll();
+    delete all[key];
+    await jsonbinWriteAll(all);
+    return { key, deleted: true };
+  },
+  async list(prefix){
+    const all = await jsonbinReadAll();
+    const keys = Object.keys(all).filter(k => !prefix || k.startsWith(prefix));
+    return { keys };
+  }
+};
+
+// One-time setup: creates the JSONBin storage bin. Only needed once ever.
+async function createStorageBin(){
+  const res = await fetch('https://api.jsonbin.io/v3/b', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', 'X-Master-Key': JSONBIN_KEY, 'X-Bin-Name': 'سجل_الجلسات_القضائية' },
+    body: JSON.stringify({})
+  });
+  const data = await res.json();
+  return data.metadata.id;
+}
+function initSetupBanner(){
+  if(JSONBIN_BIN_ID && JSONBIN_BIN_ID !== 'PASTE_BIN_ID_HERE') return;
+  const banner = document.getElementById('setupBanner');
+  banner.style.display = 'block';
+  document.getElementById('setupBtn').addEventListener('click', async () => {
+    document.getElementById('setupBtn').disabled = true;
+    document.getElementById('setupBtn').textContent = 'جاري الإنشاء...';
+    try{
+      const id = await createStorageBin();
+      JSONBIN_BIN_ID = id;
+      document.getElementById('setupResult').innerHTML =
+        `تم الإنشاء بنجاح. انسخ هذا المعرف وأرسله لإتمام التثبيت النهائي في الملف:<br><code>${id}</code>`;
+      document.getElementById('setupResult').style.display = 'block';
+    }catch(e){
+      document.getElementById('setupResult').textContent = 'حدث خطأ أثناء الإنشاء. تحقق من المفتاح وحاول مجددًا.';
+      document.getElementById('setupResult').style.display = 'block';
+    }
+    document.getElementById('setupBtn').disabled = false;
+    document.getElementById('setupBtn').textContent = 'إنشاء المخزن الآن';
+  });
+}
+
+const PREFIX = 'case:';
+let currentParsed = null;
+let isUpdate = false;
+
+// ---------- View switching ----------
+function switchView(view){
+  document.getElementById('view-add').classList.toggle('active', view === 'add');
+  document.getElementById('view-list').classList.toggle('active', view === 'list');
+  document.getElementById('tabAdd').classList.toggle('active', view === 'add');
+  document.getElementById('tabList').classList.toggle('active', view === 'list');
+  if(view === 'list') renderList();
+}
+document.getElementById('tabAdd').addEventListener('click', () => switchView('add'));
+document.getElementById('tabList').addEventListener('click', () => switchView('list'));
+document.getElementById('emptyAddBtn').addEventListener('click', () => switchView('add'));
+
+// ---------- Parsing ----------
+function normalizeHijriDate(raw){
+  if(!raw) return '';
+  const parts = raw.trim().split('/').map(p => p.trim());
+  if(parts.length !== 3) return raw.trim();
+  let [a,b,c] = parts;
+  // If the first segment is clearly a year (4 digits, or >31), the order is YYYY/MM/DD
+  if(a.length === 4 || parseInt(a,10) > 31){
+    return `${c.padStart(2,'0')}/${b.padStart(2,'0')}/${a}`;
+  }
+  return `${a.padStart(2,'0')}/${b.padStart(2,'0')}/${c}`;
+}
+
+function parseMessage(text){
+  text = text.trim();
+  const idMatch = text.match(/صاحب الهوية:\s*([\d\*]+)/);
+
+  // Case number: try the "للقضية رقم:" adjacent form first, then a generic "رقم:" fallback
+  // (used when a case-type label sits between "للقضية" and "رقم:")
+  const caseMatch = text.match(/للقضية رقم:\s*[\r\n]*\s*(\d+)/)
+    || text.match(/القضية رقم:\s*[\r\n]*\s*(\d+)/)
+    || text.match(/رقم:\s*[\r\n]*\s*(\d+)/);
+
+  // Case type: text sitting on its own line between "للقضية" and the "رقم:" line
+  // (only present when there is no المقامة من / ضد pair, e.g. guardianship cases)
+  const caseTypeMatch = text.match(/للقضية\s*[\r\n]+\s*([^\n]+?)\s*[\r\n]+\s*رقم:/);
+
+  const plaintiffMatch = text.match(/المقامة من:\s*([^\n]+)/);
+  const defendantMatch = text.match(/ضد:\s*([^\n]+)/);
+  const isReschedule = /تغيير موعد الجلسة/.test(text);
+
+  let oldDate = null, newDate = null;
+  if(isReschedule){
+    const oldMatch = text.match(/المحددة بتاريخ:\s*[\r\n]*\s*([\d\/]+)/);
+    const newMatch = text.match(/إلى تاريخ:\s*[\r\n]*\s*([\d\/]+)/);
+    oldDate = oldMatch ? normalizeHijriDate(oldMatch[1]) : null;
+    newDate = newMatch ? normalizeHijriDate(newMatch[1]) : null;
+  } else {
+    const dateMatch = text.match(/المحددة بتاريخ:\s*[\r\n]*\s*([\d\/]+)/)
+      || text.match(/بتاريخ:\s*[\r\n]*\s*([\d\/]+)/);
+    newDate = dateMatch ? normalizeHijriDate(dateMatch[1]) : null;
+  }
+  const timeMatch = text.match(/الساعة:\s*([^\n]+)/);
+
+  return {
+    idHolder: idMatch ? idMatch[1].trim() : '',
+    caseNumber: caseMatch ? caseMatch[1].trim() : '',
+    caseType: caseTypeMatch ? caseTypeMatch[1].trim() : '',
+    plaintiff: plaintiffMatch ? plaintiffMatch[1].trim() : '',
+    defendant: defendantMatch ? defendantMatch[1].trim() : '',
+    date: newDate || '',
+    previousDate: oldDate,
+    time: timeMatch ? timeMatch[1].trim() : '',
+    type: isReschedule ? 'rescheduled' : 'scheduled'
+  };
+}
+
+document.getElementById('parseBtn').addEventListener('click', async () => {
+  const raw = document.getElementById('rawMessage').value;
+  const note = document.getElementById('parseNote');
+  if(!raw.trim()){
+    note.textContent = 'الرجاء لصق نص الرسالة أولاً.';
+    note.className = 'parse-note show err';
+    return;
+  }
+  const parsed = parseMessage(raw);
+  currentParsed = parsed;
+
+  if(!parsed.caseNumber || !parsed.date){
+    note.textContent = 'تعذّر التعرف على بعض الحقول تلقائيًا (رقم القضية أو التاريخ). تحقق من النص أو عدّل الحقول يدويًا أدناه.';
+    note.className = 'parse-note show err';
+  } else {
+    note.textContent = parsed.type === 'rescheduled' ? 'تم التعرف على إشعار «تغيير موعد جلسة».' : 'تم التعرف على إشعار «جلسة جديدة».';
+    note.className = 'parse-note show ok';
+  }
+
+  document.getElementById('f_caseNumber').value = parsed.caseNumber;
+  document.getElementById('f_idHolder').value = parsed.idHolder;
+  document.getElementById('f_caseType').value = parsed.caseType;
+  document.getElementById('f_plaintiff').value = parsed.plaintiff;
+  document.getElementById('f_defendant').value = parsed.defendant;
+  document.getElementById('f_date').value = parsed.date;
+  document.getElementById('f_time').value = parsed.time;
+  updateGregorianHint();
+
+  // check if case already exists to warn about update
+  const updateFlag = document.getElementById('updateFlag');
+  isUpdate = false;
+  if(parsed.caseNumber){
+    updateFlag.classList.remove('show');
+    try{
+      const res = await storage.get(PREFIX + parsed.caseNumber);
+      if(res && res.value){
+        isUpdate = true;
+        const old = JSON.parse(res.value);
+        updateFlag.textContent = `يوجد بالفعل سجل لهذه القضية بتاريخ ${old.date} — ${old.time}. الحفظ سيحدّث الموعد ويحفظ الموعد السابق ضمن السجل.`;
+        updateFlag.classList.add('show');
+      }
+    }catch(e){
+      // no existing record (or a transient lookup issue) — safe to ignore, save still works
+    }
+  }
+
+  document.getElementById('previewPanel').style.display = 'block';
+});
+
+function updateGregorianHint(){
+  const hintEl = document.getElementById('dateGregorianHint');
+  const str = hijriDateStrToGregorianStr(document.getElementById('f_date').value.trim());
+  hintEl.textContent = str ? 'الموافق: ' + str : '';
+}
+document.getElementById('f_date').addEventListener('input', updateGregorianHint);
+
+document.getElementById('clearBtn').addEventListener('click', () => {
+  document.getElementById('rawMessage').value = '';
+  document.getElementById('parseNote').classList.remove('show');
+  document.getElementById('previewPanel').style.display = 'none';
+  document.getElementById('dateGregorianHint').textContent = '';
+});
+document.getElementById('discardBtn').addEventListener('click', () => {
+  document.getElementById('previewPanel').style.display = 'none';
+});
+
+// ---------- Save ----------
+document.getElementById('saveBtn').addEventListener('click', async () => {
+  const caseNumber = document.getElementById('f_caseNumber').value.trim();
+  const date = document.getElementById('f_date').value.trim();
+  const time = document.getElementById('f_time').value.trim();
+  if(!caseNumber || !date){
+    showToast('رقم القضية وتاريخ الجلسة حقلان مطلوبان.');
+    return;
+  }
+
+  const record = {
+    caseNumber,
+    idHolder: document.getElementById('f_idHolder').value.trim(),
+    caseType: document.getElementById('f_caseType').value.trim(),
+    plaintiff: document.getElementById('f_plaintiff').value.trim(),
+    defendant: document.getElementById('f_defendant').value.trim(),
+    date,
+    time,
+    status: 'scheduled',
+    previousDate: null,
+    previousTime: null,
+    addedAt: Date.now(),
+    updatedAt: Date.now()
+  };
+
+  // Step 1: look up an existing record for this case number.
+  // Any failure here (including "key not found" style errors) just means
+  // "treat this as a new case" — it must never block the save below.
+  let existing = null;
+  try{
+    const res = await storage.get(PREFIX + caseNumber);
+    if(res && res.value) existing = JSON.parse(res.value);
+  }catch(e){
+    existing = null;
+  }
+
+  if(existing){
+    record.addedAt = existing.addedAt;
+    record.updatedAt = Date.now();
+    if(existing.date !== date || existing.time !== time){
+      record.status = 'rescheduled';
+      record.previousDate = existing.date;
+      record.previousTime = existing.time;
+    } else {
+      record.status = existing.status;
+      record.previousDate = existing.previousDate;
+      record.previousTime = existing.previousTime;
+    }
+  }
+
+  // Step 2: the actual save. Only this step should report a real error.
+  try{
+    await storage.set(PREFIX + caseNumber, JSON.stringify(record));
+    showToast(existing ? 'تم تحديث موعد القضية في السجل.' : 'تمت إضافة القضية إلى السجل.');
+    document.getElementById('rawMessage').value = '';
+    document.getElementById('previewPanel').style.display = 'none';
+    document.getElementById('parseNote').classList.remove('show');
+    switchView('list');
+  }catch(e){
+    showToast('حدث خطأ أثناء الحفظ. حاول مرة أخرى.');
+    console.error(e);
+  }
+});
+
+// ---------- Countdown helpers (Umm al-Qura calendar) ----------
+// Fast tabular estimate, used only as a starting point to search from —
+// the final match is verified exactly against the real Umm al-Qura calendar below.
+function hijriTabularToJDN(day, month, year){
+  return Math.floor((11 * year + 3) / 30) + 354 * year + 30 * month
+    - Math.floor((month - 1) / 2) + day + 1948440 - 385;
+}
+function jdnToGregorian(jdn){
+  const a = jdn + 32044;
+  const b = Math.floor((4 * a + 3) / 146097);
+  const c = a - Math.floor((146097 * b) / 4);
+  const d = Math.floor((4 * c + 3) / 1461);
+  const e = c - Math.floor((1461 * d) / 4);
+  const m = Math.floor((5 * e + 2) / 153);
+  const day = e - Math.floor((153 * m + 2) / 5) + 1;
+  const month = m + 3 - 12 * Math.floor(m / 10);
+  const year = 100 * b + d - 4800 + Math.floor(m / 10);
+  return { year, month, day };
+}
+
+const umAlQuraFormatter = new Intl.DateTimeFormat('en-u-ca-islamic-umalqura', { year: 'numeric', month: 'numeric', day: 'numeric' });
+// Read a Gregorian JS Date as its exact Umm al-Qura Hijri equivalent.
+function gregorianDateToHijri(date){
+  const parts = umAlQuraFormatter.formatToParts(date);
+  const out = {};
+  parts.forEach(p => { if(p.type === 'year') out.year = parseInt(p.value, 10); if(p.type === 'month') out.month = parseInt(p.value, 10); if(p.type === 'day') out.day = parseInt(p.value, 10); });
+  return out;
+}
+
+const hijriToGregorianCache = {};
+// Find the exact Gregorian date for a given Umm al-Qura Hijri day/month/year,
+// by searching around a tabular estimate until the real calendar matches.
+function hijriToGregorianExact(day, month, year){
+  const cacheKey = `${year}-${month}-${day}`;
+  if(hijriToGregorianCache[cacheKey]) return new Date(hijriToGregorianCache[cacheKey]);
+
+  const estJdn = hijriTabularToJDN(day, month, year);
+  const est = jdnToGregorian(estJdn);
+  const base = new Date(est.year, est.month - 1, est.day, 12, 0, 0);
+
+  let result = base;
+  for(let offset = -7; offset <= 7; offset++){
+    const d = new Date(base);
+    d.setDate(d.getDate() + offset);
+    const h = gregorianDateToHijri(d);
+    if(h.day === day && h.month === month && h.year === year){
+      result = d;
+      break;
+    }
+  }
+  hijriToGregorianCache[cacheKey] = result.getTime();
+  return result;
+}
+
+function formatGregorian(date){
+  const dd = String(date.getDate()).padStart(2, '0');
+  const mm = String(date.getMonth() + 1).padStart(2, '0');
+  return `${dd}/${mm}/${date.getFullYear()} م`;
+}
+function hijriDateStrToGregorianStr(dateStr){
+  const parts = (dateStr || '').split('/');
+  if(parts.length !== 3) return '';
+  const day = parseInt(parts[0], 10), month = parseInt(parts[1], 10), year = parseInt(parts[2], 10);
+  if(!day || !month || !year) return '';
+  try{ return formatGregorian(hijriToGregorianExact(day, month, year)); }
+  catch(e){ return ''; }
+}
+
+// Parse "12:20 مساءً" / "10:30 صباحاً" style Arabic time into 24h hour/minute.
+function parseArabicTime(timeStr){
+  if(!timeStr) return null;
+  const m = timeStr.match(/(\d{1,2}):(\d{2})/);
+  if(!m) return null;
+  let hour = parseInt(m[1], 10);
+  const minute = parseInt(m[2], 10);
+  const isPM = /مساء/.test(timeStr);
+  const isAM = /صباح/.test(timeStr);
+  if(isPM && hour !== 12) hour += 12;
+  if(isAM && hour === 12) hour = 0;
+  return { hour, minute };
+}
+function pluralDays(n){
+  if(n === 1) return 'يوم واحد';
+  if(n === 2) return 'يومان';
+  if(n <= 10) return n + ' أيام';
+  return n + ' يومًا';
+}
+function pluralHours(n){
+  if(n === 1) return 'ساعة واحدة';
+  if(n === 2) return 'ساعتان';
+  if(n <= 10) return n + ' ساعات';
+  return n + ' ساعة';
+}
+// Returns {gregorianStr, countdownText, state} where state is 'upcoming' | 'today' | 'past' | 'unknown'
+function getSessionMeta(dateStr, timeStr){
+  const parts = (dateStr || '').split('/');
+  if(parts.length !== 3) return { gregorianStr: '', countdownText: '', state: 'unknown' };
+  const day = parseInt(parts[0], 10), month = parseInt(parts[1], 10), year = parseInt(parts[2], 10);
+  if(!day || !month || !year) return { gregorianStr: '', countdownText: '', state: 'unknown' };
+
+  const gDate = hijriToGregorianExact(day, month, year);
+  const gregorianStr = formatGregorian(gDate);
+
+  const target = new Date(gDate);
+  target.setHours(0, 0, 0, 0);
+  const t = parseArabicTime(timeStr);
+  if(t) target.setHours(t.hour, t.minute, 0, 0);
+
+  const now = new Date();
+  const diffMs = target - now;
+  if(diffMs <= 0) return { gregorianStr, countdownText: 'انتهى موعد الجلسة', state: 'past' };
+
+  const totalHours = Math.floor(diffMs / 3600000);
+  const days = Math.floor(totalHours / 24);
+  const hours = totalHours % 24;
+
+  let text;
+  if(days === 0 && hours === 0) text = 'أقل من ساعة';
+  else if(days === 0) text = 'متبقٍ ' + pluralHours(hours);
+  else if(hours === 0) text = 'متبقٍ ' + pluralDays(days);
+  else text = 'متبقٍ ' + pluralDays(days) + ' و' + pluralHours(hours);
+
+  return { gregorianStr, countdownText: text, state: days === 0 ? 'today' : 'upcoming' };
+}
+
+
+async function loadAllCases(){
+  const list = await storage.list(PREFIX);
+  if(!list || !list.keys || list.keys.length === 0) return [];
+  const cases = [];
+  for(const key of list.keys){
+    try{
+      const item = await storage.get(key);
+      if(item) cases.push(JSON.parse(item.value));
+    }catch(e){ /* skip missing */ }
+  }
+  return cases;
+}
+
+function dateSortKey(d){
+  if(!d) return '0000-00-00';
+  const parts = d.split('/');
+  if(parts.length !== 3) return '0000-00-00';
+  const [dd,mm,yyyy] = parts;
+  return `${yyyy.padStart(4,'0')}-${mm.padStart(2,'0')}-${dd.padStart(2,'0')}`;
+}
+
+async function renderList(){
+  const grid = document.getElementById('casesGrid');
+  const empty = document.getElementById('emptyState');
+
+  if(!JSONBIN_BIN_ID || JSONBIN_BIN_ID === 'PASTE_BIN_ID_HERE'){
+    grid.innerHTML = '';
+    document.getElementById('caseCount').textContent = '0';
+    empty.style.display = 'block';
+    empty.querySelector('h3').textContent = 'يلزم إكمال الإعداد الأولي أولاً';
+    empty.querySelector('p').textContent = 'روح لتبويب "إضافة قضية" واضغط "إنشاء المخزن الآن" لتفعيل الحفظ.';
+    return;
+  }
+
+  let cases = await loadAllCases();
+
+  document.getElementById('caseCount').textContent = cases.length;
+
+  const query = document.getElementById('searchInput').value.trim().toLowerCase();
+  if(query){
+    cases = cases.filter(c =>
+      (c.caseNumber||'').toLowerCase().includes(query) ||
+      (c.plaintiff||'').toLowerCase().includes(query) ||
+      (c.defendant||'').toLowerCase().includes(query) ||
+      (c.caseType||'').toLowerCase().includes(query)
+    );
+  }
+
+  const sortMode = document.getElementById('sortSelect').value;
+  if(sortMode === 'added') cases.sort((a,b) => b.addedAt - a.addedAt);
+  else if(sortMode === 'date') cases.sort((a,b) => dateSortKey(a.date).localeCompare(dateSortKey(b.date)));
+  else if(sortMode === 'case') cases.sort((a,b) => a.caseNumber.localeCompare(b.caseNumber));
+
+  if(cases.length === 0){
+    grid.innerHTML = '';
+    empty.querySelector('h3').textContent = 'لا توجد قضايا في السجل بعد';
+    empty.querySelector('p').textContent = 'ابدأ بلصق أول إشعار جلسة لإضافته إلى السجل.';
+    empty.style.display = 'block';
+    return;
+  }
+  empty.style.display = 'none';
+
+  grid.innerHTML = cases.map(c => {
+    const meta = getSessionMeta(c.date, c.time);
+    const chipClass = meta.state === 'past' ? 'past' : (meta.state === 'today' ? 'today' : 'upcoming');
+    return `
+    <div class="card">
+      <div class="card-top">
+        <div class="seal"><span class="mark"></span></div>
+        <span class="case-number-label">رقم القضية</span>
+        <span class="case-number">${escapeHtml(c.caseNumber)}</span>
+        <div>
+          <span class="status-badge ${c.status === 'rescheduled' ? 'rescheduled' : 'scheduled'}">
+            ${c.status === 'rescheduled' ? 'تم تغيير الموعد' : 'مجدولة'}
+          </span>
+          ${meta.countdownText ? `<span class="countdown-chip ${chipClass}">⏳ ${escapeHtml(meta.countdownText)}</span>` : ''}
+        </div>
+      </div>
+      <div class="parties">
+        ${ (c.plaintiff || c.defendant) ? `
+          <div class="party-row"><span class="party-role">المدعي</span><span class="party-name">${escapeHtml(c.plaintiff || '—')}</span></div>
+          <div class="vs-divider">ضد</div>
+          <div class="party-row"><span class="party-role">المدعى عليه</span><span class="party-name">${escapeHtml(c.defendant || '—')}</span></div>
+        ` : `
+          <div class="party-row"><span class="party-role">نوع القضية</span><span class="party-name">${escapeHtml(c.caseType || '—')}</span></div>
+        ` }
+      </div>
+      <div class="stub"></div>
+      <div class="session-info">
+        <div class="session-block">
+          <span class="lbl">تاريخ الجلسة (هـ)</span>
+          ${c.status === 'rescheduled' && c.previousDate ? `<span class="prev-date">${escapeHtml(c.previousDate)}</span>` : ''}
+          <span class="val">${escapeHtml(c.date || '—')}</span>
+          ${meta.gregorianStr ? `<span class="greg-sub">${escapeHtml(meta.gregorianStr)}</span>` : ''}
+        </div>
+        <div class="session-block">
+          <span class="lbl">الوقت</span>
+          <span class="val">${escapeHtml(c.time || '—')}</span>
+        </div>
+      </div>
+      <div class="card-footer">
+        <span class="id-holder">هوية: ${escapeHtml(c.idHolder || '—')}</span>
+        <button class="delete-btn" data-case="${escapeHtml(c.caseNumber)}">حذف</button>
+      </div>
+    </div>
+  `;
+  }).join('');
+
+  grid.querySelectorAll('.delete-btn').forEach(btn => {
+    btn.addEventListener('click', async () => {
+      if(!confirm('هل تريد حذف هذه القضية من السجل؟')) return;
+      await storage.delete(PREFIX + btn.dataset.case);
+      showToast('تم حذف القضية.');
+      renderList();
+    });
+  });
+}
+
+function escapeHtml(str){
+  return String(str).replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
+}
+
+document.getElementById('searchInput').addEventListener('input', renderList);
+document.getElementById('sortSelect').addEventListener('change', renderList);
+
+// ---------- Toast ----------
+let toastTimer;
+function showToast(msg){
+  const toast = document.getElementById('toast');
+  toast.textContent = msg;
+  toast.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => toast.classList.remove('show'), 2600);
+}
+
+// ---------- Init ----------
+initSetupBanner();
+if(JSONBIN_BIN_ID && JSONBIN_BIN_ID !== 'PASTE_BIN_ID_HERE'){
+  renderList();
+  setInterval(() => {
+    if(document.getElementById('view-list').classList.contains('active')) renderList();
+  }, 60000);
+}
+</script>
+
+</body>
+</html>
