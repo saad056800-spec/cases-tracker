@@ -248,6 +248,22 @@
     padding:4px 8px; border-radius:6px;
   }
   .delete-btn:hover{ background:#FBEBE6; }
+  .share-btn{
+    background:none; border:none; color:var(--green-deep); font-size:12.5px; font-weight:700;
+    padding:4px 8px; border-radius:6px; cursor:pointer;
+  }
+  .share-btn:hover{ background:var(--green-mist); }
+  .shared-tag{ font-size:11px; color:var(--ink-soft); }
+  .shared-list{
+    padding:8px 18px 14px; font-size:11.5px; color:var(--ink-soft); border-top:1px solid var(--paper-dim);
+  }
+  .shared-chip{
+    display:inline-block; background:var(--paper-dim); border-radius:999px; padding:2px 8px; margin:2px 3px 0 0;
+    direction:ltr; unicode-bidi:isolate;
+  }
+  .unshare-btn{
+    background:none; border:none; color:#B0463A; font-weight:800; cursor:pointer; padding:0 0 0 4px; font-size:12px;
+  }
 
   /* ===== Empty state ===== */
   .empty{
@@ -269,12 +285,46 @@
 </head>
 <body>
 
-<div class="topbar">
+<div id="authScreen" style="display:none; min-height:100vh; align-items:center; justify-content:center; background:var(--paper); padding:20px;">
+  <div class="panel" style="max-width:380px; width:100%;">
+    <div style="text-align:center; margin-bottom:8px;">
+      <div class="brand-seal" style="margin:0 auto 10px; color:var(--gold); border-color:var(--gold);"><span class="mark"></span></div>
+    </div>
+    <h2 style="text-align:center;">سجل الجلسات القضائية</h2>
+    <p class="hint" style="text-align:center;">سجّل دخولك للوصول إلى قضاياك</p>
+
+    <div id="authSetupNotice" style="display:none; background:#FBEBE6; color:#8C3A2B; border:1px solid #E9C6BA; padding:12px; border-radius:8px; font-size:13px; margin-bottom:10px;">
+      لم يتم إعداد نظام تسجيل الدخول بعد على هذا الملف.
+    </div>
+
+    <div id="authFormBox">
+      <div class="field" style="margin-bottom:12px;">
+        <label>البريد الإلكتروني</label>
+        <input id="authEmail" type="email" dir="ltr" placeholder="name@example.com">
+      </div>
+      <div class="field" style="margin-bottom:6px;">
+        <label>كلمة المرور</label>
+        <input id="authPassword" type="password" dir="ltr" placeholder="••••••••">
+      </div>
+      <div class="parse-note err" id="authError" style="display:none;"></div>
+      <div class="btn-row" style="margin-top:14px;">
+        <button class="btn btn-primary" id="authLoginBtn" style="flex:1;">تسجيل الدخول</button>
+        <button class="btn btn-ghost" id="authSignupBtn" style="flex:1;">إنشاء حساب جديد</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="topbar" style="display:none;">
   <div class="topbar-inner">
     <div class="brand">
       <div class="brand-seal"><span class="mark"></span></div>
       <div>
         <h1>سجل الجلسات القضائية</h1>
+      </div>
+      <div style="margin-inline-start:auto; text-align:left; display:flex; align-items:center; gap:10px;">
+        <span id="currentUserLabel" style="color:#B9C3CE; font-size:12px; direction:ltr; unicode-bidi:isolate;"></span>
+        <button id="logoutBtn" class="btn btn-ghost" style="padding:6px 12px; font-size:12.5px; color:#CFE0D6; border-color:rgba(255,255,255,0.25);">تسجيل خروج</button>
       </div>
     </div>
     <div class="tabs">
@@ -284,7 +334,7 @@
   </div>
 </div>
 
-<main>
+<main style="display:none;">
 
   <!-- ===== ADD VIEW ===== -->
   <section class="view active" id="view-add">
@@ -352,7 +402,89 @@
 
 <div class="toast" id="toast"></div>
 
-<script>
+<script type="module">
+// ---------- Firebase Authentication (real login, works on any hosted site) ----------
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-app.js";
+import {
+  getAuth, onAuthStateChanged, signInWithEmailAndPassword,
+  createUserWithEmailAndPassword, signOut
+} from "https://www.gstatic.com/firebasejs/10.13.0/firebase-auth.js";
+
+// After Firebase project setup, replace this whole object with the real config from the console.
+const firebaseConfig = {
+  apiKey: "AIzaSyA0GQZbgwi2NwdjjH-0uF5N2TuiIZOPwL8",
+  authDomain: "cases-tracker-bfe14.firebaseapp.com",
+  projectId: "cases-tracker-bfe14",
+  appId: "1:40039793809:web:c832a2d37dd95eeb88ab30"
+};
+
+let currentUserEmail = null;
+let firebaseReady = false;
+
+function firebaseConfigured(){
+  return firebaseConfig.apiKey && firebaseConfig.apiKey !== 'PASTE_API_KEY_HERE';
+}
+
+if(firebaseConfigured()){
+  const app = initializeApp(firebaseConfig);
+  const auth = getAuth(app);
+  firebaseReady = true;
+
+  onAuthStateChanged(auth, (user) => {
+    if(user){
+      currentUserEmail = user.email;
+      document.getElementById('authScreen').style.display = 'none';
+      document.querySelector('.topbar').style.display = '';
+      document.querySelector('main').style.display = '';
+      document.getElementById('currentUserLabel').textContent = user.email;
+      startApp();
+    } else {
+      currentUserEmail = null;
+      document.getElementById('authScreen').style.display = 'flex';
+      document.querySelector('.topbar').style.display = 'none';
+      document.querySelector('main').style.display = 'none';
+    }
+  });
+
+  document.getElementById('authLoginBtn').addEventListener('click', async () => {
+    const email = document.getElementById('authEmail').value.trim();
+    const password = document.getElementById('authPassword').value;
+    const err = document.getElementById('authError');
+    err.style.display = 'none';
+    try{
+      await signInWithEmailAndPassword(auth, email, password);
+    }catch(e){
+      err.textContent = 'تعذّر تسجيل الدخول: ' + arabicAuthError(e.code);
+      err.style.display = 'block';
+    }
+  });
+  document.getElementById('authSignupBtn').addEventListener('click', async () => {
+    const email = document.getElementById('authEmail').value.trim();
+    const password = document.getElementById('authPassword').value;
+    const err = document.getElementById('authError');
+    err.style.display = 'none';
+    try{
+      await createUserWithEmailAndPassword(auth, email, password);
+    }catch(e){
+      err.textContent = 'تعذّر إنشاء الحساب: ' + arabicAuthError(e.code);
+      err.style.display = 'block';
+    }
+  });
+  document.getElementById('logoutBtn').addEventListener('click', () => signOut(auth));
+}
+
+function arabicAuthError(code){
+  const map = {
+    'auth/invalid-email': 'صيغة البريد الإلكتروني غير صحيحة.',
+    'auth/user-not-found': 'ما فيه حساب بهذا البريد.',
+    'auth/wrong-password': 'كلمة المرور غير صحيحة.',
+    'auth/invalid-credential': 'البريد أو كلمة المرور غير صحيحة.',
+    'auth/email-already-in-use': 'هذا البريد مسجّل بحساب من قبل. جرّب تسجيل الدخول.',
+    'auth/weak-password': 'كلمة المرور ضعيفة، استخدم ٦ أحرف على الأقل.'
+  };
+  return map[code] || code;
+}
+
 // ---------- Storage adapter (JSONBin.io — works on any hosted site, not just inside Claude) ----------
 const JSONBIN_KEY = '$2a$10$jZROjPQjlzailtbhDoxlHeEmnS93kd/qjN5gLz4/X81hgFTTpcyhu';
 // After the one-time setup below, replace this placeholder with the real Bin ID and it's done permanently.
@@ -597,7 +729,9 @@ document.getElementById('saveBtn').addEventListener('click', async () => {
     previousDate: null,
     previousTime: null,
     addedAt: Date.now(),
-    updatedAt: Date.now()
+    updatedAt: Date.now(),
+    ownerEmail: currentUserEmail || null,
+    sharedWithEmails: []
   };
 
   // Step 1: look up an existing record for this case number.
@@ -612,8 +746,17 @@ document.getElementById('saveBtn').addEventListener('click', async () => {
   }
 
   if(existing){
+    // If logged in and this case belongs to someone else who hasn't shared it, block the edit.
+    const owner = existing.ownerEmail || null;
+    const shared = existing.sharedWithEmails || [];
+    if(currentUserEmail && owner && owner !== currentUserEmail && !shared.includes(currentUserEmail)){
+      showToast('هذي القضية مملوكة لشخص آخر ولم تتم مشاركتها معك.');
+      return;
+    }
     record.addedAt = existing.addedAt;
     record.updatedAt = Date.now();
+    record.ownerEmail = existing.ownerEmail || currentUserEmail || null;
+    record.sharedWithEmails = existing.sharedWithEmails || [];
     if(existing.date !== date || existing.time !== time){
       record.status = 'rescheduled';
       record.previousDate = existing.date;
@@ -801,6 +944,13 @@ async function renderList(){
 
   let cases = await loadAllCases();
 
+  // When logged in, only show cases this person owns or that were shared with them.
+  if(currentUserEmail){
+    cases = cases.filter(c =>
+      !c.ownerEmail || c.ownerEmail === currentUserEmail || (c.sharedWithEmails || []).includes(currentUserEmail)
+    );
+  }
+
   document.getElementById('caseCount').textContent = cases.length;
 
   const query = document.getElementById('searchInput').value.trim().toLowerCase();
@@ -867,8 +1017,16 @@ async function renderList(){
       </div>
       <div class="card-footer">
         <span class="id-holder">هوية: ${escapeHtml(c.idHolder || '—')}</span>
-        <button class="delete-btn" data-case="${escapeHtml(c.caseNumber)}">حذف</button>
+        <div style="display:flex; gap:6px; align-items:center;">
+          ${isOwnerOf(c) ? `<button class="share-btn" data-case="${escapeHtml(c.caseNumber)}">مشاركة</button>` : (c.ownerEmail ? `<span class="shared-tag">مشتركة من ${escapeHtml(c.ownerEmail)}</span>` : '')}
+          ${isOwnerOf(c) ? `<button class="delete-btn" data-case="${escapeHtml(c.caseNumber)}">حذف</button>` : ''}
+        </div>
       </div>
+      ${isOwnerOf(c) && (c.sharedWithEmails||[]).length ? `
+        <div class="shared-list">
+          مشترك مع: ${(c.sharedWithEmails||[]).map(em => `<span class="shared-chip">${escapeHtml(em)} <button class="unshare-btn" data-case="${escapeHtml(c.caseNumber)}" data-email="${escapeHtml(em)}">×</button></span>`).join(' ')}
+        </div>
+      ` : ''}
     </div>
   `;
   }).join('');
@@ -881,6 +1039,45 @@ async function renderList(){
       renderList();
     });
   });
+
+  grid.querySelectorAll('.share-btn').forEach(btn => {
+    btn.addEventListener('click', async () => {
+      const email = prompt('أدخل البريد الإلكتروني للشخص اللي تبي تشارك معه هذي القضية:');
+      if(!email || !email.trim()) return;
+      const clean = email.trim().toLowerCase();
+      try{
+        const res = await storage.get(PREFIX + btn.dataset.case);
+        const rec = JSON.parse(res.value);
+        rec.sharedWithEmails = rec.sharedWithEmails || [];
+        if(!rec.sharedWithEmails.includes(clean)) rec.sharedWithEmails.push(clean);
+        await storage.set(PREFIX + btn.dataset.case, JSON.stringify(rec));
+        showToast('تمت مشاركة القضية مع ' + clean);
+        renderList();
+      }catch(e){
+        showToast('تعذّرت المشاركة. حاول مجددًا.');
+      }
+    });
+  });
+
+  grid.querySelectorAll('.unshare-btn').forEach(btn => {
+    btn.addEventListener('click', async () => {
+      try{
+        const res = await storage.get(PREFIX + btn.dataset.case);
+        const rec = JSON.parse(res.value);
+        rec.sharedWithEmails = (rec.sharedWithEmails || []).filter(e => e !== btn.dataset.email);
+        await storage.set(PREFIX + btn.dataset.case, JSON.stringify(rec));
+        showToast('تمت إزالة المشاركة.');
+        renderList();
+      }catch(e){
+        showToast('حدث خطأ. حاول مجددًا.');
+      }
+    });
+  });
+}
+
+function isOwnerOf(c){
+  if(!currentUserEmail) return true; // legacy no-login mode: everyone can manage everything
+  return !c.ownerEmail || c.ownerEmail === currentUserEmail;
 }
 
 function escapeHtml(str){
@@ -901,12 +1098,27 @@ function showToast(msg){
 }
 
 // ---------- Init ----------
-initSetupBanner();
-if(JSONBIN_BIN_ID && JSONBIN_BIN_ID !== 'PASTE_BIN_ID_HERE'){
-  renderList();
-  setInterval(() => {
-    if(document.getElementById('view-list').classList.contains('active')) renderList();
-  }, 60000);
+let appStarted = false;
+function startApp(){
+  if(appStarted) return;
+  appStarted = true;
+  initSetupBanner();
+  if(JSONBIN_BIN_ID && JSONBIN_BIN_ID !== 'PASTE_BIN_ID_HERE'){
+    renderList();
+    setInterval(() => {
+      if(document.getElementById('view-list').classList.contains('active')) renderList();
+    }, 60000);
+  }
+}
+
+// If Firebase login hasn't been configured yet, skip it entirely so the app
+// keeps working exactly as before (no breakage while setup is in progress).
+if(!firebaseConfigured()){
+  document.getElementById('authScreen').style.display = 'none';
+  document.querySelector('.topbar').style.display = '';
+  document.querySelector('main').style.display = '';
+  document.getElementById('logoutBtn').style.display = 'none';
+  startApp();
 }
 </script>
 
