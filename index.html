@@ -218,6 +218,10 @@
   .party-role{ color:var(--ink-soft); flex-shrink:0; min-width:64px; font-size:12.5px; padding-top:2px;}
   .party-name{ font-weight:600; }
   .vs-divider{ text-align:center; color:var(--gold); font-size:11px; font-weight:800; margin:2px 0; letter-spacing:1px; }
+  .case-notes{
+    margin:0 18px 12px; padding:9px 12px; background:var(--paper-dim); border-radius:8px;
+    font-size:12.5px; color:var(--ink-soft); line-height:1.7; white-space:pre-wrap;
+  }
 
   .stub{
     height:0; border-top:2px dashed var(--gold);
@@ -350,6 +354,7 @@
         <p class="hint">الصق نص إشعار ناجز كاملاً كما وصلك (سواء إشعار جلسة جديدة أو إشعار تغيير موعد)، ثم اضغط «تحليل الرسالة».</p>
         <textarea id="rawMessage" placeholder="صاحب الهوية:&#10;******8595&#10;نبلغكم بتفعيل الجلسة المرئية للقضية رقم:&#10;...."></textarea>
         <div class="btn-row">
+          <button class="btn btn-gold" id="pasteBtn">📋 لصق من الحافظة وتحليل</button>
           <button class="btn btn-primary" id="parseBtn">تحليل الرسالة</button>
           <button class="btn btn-ghost" id="clearBtn">مسح</button>
         </div>
@@ -368,6 +373,7 @@
           <div class="field full"><label>المدعى عليه</label><input id="f_defendant"></div>
           <div class="field"><label>تاريخ الجلسة (هـ)</label><input id="f_date" dir="ltr" placeholder="DD/MM/YYYY"><span class="field-note" id="dateGregorianHint"></span></div>
           <div class="field"><label>وقت الجلسة</label><input id="f_time" dir="ltr"></div>
+          <div class="field full"><label>ملاحظات</label><textarea id="f_notes" style="min-height:70px; font-size:13.5px; padding:9px 12px; border-radius:8px; border:1px solid var(--line); background:#fff;" placeholder="أي ملاحظات خاصة بهذي القضية..."></textarea></div>
         </div>
         <div class="btn-row">
           <button class="btn btn-gold" id="saveBtn">حفظ في السجل</button>
@@ -641,7 +647,7 @@ function parseMessage(text){
   };
 }
 
-document.getElementById('parseBtn').addEventListener('click', async () => {
+async function parseAndPreview(){
   const raw = document.getElementById('rawMessage').value;
   const note = document.getElementById('parseNote');
   if(!raw.trim()){
@@ -667,6 +673,7 @@ document.getElementById('parseBtn').addEventListener('click', async () => {
   document.getElementById('f_defendant').value = parsed.defendant;
   document.getElementById('f_date').value = parsed.date;
   document.getElementById('f_time').value = parsed.time;
+  document.getElementById('f_notes').value = '';
   updateGregorianHint();
 
   // check if case already exists to warn about update
@@ -681,6 +688,7 @@ document.getElementById('parseBtn').addEventListener('click', async () => {
         const old = JSON.parse(res.value);
         updateFlag.textContent = `يوجد بالفعل سجل لهذه القضية بتاريخ ${old.date} — ${old.time}. الحفظ سيحدّث الموعد ويحفظ الموعد السابق ضمن السجل.`;
         updateFlag.classList.add('show');
+        if(old.notes) document.getElementById('f_notes').value = old.notes;
       }
     }catch(e){
       // no existing record (or a transient lookup issue) — safe to ignore, save still works
@@ -688,6 +696,24 @@ document.getElementById('parseBtn').addEventListener('click', async () => {
   }
 
   document.getElementById('previewPanel').style.display = 'block';
+}
+document.getElementById('parseBtn').addEventListener('click', parseAndPreview);
+
+document.getElementById('pasteBtn').addEventListener('click', async () => {
+  const note = document.getElementById('parseNote');
+  try{
+    const text = await navigator.clipboard.readText();
+    if(!text || !text.trim()){
+      note.textContent = 'الحافظة فارغة. انسخ نص الرسالة أولاً ثم اضغط الزر.';
+      note.className = 'parse-note show err';
+      return;
+    }
+    document.getElementById('rawMessage').value = text;
+    await parseAndPreview();
+  }catch(e){
+    note.textContent = 'تعذّر الوصول للحافظة تلقائيًا (قد يحتاج المتصفح إذنًا). الصق النص يدويًا في الصندوق أعلاه بدلاً من ذلك.';
+    note.className = 'parse-note show err';
+  }
 });
 
 function updateGregorianHint(){
@@ -702,6 +728,7 @@ document.getElementById('clearBtn').addEventListener('click', () => {
   document.getElementById('parseNote').classList.remove('show');
   document.getElementById('previewPanel').style.display = 'none';
   document.getElementById('dateGregorianHint').textContent = '';
+  document.getElementById('f_notes').value = '';
 });
 document.getElementById('discardBtn').addEventListener('click', () => {
   document.getElementById('previewPanel').style.display = 'none';
@@ -725,6 +752,7 @@ document.getElementById('saveBtn').addEventListener('click', async () => {
     defendant: document.getElementById('f_defendant').value.trim(),
     date,
     time,
+    notes: document.getElementById('f_notes').value.trim(),
     status: 'scheduled',
     previousDate: null,
     previousTime: null,
@@ -959,7 +987,8 @@ async function renderList(){
       (c.caseNumber||'').toLowerCase().includes(query) ||
       (c.plaintiff||'').toLowerCase().includes(query) ||
       (c.defendant||'').toLowerCase().includes(query) ||
-      (c.caseType||'').toLowerCase().includes(query)
+      (c.caseType||'').toLowerCase().includes(query) ||
+      (c.notes||'').toLowerCase().includes(query)
     );
   }
 
@@ -1002,6 +1031,7 @@ async function renderList(){
           <div class="party-row"><span class="party-role">نوع القضية</span><span class="party-name">${escapeHtml(c.caseType || '—')}</span></div>
         ` }
       </div>
+      ${c.notes ? `<div class="case-notes">📝 ${escapeHtml(c.notes)}</div>` : ''}
       <div class="stub"></div>
       <div class="session-info">
         <div class="session-block">
