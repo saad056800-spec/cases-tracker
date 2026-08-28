@@ -222,6 +222,23 @@
     margin:0 18px 12px; padding:9px 12px; background:var(--paper-dim); border-radius:8px;
     font-size:12.5px; color:var(--ink-soft); line-height:1.7; white-space:pre-wrap;
   }
+  .sessions-list{ padding:0 18px 14px; display:flex; flex-direction:column; gap:6px; }
+  .session-row{
+    display:flex; align-items:center; gap:8px; font-size:12.5px; padding:7px 10px;
+    background:var(--paper-dim); border-radius:8px; color:var(--ink-soft);
+  }
+  .session-row.is-current{ background:var(--green-mist); color:var(--green-deeper); font-weight:700; }
+  .session-row.is-archived{ opacity:0.55; text-decoration:line-through; }
+  .session-row-date{ flex:1; direction:ltr; unicode-bidi:isolate; text-align:right; }
+  .session-row-tag{ font-size:10.5px; opacity:0.8; }
+  .mini-archive-btn, .archive-case-btn, .restore-case-btn, .restore-session-btn{
+    background:none; border:1px solid var(--line); color:var(--ink-soft); font-size:11px; font-weight:700;
+    padding:3px 9px; border-radius:999px; cursor:pointer;
+  }
+  .mini-archive-btn:hover{ background:#FBEBE6; border-color:#E9C6BA; color:#8C3A2B; }
+  .archive-case-btn:hover{ background:#FBEBE6; border-color:#E9C6BA; color:#8C3A2B; }
+  .restore-case-btn, .restore-session-btn{ color:var(--green-deep); border-color:var(--green-mist); }
+  .restore-case-btn:hover, .restore-session-btn:hover{ background:var(--green-mist); }
 
   .stub{
     height:0; border-top:2px dashed var(--gold);
@@ -333,7 +350,9 @@
     </div>
     <div class="tabs">
       <button class="tab-btn active" data-view="add" id="tabAdd">إضافة قضية</button>
-      <button class="tab-btn" data-view="list" id="tabList">القضايا <span class="count" id="caseCount">0</span></button>
+      <button class="tab-btn" data-view="list" id="tabList">الجلسات <span class="count" id="caseCount">0</span></button>
+      <button class="tab-btn" data-view="cases" id="tabCases">القضايا <span class="count" id="casesGroupCount">0</span></button>
+      <button class="tab-btn" data-view="archive" id="tabArchive">الأرشيف</button>
     </div>
   </div>
 </div>
@@ -401,6 +420,35 @@
       <h3>لا توجد قضايا في السجل بعد</h3>
       <p>ابدأ بلصق أول إشعار جلسة لإضافته إلى السجل.</p>
       <button class="btn btn-primary" id="emptyAddBtn">إضافة أول قضية</button>
+    </div>
+  </section>
+
+  <!-- ===== CASES (GROUPED) VIEW ===== -->
+  <section class="view" id="view-cases">
+    <div class="list-toolbar">
+      <div class="search-box">
+        <input type="text" id="casesSearchInput" placeholder="ابحث برقم القضية أو اسم أحد الأطراف...">
+      </div>
+    </div>
+    <div class="cases-grid" id="casesGroupGrid"></div>
+    <div class="empty" id="casesGroupEmpty" style="display:none;">
+      <div class="glyph"><span class="mark"></span></div>
+      <h3>لا توجد قضايا بعد</h3>
+      <p>القضايا اللي تضيفها بتظهر هنا مجمّعة مع كل جلساتها.</p>
+    </div>
+  </section>
+
+  <!-- ===== ARCHIVE VIEW ===== -->
+  <section class="view" id="view-archive">
+    <div class="tabs" style="background:transparent; padding:0; margin-bottom:18px; border-bottom:1px solid var(--line); gap:0;">
+      <button class="tab-btn archive-subtab active" data-sub="cases" id="archiveSubCases" style="color:var(--ink-soft);">قضايا مؤرشفة</button>
+      <button class="tab-btn archive-subtab" data-sub="sessions" id="archiveSubSessions" style="color:var(--ink-soft);">جلسات مؤرشفة</button>
+    </div>
+    <div class="cases-grid" id="archiveGrid"></div>
+    <div class="empty" id="archiveEmpty" style="display:none;">
+      <div class="glyph"><span class="mark"></span></div>
+      <h3>الأرشيف فارغ</h3>
+      <p>القضايا والجلسات المؤرشفة بتظهر هنا.</p>
     </div>
   </section>
 
@@ -580,15 +628,37 @@ let isUpdate = false;
 
 // ---------- View switching ----------
 function switchView(view){
-  document.getElementById('view-add').classList.toggle('active', view === 'add');
-  document.getElementById('view-list').classList.toggle('active', view === 'list');
+  ['add','list','cases','archive'].forEach(v => {
+    document.getElementById('view-' + v).classList.toggle('active', v === view);
+  });
   document.getElementById('tabAdd').classList.toggle('active', view === 'add');
   document.getElementById('tabList').classList.toggle('active', view === 'list');
+  document.getElementById('tabCases').classList.toggle('active', view === 'cases');
+  document.getElementById('tabArchive').classList.toggle('active', view === 'archive');
   if(view === 'list') renderList();
+  if(view === 'cases') renderCasesGrouped();
+  if(view === 'archive') renderArchive();
 }
 document.getElementById('tabAdd').addEventListener('click', () => switchView('add'));
 document.getElementById('tabList').addEventListener('click', () => switchView('list'));
+document.getElementById('tabCases').addEventListener('click', () => switchView('cases'));
+document.getElementById('tabArchive').addEventListener('click', () => switchView('archive'));
 document.getElementById('emptyAddBtn').addEventListener('click', () => switchView('add'));
+
+let archiveSubView = 'cases';
+document.getElementById('archiveSubCases').addEventListener('click', () => {
+  archiveSubView = 'cases';
+  document.getElementById('archiveSubCases').classList.add('active');
+  document.getElementById('archiveSubSessions').classList.remove('active');
+  renderArchive();
+});
+document.getElementById('archiveSubSessions').addEventListener('click', () => {
+  archiveSubView = 'sessions';
+  document.getElementById('archiveSubSessions').classList.add('active');
+  document.getElementById('archiveSubCases').classList.remove('active');
+  renderArchive();
+});
+document.getElementById('casesSearchInput').addEventListener('input', renderCasesGrouped);
 
 // ---------- Parsing ----------
 function normalizeHijriDate(raw){
@@ -685,8 +755,9 @@ async function parseAndPreview(){
       const res = await storage.get(PREFIX + parsed.caseNumber);
       if(res && res.value){
         isUpdate = true;
-        const old = JSON.parse(res.value);
-        updateFlag.textContent = `يوجد بالفعل سجل لهذه القضية بتاريخ ${old.date} — ${old.time}. الحفظ سيحدّث الموعد ويحفظ الموعد السابق ضمن السجل.`;
+        const old = normalizeCase(JSON.parse(res.value));
+        const latest = getLatestSession(old);
+        updateFlag.textContent = `يوجد بالفعل سجل لهذه القضية بتاريخ ${latest.date} — ${latest.time} (${old.sessions.length} جلسة/جلسات مسجّلة). الحفظ بيضيف جلسة جديدة للقضية نفسها ويحتفظ بكل السجل السابق.`;
         updateFlag.classList.add('show');
         if(old.notes) document.getElementById('f_notes').value = old.notes;
       }
@@ -744,22 +815,13 @@ document.getElementById('saveBtn').addEventListener('click', async () => {
     return;
   }
 
-  const record = {
+  const caseFields = {
     caseNumber,
     idHolder: document.getElementById('f_idHolder').value.trim(),
     caseType: document.getElementById('f_caseType').value.trim(),
     plaintiff: document.getElementById('f_plaintiff').value.trim(),
     defendant: document.getElementById('f_defendant').value.trim(),
-    date,
-    time,
-    notes: document.getElementById('f_notes').value.trim(),
-    status: 'scheduled',
-    previousDate: null,
-    previousTime: null,
-    addedAt: Date.now(),
-    updatedAt: Date.now(),
-    ownerEmail: currentUserEmail || null,
-    sharedWithEmails: []
+    notes: document.getElementById('f_notes').value.trim()
   };
 
   // Step 1: look up an existing record for this case number.
@@ -768,10 +830,13 @@ document.getElementById('saveBtn').addEventListener('click', async () => {
   let existing = null;
   try{
     const res = await storage.get(PREFIX + caseNumber);
-    if(res && res.value) existing = JSON.parse(res.value);
+    if(res && res.value) existing = normalizeCase(JSON.parse(res.value));
   }catch(e){
     existing = null;
   }
+
+  let record;
+  let addedNewSession = false;
 
   if(existing){
     // If logged in and this case belongs to someone else who hasn't shared it, block the edit.
@@ -781,25 +846,33 @@ document.getElementById('saveBtn').addEventListener('click', async () => {
       showToast('هذي القضية مملوكة لشخص آخر ولم تتم مشاركتها معك.');
       return;
     }
-    record.addedAt = existing.addedAt;
+    record = existing;
+    Object.assign(record, caseFields); // case-level fields can be edited/corrected each time
     record.updatedAt = Date.now();
-    record.ownerEmail = existing.ownerEmail || currentUserEmail || null;
-    record.sharedWithEmails = existing.sharedWithEmails || [];
-    if(existing.date !== date || existing.time !== time){
-      record.status = 'rescheduled';
-      record.previousDate = existing.date;
-      record.previousTime = existing.time;
-    } else {
-      record.status = existing.status;
-      record.previousDate = existing.previousDate;
-      record.previousTime = existing.previousTime;
+
+    const latest = getLatestSession(record);
+    if(!latest || latest.date !== date || latest.time !== time){
+      record.sessions.push({ id: genSessionId(), date, time, addedAt: Date.now(), archived: false });
+      addedNewSession = true;
+      record.archived = false; // a new session means the case is active again
     }
+  } else {
+    record = {
+      ...caseFields,
+      ownerEmail: currentUserEmail || null,
+      sharedWithEmails: [],
+      archived: false,
+      createdAt: Date.now(),
+      updatedAt: Date.now(),
+      sessions: [{ id: genSessionId(), date, time, addedAt: Date.now(), archived: false }]
+    };
+    addedNewSession = true;
   }
 
   // Step 2: the actual save. Only this step should report a real error.
   try{
     await storage.set(PREFIX + caseNumber, JSON.stringify(record));
-    showToast(existing ? 'تم تحديث موعد القضية في السجل.' : 'تمت إضافة القضية إلى السجل.');
+    showToast(!existing ? 'تمت إضافة القضية إلى السجل.' : (addedNewSession ? 'تمت إضافة جلسة جديدة لنفس القضية.' : 'تم تحديث بيانات القضية.'));
     document.getElementById('rawMessage').value = '';
     document.getElementById('previewPanel').style.display = 'none';
     document.getElementById('parseNote').classList.remove('show');
@@ -809,6 +882,37 @@ document.getElementById('saveBtn').addEventListener('click', async () => {
     console.error(e);
   }
 });
+
+// ---------- Sessions data model helpers ----------
+function genSessionId(){ return 's_' + Date.now() + '_' + Math.random().toString(36).slice(2,7); }
+function normalizeCase(rec){
+  if(!rec.sessions){
+    rec.sessions = [];
+    if(rec.previousDate){
+      rec.sessions.push({ id: 'legacy_prev', date: rec.previousDate, time: rec.previousTime || '', addedAt: (rec.addedAt || Date.now()) - 1, archived: false });
+    }
+    rec.sessions.push({ id: 'legacy_cur', date: rec.date, time: rec.time, addedAt: rec.updatedAt || rec.addedAt || Date.now(), archived: false });
+  }
+  if(rec.archived === undefined) rec.archived = false;
+  if(!rec.createdAt) rec.createdAt = rec.addedAt || Date.now();
+  if(!rec.updatedAt) rec.updatedAt = Date.now();
+  if(!rec.sharedWithEmails) rec.sharedWithEmails = [];
+  return rec;
+}
+function getActiveSessions(rec){ return (rec.sessions || []).filter(s => !s.archived); }
+function getLatestSession(rec){
+  const active = getActiveSessions(rec);
+  if(active.length) return active[active.length - 1];
+  const all = rec.sessions || [];
+  return all.length ? all[all.length - 1] : null;
+}
+function getPreviousActiveSession(rec){
+  const active = getActiveSessions(rec);
+  return active.length > 1 ? active[active.length - 2] : null;
+}
+function caseStatusLabel(rec){
+  return (rec.sessions || []).length > 1 ? 'rescheduled' : 'scheduled';
+}
 
 // ---------- Countdown helpers (Umm al-Qura calendar) ----------
 // Fast tabular estimate, used only as a starting point to search from —
@@ -970,20 +1074,26 @@ async function renderList(){
     return;
   }
 
-  let cases = await loadAllCases();
+  let rawCases = (await loadAllCases()).map(normalizeCase);
 
   // When logged in, only show cases this person owns or that were shared with them.
   if(currentUserEmail){
-    cases = cases.filter(c =>
+    rawCases = rawCases.filter(c =>
       !c.ownerEmail || c.ownerEmail === currentUserEmail || (c.sharedWithEmails || []).includes(currentUserEmail)
     );
   }
 
-  document.getElementById('caseCount').textContent = cases.length;
+  // This view shows one card per non-archived case, using its latest active session.
+  let items = rawCases
+    .filter(c => !c.archived)
+    .map(c => ({ c, session: getLatestSession(c) }))
+    .filter(x => x.session && !x.session.archived);
+
+  document.getElementById('caseCount').textContent = items.length;
 
   const query = document.getElementById('searchInput').value.trim().toLowerCase();
   if(query){
-    cases = cases.filter(c =>
+    items = items.filter(({c}) =>
       (c.caseNumber||'').toLowerCase().includes(query) ||
       (c.plaintiff||'').toLowerCase().includes(query) ||
       (c.defendant||'').toLowerCase().includes(query) ||
@@ -993,11 +1103,11 @@ async function renderList(){
   }
 
   const sortMode = document.getElementById('sortSelect').value;
-  if(sortMode === 'added') cases.sort((a,b) => b.addedAt - a.addedAt);
-  else if(sortMode === 'date') cases.sort((a,b) => dateSortKey(a.date).localeCompare(dateSortKey(b.date)));
-  else if(sortMode === 'case') cases.sort((a,b) => a.caseNumber.localeCompare(b.caseNumber));
+  if(sortMode === 'added') items.sort((a,b) => b.session.addedAt - a.session.addedAt);
+  else if(sortMode === 'date') items.sort((a,b) => dateSortKey(a.session.date).localeCompare(dateSortKey(b.session.date)));
+  else if(sortMode === 'case') items.sort((a,b) => a.c.caseNumber.localeCompare(b.c.caseNumber));
 
-  if(cases.length === 0){
+  if(items.length === 0){
     grid.innerHTML = '';
     empty.querySelector('h3').textContent = 'لا توجد قضايا في السجل بعد';
     empty.querySelector('p').textContent = 'ابدأ بلصق أول إشعار جلسة لإضافته إلى السجل.';
@@ -1006,9 +1116,11 @@ async function renderList(){
   }
   empty.style.display = 'none';
 
-  grid.innerHTML = cases.map(c => {
-    const meta = getSessionMeta(c.date, c.time);
+  grid.innerHTML = items.map(({c, session}) => {
+    const meta = getSessionMeta(session.date, session.time);
     const chipClass = meta.state === 'past' ? 'past' : (meta.state === 'today' ? 'today' : 'upcoming');
+    const prev = getPreviousActiveSession(c);
+    const statusLabel = caseStatusLabel(c);
     return `
     <div class="card">
       <div class="card-top">
@@ -1016,8 +1128,8 @@ async function renderList(){
         <span class="case-number-label">رقم القضية</span>
         <span class="case-number">${escapeHtml(c.caseNumber)}</span>
         <div>
-          <span class="status-badge ${c.status === 'rescheduled' ? 'rescheduled' : 'scheduled'}">
-            ${c.status === 'rescheduled' ? 'تم تغيير الموعد' : 'مجدولة'}
+          <span class="status-badge ${statusLabel === 'rescheduled' ? 'rescheduled' : 'scheduled'}">
+            ${statusLabel === 'rescheduled' ? 'تم تغيير الموعد' : 'مجدولة'}
           </span>
           ${meta.countdownText ? `<span class="countdown-chip ${chipClass}">⏳ ${escapeHtml(meta.countdownText)}</span>` : ''}
         </div>
@@ -1036,19 +1148,20 @@ async function renderList(){
       <div class="session-info">
         <div class="session-block">
           <span class="lbl">تاريخ الجلسة (هـ)</span>
-          ${c.status === 'rescheduled' && c.previousDate ? `<span class="prev-date">${escapeHtml(c.previousDate)}</span>` : ''}
-          <span class="val">${escapeHtml(c.date || '—')}</span>
+          ${prev ? `<span class="prev-date">${escapeHtml(prev.date)}</span>` : ''}
+          <span class="val">${escapeHtml(session.date || '—')}</span>
           ${meta.gregorianStr ? `<span class="greg-sub">${escapeHtml(meta.gregorianStr)}</span>` : ''}
         </div>
         <div class="session-block">
           <span class="lbl">الوقت</span>
-          <span class="val">${escapeHtml(c.time || '—')}</span>
+          <span class="val">${escapeHtml(session.time || '—')}</span>
         </div>
       </div>
       <div class="card-footer">
         <span class="id-holder">هوية: ${escapeHtml(c.idHolder || '—')}</span>
         <div style="display:flex; gap:6px; align-items:center;">
           ${isOwnerOf(c) ? `<button class="share-btn" data-case="${escapeHtml(c.caseNumber)}">مشاركة</button>` : (c.ownerEmail ? `<span class="shared-tag">مشتركة من ${escapeHtml(c.ownerEmail)}</span>` : '')}
+          ${isOwnerOf(c) ? `<button class="archive-session-btn" data-case="${escapeHtml(c.caseNumber)}" data-session="${escapeHtml(session.id)}">أرشفة الجلسة</button>` : ''}
           ${isOwnerOf(c) ? `<button class="delete-btn" data-case="${escapeHtml(c.caseNumber)}">حذف</button>` : ''}
         </div>
       </div>
@@ -1063,10 +1176,26 @@ async function renderList(){
 
   grid.querySelectorAll('.delete-btn').forEach(btn => {
     btn.addEventListener('click', async () => {
-      if(!confirm('هل تريد حذف هذه القضية من السجل؟')) return;
+      if(!confirm('هل تريد حذف هذه القضية نهائيًا من السجل (بكل جلساتها)؟')) return;
       await storage.delete(PREFIX + btn.dataset.case);
       showToast('تم حذف القضية.');
       renderList();
+    });
+  });
+
+  grid.querySelectorAll('.archive-session-btn').forEach(btn => {
+    btn.addEventListener('click', async () => {
+      try{
+        const res = await storage.get(PREFIX + btn.dataset.case);
+        const rec = normalizeCase(JSON.parse(res.value));
+        const s = rec.sessions.find(s => s.id === btn.dataset.session);
+        if(s) s.archived = true;
+        await storage.set(PREFIX + btn.dataset.case, JSON.stringify(rec));
+        showToast('تمت أرشفة الجلسة.');
+        renderList();
+      }catch(e){
+        showToast('حدث خطأ. حاول مجددًا.');
+      }
     });
   });
 
@@ -1108,6 +1237,209 @@ async function renderList(){
 function isOwnerOf(c){
   if(!currentUserEmail) return true; // legacy no-login mode: everyone can manage everything
   return !c.ownerEmail || c.ownerEmail === currentUserEmail;
+}
+
+// ---------- القضايا (grouped) view: one card per case, listing every session ----------
+async function renderCasesGrouped(){
+  const grid = document.getElementById('casesGroupGrid');
+  const empty = document.getElementById('casesGroupEmpty');
+
+  if(!JSONBIN_BIN_ID || JSONBIN_BIN_ID === 'PASTE_BIN_ID_HERE'){ grid.innerHTML = ''; empty.style.display='block'; return; }
+
+  let cases = (await loadAllCases()).map(normalizeCase).filter(c => !c.archived);
+  if(currentUserEmail){
+    cases = cases.filter(c => !c.ownerEmail || c.ownerEmail === currentUserEmail || (c.sharedWithEmails || []).includes(currentUserEmail));
+  }
+
+  const query = document.getElementById('casesSearchInput').value.trim().toLowerCase();
+  if(query){
+    cases = cases.filter(c =>
+      (c.caseNumber||'').toLowerCase().includes(query) ||
+      (c.plaintiff||'').toLowerCase().includes(query) ||
+      (c.defendant||'').toLowerCase().includes(query) ||
+      (c.caseType||'').toLowerCase().includes(query)
+    );
+  }
+  cases.sort((a,b) => b.updatedAt - a.updatedAt);
+
+  document.getElementById('casesGroupCount').textContent = cases.length;
+
+  if(cases.length === 0){ grid.innerHTML = ''; empty.style.display = 'block'; return; }
+  empty.style.display = 'none';
+
+  grid.innerHTML = cases.map(c => {
+    const sessions = [...c.sessions].sort((a,b) => a.addedAt - b.addedAt);
+    const latest = getLatestSession(c);
+    return `
+    <div class="card">
+      <div class="card-top">
+        <div class="seal"><span class="mark"></span></div>
+        <span class="case-number-label">رقم القضية</span>
+        <span class="case-number">${escapeHtml(c.caseNumber)}</span>
+        <div><span class="status-badge scheduled">${sessions.length} جلسة/جلسات</span></div>
+      </div>
+      <div class="parties">
+        ${ (c.plaintiff || c.defendant) ? `
+          <div class="party-row"><span class="party-role">المدعي</span><span class="party-name">${escapeHtml(c.plaintiff || '—')}</span></div>
+          <div class="vs-divider">ضد</div>
+          <div class="party-row"><span class="party-role">المدعى عليه</span><span class="party-name">${escapeHtml(c.defendant || '—')}</span></div>
+        ` : `
+          <div class="party-row"><span class="party-role">نوع القضية</span><span class="party-name">${escapeHtml(c.caseType || '—')}</span></div>
+        ` }
+      </div>
+      ${c.notes ? `<div class="case-notes">📝 ${escapeHtml(c.notes)}</div>` : ''}
+      <div class="sessions-list">
+        ${sessions.map(s => `
+          <div class="session-row ${s.archived ? 'is-archived' : ''} ${!s.archived && latest && s.id === latest.id ? 'is-current' : ''}">
+            <span class="session-row-date">${escapeHtml(s.date)} — ${escapeHtml(s.time || '—')}</span>
+            <span class="session-row-tag">${s.archived ? 'مؤرشفة' : (latest && s.id === latest.id ? 'الحالية' : 'سابقة')}</span>
+            ${isOwnerOf(c) && !s.archived ? `<button class="mini-archive-btn" data-case="${escapeHtml(c.caseNumber)}" data-session="${escapeHtml(s.id)}">أرشفة</button>` : ''}
+          </div>
+        `).join('')}
+      </div>
+      <div class="card-footer">
+        <span class="id-holder">هوية: ${escapeHtml(c.idHolder || '—')}</span>
+        ${isOwnerOf(c) ? `<button class="archive-case-btn" data-case="${escapeHtml(c.caseNumber)}">أرشفة القضية بالكامل</button>` : ''}
+      </div>
+    </div>`;
+  }).join('');
+
+  grid.querySelectorAll('.mini-archive-btn').forEach(btn => {
+    btn.addEventListener('click', async () => {
+      try{
+        const res = await storage.get(PREFIX + btn.dataset.case);
+        const rec = normalizeCase(JSON.parse(res.value));
+        const s = rec.sessions.find(s => s.id === btn.dataset.session);
+        if(s) s.archived = true;
+        await storage.set(PREFIX + btn.dataset.case, JSON.stringify(rec));
+        showToast('تمت أرشفة الجلسة.');
+        renderCasesGrouped();
+      }catch(e){ showToast('حدث خطأ. حاول مجددًا.'); }
+    });
+  });
+
+  grid.querySelectorAll('.archive-case-btn').forEach(btn => {
+    btn.addEventListener('click', async () => {
+      if(!confirm('أرشفة هذي القضية بالكامل؟ تقدر تسترجعها لاحقًا من الأرشيف.')) return;
+      try{
+        const res = await storage.get(PREFIX + btn.dataset.case);
+        const rec = normalizeCase(JSON.parse(res.value));
+        rec.archived = true;
+        await storage.set(PREFIX + btn.dataset.case, JSON.stringify(rec));
+        showToast('تمت أرشفة القضية.');
+        renderCasesGrouped();
+      }catch(e){ showToast('حدث خطأ. حاول مجددًا.'); }
+    });
+  });
+}
+
+// ---------- الأرشيف view: archived cases, or archived individual sessions ----------
+async function renderArchive(){
+  const grid = document.getElementById('archiveGrid');
+  const empty = document.getElementById('archiveEmpty');
+
+  if(!JSONBIN_BIN_ID || JSONBIN_BIN_ID === 'PASTE_BIN_ID_HERE'){ grid.innerHTML=''; empty.style.display='block'; return; }
+
+  let cases = (await loadAllCases()).map(normalizeCase);
+  if(currentUserEmail){
+    cases = cases.filter(c => !c.ownerEmail || c.ownerEmail === currentUserEmail || (c.sharedWithEmails || []).includes(currentUserEmail));
+  }
+
+  if(archiveSubView === 'cases'){
+    const archived = cases.filter(c => c.archived).sort((a,b) => b.updatedAt - a.updatedAt);
+    if(archived.length === 0){
+      grid.innerHTML = '';
+      empty.querySelector('h3').textContent = 'لا توجد قضايا مؤرشفة';
+      empty.querySelector('p').textContent = 'القضايا اللي تؤرشفها بالكامل بتظهر هنا.';
+      empty.style.display = 'block';
+      return;
+    }
+    empty.style.display = 'none';
+    grid.innerHTML = archived.map(c => {
+      const latest = getLatestSession(c);
+      return `
+      <div class="card">
+        <div class="card-top">
+          <div class="seal"><span class="mark"></span></div>
+          <span class="case-number-label">رقم القضية</span>
+          <span class="case-number">${escapeHtml(c.caseNumber)}</span>
+        </div>
+        <div class="parties">
+          ${ (c.plaintiff || c.defendant) ? `
+            <div class="party-row"><span class="party-role">المدعي</span><span class="party-name">${escapeHtml(c.plaintiff || '—')}</span></div>
+            <div class="vs-divider">ضد</div>
+            <div class="party-row"><span class="party-role">المدعى عليه</span><span class="party-name">${escapeHtml(c.defendant || '—')}</span></div>
+          ` : `<div class="party-row"><span class="party-role">نوع القضية</span><span class="party-name">${escapeHtml(c.caseType || '—')}</span></div>` }
+        </div>
+        <div class="session-info">
+          <div class="session-block"><span class="lbl">آخر جلسة مسجّلة</span><span class="val">${escapeHtml(latest ? latest.date : '—')}</span></div>
+        </div>
+        <div class="card-footer">
+          <span class="id-holder">هوية: ${escapeHtml(c.idHolder || '—')}</span>
+          ${isOwnerOf(c) ? `<button class="restore-case-btn" data-case="${escapeHtml(c.caseNumber)}">استرجاع</button>` : ''}
+        </div>
+      </div>`;
+    }).join('');
+
+    grid.querySelectorAll('.restore-case-btn').forEach(btn => {
+      btn.addEventListener('click', async () => {
+        try{
+          const res = await storage.get(PREFIX + btn.dataset.case);
+          const rec = normalizeCase(JSON.parse(res.value));
+          rec.archived = false;
+          await storage.set(PREFIX + btn.dataset.case, JSON.stringify(rec));
+          showToast('تم استرجاع القضية.');
+          renderArchive();
+        }catch(e){ showToast('حدث خطأ. حاول مجددًا.'); }
+      });
+    });
+  } else {
+    // Archived individual sessions, across all (archived or active) cases.
+    const rows = [];
+    cases.forEach(c => {
+      (c.sessions || []).filter(s => s.archived).forEach(s => rows.push({ c, s }));
+    });
+    rows.sort((a,b) => b.s.addedAt - a.s.addedAt);
+
+    if(rows.length === 0){
+      grid.innerHTML = '';
+      empty.querySelector('h3').textContent = 'لا توجد جلسات مؤرشفة';
+      empty.querySelector('p').textContent = 'الجلسات المنتهية اللي تؤرشفها تظهر هنا.';
+      empty.style.display = 'block';
+      return;
+    }
+    empty.style.display = 'none';
+    grid.innerHTML = rows.map(({c, s}) => `
+      <div class="card">
+        <div class="card-top">
+          <div class="seal"><span class="mark"></span></div>
+          <span class="case-number-label">رقم القضية</span>
+          <span class="case-number">${escapeHtml(c.caseNumber)}</span>
+        </div>
+        <div class="session-info">
+          <div class="session-block"><span class="lbl">تاريخ الجلسة المؤرشفة</span><span class="val">${escapeHtml(s.date)} — ${escapeHtml(s.time||'—')}</span></div>
+        </div>
+        <div class="card-footer">
+          <span class="id-holder">${escapeHtml(c.plaintiff || c.caseType || '—')}</span>
+          ${isOwnerOf(c) ? `<button class="restore-session-btn" data-case="${escapeHtml(c.caseNumber)}" data-session="${escapeHtml(s.id)}">استرجاع</button>` : ''}
+        </div>
+      </div>
+    `).join('');
+
+    grid.querySelectorAll('.restore-session-btn').forEach(btn => {
+      btn.addEventListener('click', async () => {
+        try{
+          const res = await storage.get(PREFIX + btn.dataset.case);
+          const rec = normalizeCase(JSON.parse(res.value));
+          const s = rec.sessions.find(s => s.id === btn.dataset.session);
+          if(s) s.archived = false;
+          await storage.set(PREFIX + btn.dataset.case, JSON.stringify(rec));
+          showToast('تم استرجاع الجلسة.');
+          renderArchive();
+        }catch(e){ showToast('حدث خطأ. حاول مجددًا.'); }
+      });
+    });
+  }
 }
 
 function escapeHtml(str){
