@@ -222,6 +222,17 @@
     margin:0 18px 12px; padding:9px 12px; background:var(--paper-dim); border-radius:8px;
     font-size:12.5px; color:var(--ink-soft); line-height:1.7; white-space:pre-wrap;
   }
+  .session-number-tag{
+    font-size:11px; font-weight:700; color:var(--gold); background:var(--paper-dim);
+    padding:2px 8px; border-radius:999px; margin-inline-start:6px; vertical-align:middle;
+  }
+  .notes-box{ padding:0 18px 14px; }
+  .notes-box label{ display:block; font-size:11.5px; color:var(--ink-soft); margin-bottom:5px; font-weight:600; }
+  .notes-textarea{
+    width:100%; min-height:56px; resize:vertical; font-family:'Cairo',sans-serif; font-size:13px;
+    padding:9px 12px; border-radius:8px; border:1px solid var(--line); background:#fff; color:var(--ink);
+  }
+  .notes-textarea:focus{ outline:2px solid var(--green-deep); outline-offset:1px; }
   .sessions-list{ padding:0 18px 14px; display:flex; flex-direction:column; gap:6px; }
   .session-row{
     display:flex; align-items:center; gap:8px; font-size:12.5px; padding:7px 10px;
@@ -1120,17 +1131,14 @@ async function renderList(){
     const meta = getSessionMeta(session.date, session.time);
     const chipClass = meta.state === 'past' ? 'past' : (meta.state === 'today' ? 'today' : 'upcoming');
     const prev = getPreviousActiveSession(c);
-    const statusLabel = caseStatusLabel(c);
+    const sessionNumber = (c.sessions || []).findIndex(s => s.id === session.id) + 1;
     return `
     <div class="card">
       <div class="card-top">
         <div class="seal"><span class="mark"></span></div>
         <span class="case-number-label">رقم القضية</span>
-        <span class="case-number">${escapeHtml(c.caseNumber)}</span>
+        <span class="case-number">${escapeHtml(c.caseNumber)} <span class="session-number-tag">جلسة ${sessionNumber}</span></span>
         <div>
-          <span class="status-badge ${statusLabel === 'rescheduled' ? 'rescheduled' : 'scheduled'}">
-            ${statusLabel === 'rescheduled' ? 'تم تغيير الموعد' : 'مجدولة'}
-          </span>
           ${meta.countdownText ? `<span class="countdown-chip ${chipClass}">⏳ ${escapeHtml(meta.countdownText)}</span>` : ''}
         </div>
       </div>
@@ -1143,12 +1151,11 @@ async function renderList(){
           <div class="party-row"><span class="party-role">نوع القضية</span><span class="party-name">${escapeHtml(c.caseType || '—')}</span></div>
         ` }
       </div>
-      ${c.notes ? `<div class="case-notes">📝 ${escapeHtml(c.notes)}</div>` : ''}
+      </div>
       <div class="stub"></div>
       <div class="session-info">
         <div class="session-block">
           <span class="lbl">تاريخ الجلسة (هـ)</span>
-          ${prev ? `<span class="prev-date">${escapeHtml(prev.date)}</span>` : ''}
           <span class="val">${escapeHtml(session.date || '—')}</span>
           ${meta.gregorianStr ? `<span class="greg-sub">${escapeHtml(meta.gregorianStr)}</span>` : ''}
         </div>
@@ -1157,12 +1164,16 @@ async function renderList(){
           <span class="val">${escapeHtml(session.time || '—')}</span>
         </div>
       </div>
+      <div class="notes-box">
+        <label>ملاحظات</label>
+        <textarea class="notes-textarea" data-case="${escapeHtml(c.caseNumber)}" placeholder="اكتب ملاحظاتك هنا...">${escapeHtml(c.notes || '')}</textarea>
+      </div>
       <div class="card-footer">
         <span class="id-holder">هوية: ${escapeHtml(c.idHolder || '—')}</span>
         <div style="display:flex; gap:6px; align-items:center;">
           ${isOwnerOf(c) ? `<button class="share-btn" data-case="${escapeHtml(c.caseNumber)}">مشاركة</button>` : (c.ownerEmail ? `<span class="shared-tag">مشتركة من ${escapeHtml(c.ownerEmail)}</span>` : '')}
           ${isOwnerOf(c) ? `<button class="archive-session-btn" data-case="${escapeHtml(c.caseNumber)}" data-session="${escapeHtml(session.id)}">أرشفة الجلسة</button>` : ''}
-          ${isOwnerOf(c) ? `<button class="delete-btn" data-case="${escapeHtml(c.caseNumber)}">حذف</button>` : ''}
+          ${isOwnerOf(c) || (c.sharedWithEmails||[]).includes(currentUserEmail) ? `<button class="delete-btn" data-case="${escapeHtml(c.caseNumber)}">حذف</button>` : ''}
         </div>
       </div>
       ${isOwnerOf(c) && (c.sharedWithEmails||[]).length ? `
@@ -1173,6 +1184,18 @@ async function renderList(){
     </div>
   `;
   }).join('');
+
+  grid.querySelectorAll('.notes-textarea').forEach(ta => {
+    ta.addEventListener('blur', async () => {
+      try{
+        const res = await storage.get(PREFIX + ta.dataset.case);
+        const rec = JSON.parse(res.value);
+        rec.notes = ta.value.trim();
+        await storage.set(PREFIX + ta.dataset.case, JSON.stringify(rec));
+        showToast('تم حفظ الملاحظة.');
+      }catch(e){ showToast('تعذّر حفظ الملاحظة.'); }
+    });
+  });
 
   grid.querySelectorAll('.delete-btn').forEach(btn => {
     btn.addEventListener('click', async () => {
