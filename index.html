@@ -432,6 +432,7 @@
         <div class="btn-row">
           <button class="btn btn-gold" id="pasteBtn">📋 لصق من الحافظة وتحليل</button>
           <button class="btn btn-primary" id="parseBtn">تحليل الرسالة</button>
+          <button class="btn btn-ghost" id="manualEntryBtn">✍️ إضافة جلسة يدويًا</button>
           <button class="btn btn-ghost" id="clearBtn">مسح</button>
         </div>
         <div class="parse-note" id="parseNote"></div>
@@ -444,6 +445,7 @@
         <div class="field-grid">
           <div class="field"><label>رقم القضية</label><input id="f_caseNumber" dir="ltr"></div>
           <div class="field"><label>رقم الهوية (المُبلَّغ)</label><input id="f_idHolder" dir="ltr"></div>
+          <div class="field"><label>رقم الجلسة</label><input id="f_sessionNumber" dir="ltr" placeholder="1"><span class="field-note" id="sessionNumberHint"></span></div>
           <div class="field full"><label>نوع القضية (إن وُجد بدل الأطراف)</label><input id="f_caseType" placeholder="مثال: إقامة ولاية على قاصر عقلاً"></div>
           <div class="field full"><label>المدعي</label><input id="f_plaintiff"></div>
           <div class="field full"><label>المدعى عليه</label><input id="f_defendant"></div>
@@ -718,27 +720,110 @@ document.getElementById('archiveSubSessions').addEventListener('click', () => {
 });
 // ---------- International time zone conversion (session times are always Saudi/Riyadh local time) ----------
 const TIMEZONE_OPTIONS = [
+  // الخليج والجزيرة العربية
   ['الإمارات (أبوظبي/دبي)', 'Asia/Dubai'],
   ['الكويت', 'Asia/Kuwait'],
   ['قطر', 'Asia/Qatar'],
   ['البحرين', 'Asia/Bahrain'],
-  ['عمان (مسقط)', 'Asia/Muscat'],
-  ['مصر (القاهرة)', 'Africa/Cairo'],
+  ['عُمان (مسقط)', 'Asia/Muscat'],
+  ['اليمن (صنعاء)', 'Asia/Aden'],
+  // الشام والعراق
   ['الأردن (عمّان)', 'Asia/Amman'],
   ['لبنان (بيروت)', 'Asia/Beirut'],
+  ['سوريا (دمشق)', 'Asia/Damascus'],
+  ['فلسطين (القدس/غزة)', 'Asia/Gaza'],
   ['العراق (بغداد)', 'Asia/Baghdad'],
+  // شمال أفريقيا
+  ['مصر (القاهرة)', 'Africa/Cairo'],
+  ['السودان (الخرطوم)', 'Africa/Khartoum'],
+  ['ليبيا (طرابلس)', 'Africa/Tripoli'],
+  ['تونس', 'Africa/Tunis'],
+  ['الجزائر', 'Africa/Algiers'],
+  ['المغرب (الرباط)', 'Africa/Casablanca'],
+  ['موريتانيا (نواكشوط)', 'Africa/Nouakchott'],
+  // أفريقيا (بقية الدول)
+  ['الصومال (مقديشو)', 'Africa/Mogadishu'],
+  ['جيبوتي', 'Africa/Djibouti'],
+  ['إثيوبيا (أديس أبابا)', 'Africa/Addis_Ababa'],
+  ['كينيا (نيروبي)', 'Africa/Nairobi'],
+  ['تنزانيا (دار السلام)', 'Africa/Dar_es_Salaam'],
+  ['أوغندا (كمبالا)', 'Africa/Kampala'],
+  ['نيجيريا (لاغوس)', 'Africa/Lagos'],
+  ['غانا (أكرا)', 'Africa/Accra'],
+  ['السنغال (داكار)', 'Africa/Dakar'],
+  ['جنوب أفريقيا (جوهانسبرغ)', 'Africa/Johannesburg'],
+  ['الكونغو الديمقراطية (كينشاسا)', 'Africa/Kinshasa'],
+  ['أنغولا (لواندا)', 'Africa/Luanda'],
+  // تركيا وآسيا الوسطى والقوقاز
   ['تركيا (إسطنبول)', 'Europe/Istanbul'],
+  ['جورجيا (تبليسي)', 'Asia/Tbilisi'],
+  ['أرمينيا (يريفان)', 'Asia/Yerevan'],
+  ['أذربيجان (باكو)', 'Asia/Baku'],
+  ['كازاخستان (ألماتي)', 'Asia/Almaty'],
+  ['أوزبكستان (طشقند)', 'Asia/Tashkent'],
+  ['تركمانستان (عشق آباد)', 'Asia/Ashgabat'],
+  ['قيرغيزستان (بيشكيك)', 'Asia/Bishkek'],
+  ['طاجيكستان (دوشنبه)', 'Asia/Dushanbe'],
+  ['أفغانستان (كابل)', 'Asia/Kabul'],
+  ['إيران (طهران)', 'Asia/Tehran'],
+  // أوروبا
   ['المملكة المتحدة (لندن)', 'Europe/London'],
+  ['أيرلندا (دبلن)', 'Europe/Dublin'],
+  ['البرتغال (لشبونة)', 'Europe/Lisbon'],
+  ['إسبانيا (مدريد)', 'Europe/Madrid'],
   ['فرنسا (باريس)', 'Europe/Paris'],
+  ['بلجيكا (بروكسل)', 'Europe/Brussels'],
+  ['هولندا (أمستردام)', 'Europe/Amsterdam'],
   ['ألمانيا (برلين)', 'Europe/Berlin'],
-  ['أمريكا - نيويورك', 'America/New_York'],
-  ['أمريكا - لوس أنجلوس', 'America/Los_Angeles'],
+  ['سويسرا (زيورخ)', 'Europe/Zurich'],
+  ['إيطاليا (روما)', 'Europe/Rome'],
+  ['النمسا (فيينا)', 'Europe/Vienna'],
+  ['السويد (ستوكهولم)', 'Europe/Stockholm'],
+  ['النرويج (أوسلو)', 'Europe/Oslo'],
+  ['الدنمارك (كوبنهاغن)', 'Europe/Copenhagen'],
+  ['فنلندا (هلسنكي)', 'Europe/Helsinki'],
+  ['بولندا (وارسو)', 'Europe/Warsaw'],
+  ['التشيك (براغ)', 'Europe/Prague'],
+  ['اليونان (أثينا)', 'Europe/Athens'],
+  ['رومانيا (بوخارست)', 'Europe/Bucharest'],
+  ['أوكرانيا (كييف)', 'Europe/Kyiv'],
+  ['روسيا (موسكو)', 'Europe/Moscow'],
+  // جنوب وشرق آسيا
   ['الهند (نيودلهي)', 'Asia/Kolkata'],
   ['باكستان (إسلام آباد)', 'Asia/Karachi'],
+  ['بنغلاديش (دكا)', 'Asia/Dhaka'],
+  ['سريلانكا (كولومبو)', 'Asia/Colombo'],
+  ['نيبال (كاتماندو)', 'Asia/Kathmandu'],
   ['ماليزيا (كوالالمبور)', 'Asia/Kuala_Lumpur'],
-  ['اليابان (طوكيو)', 'Asia/Tokyo'],
+  ['إندونيسيا (جاكرتا)', 'Asia/Jakarta'],
+  ['سنغافورة', 'Asia/Singapore'],
+  ['الفلبين (مانيلا)', 'Asia/Manila'],
+  ['تايلاند (بانكوك)', 'Asia/Bangkok'],
+  ['فيتنام (هانوي)', 'Asia/Ho_Chi_Minh'],
+  ['ميانمار (يانغون)', 'Asia/Yangon'],
   ['الصين (بكين)', 'Asia/Shanghai'],
-  ['أستراليا (سيدني)', 'Australia/Sydney']
+  ['هونغ كونغ', 'Asia/Hong_Kong'],
+  ['تايوان (تايبيه)', 'Asia/Taipei'],
+  ['كوريا الجنوبية (سيول)', 'Asia/Seoul'],
+  ['اليابان (طوكيو)', 'Asia/Tokyo'],
+  // أوقيانوسيا
+  ['أستراليا (سيدني)', 'Australia/Sydney'],
+  ['أستراليا (بيرث)', 'Australia/Perth'],
+  ['نيوزيلندا (أوكلاند)', 'Pacific/Auckland'],
+  // أمريكا الشمالية
+  ['كندا (تورونتو)', 'America/Toronto'],
+  ['كندا (فانكوفر)', 'America/Vancouver'],
+  ['أمريكا - نيويورك (الشرقي)', 'America/New_York'],
+  ['أمريكا - شيكاغو (الوسطى)', 'America/Chicago'],
+  ['أمريكا - دنفر (الجبلي)', 'America/Denver'],
+  ['أمريكا - لوس أنجلوس (الغربي)', 'America/Los_Angeles'],
+  ['المكسيك (مكسيكو سيتي)', 'America/Mexico_City'],
+  // أمريكا الجنوبية
+  ['البرازيل (ساو باولو)', 'America/Sao_Paulo'],
+  ['الأرجنتين (بوينس آيرس)', 'America/Argentina/Buenos_Aires'],
+  ['تشيلي (سانتياغو)', 'America/Santiago'],
+  ['كولومبيا (بوغوتا)', 'America/Bogota'],
+  ['بيرو (ليما)', 'America/Lima']
 ];
 const RIYADH_UTC_OFFSET_MIN = 180; // Asia/Riyadh is fixed UTC+3, no daylight saving
 function convertSessionTimeToTZ(hijriDateStr, timeStr, targetTz){
@@ -861,13 +946,16 @@ async function parseAndPreview(){
   document.getElementById('f_time').value = parsed.time;
   document.getElementById('f_notes').value = '';
   document.getElementById('f_sessionLink').value = '';
+  document.getElementById('f_sessionNumber').value = '';
   updateGregorianHint();
 
   // check if case already exists to warn about update
   const updateFlag = document.getElementById('updateFlag');
+  const sessionNumberHint = document.getElementById('sessionNumberHint');
   isUpdate = false;
   if(parsed.caseNumber){
     updateFlag.classList.remove('show');
+    sessionNumberHint.textContent = 'قضية جديدة — أدخل رقم الجلسة يدويًا (إلزامي).';
     try{
       const res = await storage.get(PREFIX + parsed.caseNumber);
       if(res && res.value){
@@ -878,6 +966,8 @@ async function parseAndPreview(){
         updateFlag.classList.add('show');
         if(old.notes) document.getElementById('f_notes').value = old.notes;
         if(old.sessionLink) document.getElementById('f_sessionLink').value = old.sessionLink;
+        document.getElementById('f_sessionNumber').value = suggestNextSessionNumber(old);
+        sessionNumberHint.textContent = 'تم تعبئته تلقائيًا (الجلسة التالية لهذي القضية) — تقدر تعدّله لو احتجت.';
       }
     }catch(e){
       // no existing record (or a transient lookup issue) — safe to ignore, save still works
@@ -905,6 +995,49 @@ document.getElementById('pasteBtn').addEventListener('click', async () => {
   }
 });
 
+document.getElementById('manualEntryBtn').addEventListener('click', () => {
+  document.getElementById('rawMessage').value = '';
+  document.getElementById('parseNote').classList.remove('show');
+  document.getElementById('updateFlag').classList.remove('show');
+  document.getElementById('dateGregorianHint').textContent = '';
+  currentParsed = null;
+  isUpdate = false;
+  ['f_caseNumber','f_idHolder','f_caseType','f_plaintiff','f_defendant','f_date','f_time','f_notes','f_sessionLink','f_sessionNumber'].forEach(id => {
+    document.getElementById(id).value = '';
+  });
+  document.getElementById('sessionNumberHint').textContent = 'أدخل رقم الجلسة يدويًا (إلزامي عند أول قضية جديدة).';
+  document.getElementById('previewPanel').style.display = 'block';
+  document.getElementById('f_caseNumber').focus();
+});
+
+document.getElementById('f_caseNumber').addEventListener('blur', async () => {
+  const caseNumber = document.getElementById('f_caseNumber').value.trim();
+  const hint = document.getElementById('sessionNumberHint');
+  const updateFlag = document.getElementById('updateFlag');
+  if(!caseNumber) return;
+  try{
+    const res = await storage.get(PREFIX + caseNumber);
+    if(res && res.value){
+      const old = normalizeCase(JSON.parse(res.value));
+      if(!document.getElementById('f_sessionNumber').value.trim()){
+        document.getElementById('f_sessionNumber').value = suggestNextSessionNumber(old);
+      }
+      hint.textContent = 'تم تعبئته تلقائيًا (الجلسة التالية لهذي القضية) — تقدر تعدّله لو احتجت.';
+      const latest = getLatestSession(old);
+      updateFlag.textContent = `يوجد بالفعل سجل لهذه القضية بتاريخ ${latest.date} — ${latest.time} (${old.sessions.length} جلسة/جلسات مسجّلة).`;
+      updateFlag.classList.add('show');
+      if(old.plaintiff && !document.getElementById('f_plaintiff').value) document.getElementById('f_plaintiff').value = old.plaintiff;
+      if(old.defendant && !document.getElementById('f_defendant').value) document.getElementById('f_defendant').value = old.defendant;
+      if(old.idHolder && !document.getElementById('f_idHolder').value) document.getElementById('f_idHolder').value = old.idHolder;
+      if(old.caseType && !document.getElementById('f_caseType').value) document.getElementById('f_caseType').value = old.caseType;
+    } else {
+      hint.textContent = 'قضية جديدة — أدخل رقم الجلسة يدويًا (إلزامي).';
+    }
+  }catch(e){
+    hint.textContent = 'قضية جديدة — أدخل رقم الجلسة يدويًا (إلزامي).';
+  }
+});
+
 function updateGregorianHint(){
   const hintEl = document.getElementById('dateGregorianHint');
   const str = hijriDateStrToGregorianStr(document.getElementById('f_date').value.trim());
@@ -919,6 +1052,7 @@ document.getElementById('clearBtn').addEventListener('click', () => {
   document.getElementById('dateGregorianHint').textContent = '';
   document.getElementById('f_notes').value = '';
   document.getElementById('f_sessionLink').value = '';
+  document.getElementById('f_sessionNumber').value = '';
 });
 document.getElementById('discardBtn').addEventListener('click', () => {
   document.getElementById('previewPanel').style.display = 'none';
@@ -929,6 +1063,7 @@ document.getElementById('saveBtn').addEventListener('click', async () => {
   const caseNumber = document.getElementById('f_caseNumber').value.trim();
   const date = document.getElementById('f_date').value.trim();
   const time = document.getElementById('f_time').value.trim();
+  const sessionNumberVal = document.getElementById('f_sessionNumber').value.trim();
   if(!caseNumber || !date){
     showToast('رقم القضية وتاريخ الجلسة حقلان مطلوبان.');
     return;
@@ -955,6 +1090,12 @@ document.getElementById('saveBtn').addEventListener('click', async () => {
     existing = null;
   }
 
+  // The session number is mandatory the first time a case is ever created.
+  if(!existing && !sessionNumberVal){
+    showToast('رقم الجلسة إلزامي عند أول إضافة لهذي القضية.');
+    return;
+  }
+
   let record;
   let addedNewSession = false;
 
@@ -972,11 +1113,13 @@ document.getElementById('saveBtn').addEventListener('click', async () => {
 
     const latest = getLatestSession(record);
     if(!latest || latest.date !== date || latest.time !== time){
-      record.sessions.push({ id: genSessionId(), date, time, addedAt: Date.now(), archived: false });
+      const num = sessionNumberVal ? (isNaN(parseInt(sessionNumberVal,10)) ? sessionNumberVal : parseInt(sessionNumberVal,10)) : suggestNextSessionNumber(record);
+      record.sessions.push({ id: genSessionId(), date, time, addedAt: Date.now(), archived: false, number: num });
       addedNewSession = true;
       record.archived = false; // a new session means the case is active again
     }
   } else {
+    const num = isNaN(parseInt(sessionNumberVal,10)) ? sessionNumberVal : parseInt(sessionNumberVal,10);
     record = {
       ...caseFields,
       ownerEmail: currentUserEmail || null,
@@ -984,7 +1127,7 @@ document.getElementById('saveBtn').addEventListener('click', async () => {
       archived: false,
       createdAt: Date.now(),
       updatedAt: Date.now(),
-      sessions: [{ id: genSessionId(), date, time, addedAt: Date.now(), archived: false }]
+      sessions: [{ id: genSessionId(), date, time, addedAt: Date.now(), archived: false, number: num }]
     };
     addedNewSession = true;
   }
@@ -1009,15 +1152,26 @@ function normalizeCase(rec){
   if(!rec.sessions){
     rec.sessions = [];
     if(rec.previousDate){
-      rec.sessions.push({ id: 'legacy_prev', date: rec.previousDate, time: rec.previousTime || '', addedAt: (rec.addedAt || Date.now()) - 1, archived: false });
+      rec.sessions.push({ id: 'legacy_prev', date: rec.previousDate, time: rec.previousTime || '', addedAt: (rec.addedAt || Date.now()) - 1, archived: false, number: 1 });
+      rec.sessions.push({ id: 'legacy_cur', date: rec.date, time: rec.time, addedAt: rec.updatedAt || rec.addedAt || Date.now(), archived: false, number: 2 });
+    } else {
+      rec.sessions.push({ id: 'legacy_cur', date: rec.date, time: rec.time, addedAt: rec.updatedAt || rec.addedAt || Date.now(), archived: false, number: 1 });
     }
-    rec.sessions.push({ id: 'legacy_cur', date: rec.date, time: rec.time, addedAt: rec.updatedAt || rec.addedAt || Date.now(), archived: false });
   }
+  // Backfill session numbers for records saved before this feature existed.
+  rec.sessions.forEach((s, idx) => {
+    if(s.number === undefined || s.number === null || s.number === '') s.number = idx + 1;
+  });
   if(rec.archived === undefined) rec.archived = false;
   if(!rec.createdAt) rec.createdAt = rec.addedAt || Date.now();
   if(!rec.updatedAt) rec.updatedAt = Date.now();
   if(!rec.sharedWithEmails) rec.sharedWithEmails = [];
   return rec;
+}
+function suggestNextSessionNumber(rec){
+  const nums = (rec.sessions || []).map(s => parseInt(s.number, 10)).filter(n => !isNaN(n));
+  if(nums.length) return Math.max(...nums) + 1;
+  return (rec.sessions || []).length + 1;
 }
 function getActiveSessions(rec){ return (rec.sessions || []).filter(s => !s.archived); }
 function getLatestSession(rec){
@@ -1240,7 +1394,7 @@ async function renderList(){
     const meta = getSessionMeta(session.date, session.time);
     const chipClass = meta.state === 'past' ? 'past' : (meta.state === 'today' ? 'today' : 'upcoming');
     const prev = getPreviousActiveSession(c);
-    const sessionNumber = (c.sessions || []).findIndex(s => s.id === session.id) + 1;
+    const sessionNumber = session.number;
     return `
     <div class="card">
       <div class="card-top">
@@ -1527,7 +1681,7 @@ async function renderCasesGrouped(){
         ${sessions.map(s => `
           <div class="session-row ${s.archived ? 'is-archived' : ''} ${!s.archived && latest && s.id === latest.id ? 'is-current' : ''}">
             <span class="session-row-date">${escapeHtml(s.date)} — ${escapeHtml(s.time || '—')}</span>
-            <span class="session-row-tag">${s.archived ? 'مؤرشفة' : (latest && s.id === latest.id ? 'الحالية' : 'سابقة')}</span>
+            <span class="session-row-tag">جلسة ${escapeHtml(String(s.number))} ${s.archived ? '· مؤرشفة' : (latest && s.id === latest.id ? '· الحالية' : '')}</span>
             ${isOwnerOf(c) && !s.archived ? `<button class="mini-archive-btn" data-case="${escapeHtml(c.caseNumber)}" data-session="${escapeHtml(s.id)}">أرشفة</button>` : ''}
           </div>
         `).join('')}
