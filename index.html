@@ -605,8 +605,9 @@ const JSONBIN_KEY = '$2a$10$jZROjPQjlzailtbhDoxlHeEmnS93kd/qjN5gLz4/X81hgFTTpcyh
 let JSONBIN_BIN_ID = '6a8dc4b9f5f4af5e2940f6dd';
 
 async function jsonbinReadAll(){
-  const res = await fetch(`https://api.jsonbin.io/v3/b/${JSONBIN_BIN_ID}/latest`, {
-    headers: { 'X-Master-Key': JSONBIN_KEY }
+  const res = await fetch(`https://api.jsonbin.io/v3/b/${JSONBIN_BIN_ID}/latest?t=${Date.now()}`, {
+    headers: { 'X-Master-Key': JSONBIN_KEY },
+    cache: 'no-store'
   });
   if(!res.ok) throw new Error(`JSONBin read failed (${res.status}): ${await res.text()}`);
   const data = await res.json();
@@ -616,12 +617,21 @@ async function jsonbinWriteAll(obj){
   const res = await fetch(`https://api.jsonbin.io/v3/b/${JSONBIN_BIN_ID}`, {
     method: 'PUT',
     headers: { 'Content-Type': 'application/json', 'X-Master-Key': JSONBIN_KEY },
-    body: JSON.stringify(obj)
+    body: JSON.stringify(obj),
+    cache: 'no-store'
   });
   if(!res.ok) throw new Error(`JSONBin write failed (${res.status}): ${await res.text()}`);
 }
 
 // Drop-in replacement for the old window.storage API used throughout the app below.
+// Writes are queued (run one at a time) so two concurrent saves can never overwrite
+// each other's changes — this is what caused the "archived case reappears" bug.
+let storageWriteQueue = Promise.resolve();
+function queueStorageWrite(fn){
+  const run = storageWriteQueue.then(fn, fn);
+  storageWriteQueue = run.catch(() => {});
+  return run;
+}
 const storage = {
   async get(key){
     const all = await jsonbinReadAll();
@@ -629,16 +639,20 @@ const storage = {
     return { key, value: all[key] };
   },
   async set(key, value){
-    const all = await jsonbinReadAll();
-    all[key] = value;
-    await jsonbinWriteAll(all);
-    return { key, value };
+    return queueStorageWrite(async () => {
+      const all = await jsonbinReadAll();
+      all[key] = value;
+      await jsonbinWriteAll(all);
+      return { key, value };
+    });
   },
   async delete(key){
-    const all = await jsonbinReadAll();
-    delete all[key];
-    await jsonbinWriteAll(all);
-    return { key, deleted: true };
+    return queueStorageWrite(async () => {
+      const all = await jsonbinReadAll();
+      delete all[key];
+      await jsonbinWriteAll(all);
+      return { key, deleted: true };
+    });
   },
   async list(prefix){
     const all = await jsonbinReadAll();
@@ -720,110 +734,100 @@ document.getElementById('archiveSubSessions').addEventListener('click', () => {
 });
 // ---------- International time zone conversion (session times are always Saudi/Riyadh local time) ----------
 const TIMEZONE_OPTIONS = [
-  // الخليج والجزيرة العربية
-  ['الإمارات (أبوظبي/دبي)', 'Asia/Dubai'],
-  ['الكويت', 'Asia/Kuwait'],
-  ['قطر', 'Asia/Qatar'],
-  ['البحرين', 'Asia/Bahrain'],
-  ['عُمان (مسقط)', 'Asia/Muscat'],
-  ['اليمن (صنعاء)', 'Asia/Aden'],
-  // الشام والعراق
-  ['الأردن (عمّان)', 'Asia/Amman'],
-  ['لبنان (بيروت)', 'Asia/Beirut'],
-  ['سوريا (دمشق)', 'Asia/Damascus'],
-  ['فلسطين (القدس/غزة)', 'Asia/Gaza'],
-  ['العراق (بغداد)', 'Asia/Baghdad'],
-  // شمال أفريقيا
-  ['مصر (القاهرة)', 'Africa/Cairo'],
-  ['السودان (الخرطوم)', 'Africa/Khartoum'],
-  ['ليبيا (طرابلس)', 'Africa/Tripoli'],
-  ['تونس', 'Africa/Tunis'],
-  ['الجزائر', 'Africa/Algiers'],
-  ['المغرب (الرباط)', 'Africa/Casablanca'],
-  ['موريتانيا (نواكشوط)', 'Africa/Nouakchott'],
-  // أفريقيا (بقية الدول)
-  ['الصومال (مقديشو)', 'Africa/Mogadishu'],
-  ['جيبوتي', 'Africa/Djibouti'],
-  ['إثيوبيا (أديس أبابا)', 'Africa/Addis_Ababa'],
-  ['كينيا (نيروبي)', 'Africa/Nairobi'],
-  ['تنزانيا (دار السلام)', 'Africa/Dar_es_Salaam'],
-  ['أوغندا (كمبالا)', 'Africa/Kampala'],
-  ['نيجيريا (لاغوس)', 'Africa/Lagos'],
-  ['غانا (أكرا)', 'Africa/Accra'],
-  ['السنغال (داكار)', 'Africa/Dakar'],
-  ['جنوب أفريقيا (جوهانسبرغ)', 'Africa/Johannesburg'],
-  ['الكونغو الديمقراطية (كينشاسا)', 'Africa/Kinshasa'],
-  ['أنغولا (لواندا)', 'Africa/Luanda'],
-  // تركيا وآسيا الوسطى والقوقاز
-  ['تركيا (إسطنبول)', 'Europe/Istanbul'],
-  ['جورجيا (تبليسي)', 'Asia/Tbilisi'],
-  ['أرمينيا (يريفان)', 'Asia/Yerevan'],
   ['أذربيجان (باكو)', 'Asia/Baku'],
-  ['كازاخستان (ألماتي)', 'Asia/Almaty'],
-  ['أوزبكستان (طشقند)', 'Asia/Tashkent'],
-  ['تركمانستان (عشق آباد)', 'Asia/Ashgabat'],
-  ['قيرغيزستان (بيشكيك)', 'Asia/Bishkek'],
-  ['طاجيكستان (دوشنبه)', 'Asia/Dushanbe'],
-  ['أفغانستان (كابل)', 'Asia/Kabul'],
-  ['إيران (طهران)', 'Asia/Tehran'],
-  // أوروبا
-  ['المملكة المتحدة (لندن)', 'Europe/London'],
-  ['أيرلندا (دبلن)', 'Europe/Dublin'],
-  ['البرتغال (لشبونة)', 'Europe/Lisbon'],
-  ['إسبانيا (مدريد)', 'Europe/Madrid'],
-  ['فرنسا (باريس)', 'Europe/Paris'],
-  ['بلجيكا (بروكسل)', 'Europe/Brussels'],
-  ['هولندا (أمستردام)', 'Europe/Amsterdam'],
-  ['ألمانيا (برلين)', 'Europe/Berlin'],
-  ['سويسرا (زيورخ)', 'Europe/Zurich'],
-  ['إيطاليا (روما)', 'Europe/Rome'],
-  ['النمسا (فيينا)', 'Europe/Vienna'],
-  ['السويد (ستوكهولم)', 'Europe/Stockholm'],
-  ['النرويج (أوسلو)', 'Europe/Oslo'],
-  ['الدنمارك (كوبنهاغن)', 'Europe/Copenhagen'],
-  ['فنلندا (هلسنكي)', 'Europe/Helsinki'],
-  ['بولندا (وارسو)', 'Europe/Warsaw'],
-  ['التشيك (براغ)', 'Europe/Prague'],
-  ['اليونان (أثينا)', 'Europe/Athens'],
-  ['رومانيا (بوخارست)', 'Europe/Bucharest'],
-  ['أوكرانيا (كييف)', 'Europe/Kyiv'],
-  ['روسيا (موسكو)', 'Europe/Moscow'],
-  // جنوب وشرق آسيا
-  ['الهند (نيودلهي)', 'Asia/Kolkata'],
-  ['باكستان (إسلام آباد)', 'Asia/Karachi'],
-  ['بنغلاديش (دكا)', 'Asia/Dhaka'],
-  ['سريلانكا (كولومبو)', 'Asia/Colombo'],
-  ['نيبال (كاتماندو)', 'Asia/Kathmandu'],
-  ['ماليزيا (كوالالمبور)', 'Asia/Kuala_Lumpur'],
-  ['إندونيسيا (جاكرتا)', 'Asia/Jakarta'],
-  ['سنغافورة', 'Asia/Singapore'],
-  ['الفلبين (مانيلا)', 'Asia/Manila'],
-  ['تايلاند (بانكوك)', 'Asia/Bangkok'],
-  ['فيتنام (هانوي)', 'Asia/Ho_Chi_Minh'],
-  ['ميانمار (يانغون)', 'Asia/Yangon'],
-  ['الصين (بكين)', 'Asia/Shanghai'],
-  ['هونغ كونغ', 'Asia/Hong_Kong'],
-  ['تايوان (تايبيه)', 'Asia/Taipei'],
-  ['كوريا الجنوبية (سيول)', 'Asia/Seoul'],
-  ['اليابان (طوكيو)', 'Asia/Tokyo'],
-  // أوقيانوسيا
-  ['أستراليا (سيدني)', 'Australia/Sydney'],
+  ['أرمينيا (يريفان)', 'Asia/Yerevan'],
   ['أستراليا (بيرث)', 'Australia/Perth'],
-  ['نيوزيلندا (أوكلاند)', 'Pacific/Auckland'],
-  // أمريكا الشمالية
+  ['أستراليا (سيدني)', 'Australia/Sydney'],
+  ['أفغانستان (كابل)', 'Asia/Kabul'],
+  ['ألمانيا (برلين)', 'Europe/Berlin'],
+  ['أمريكا - دنفر (الجبلي)', 'America/Denver'],
+  ['أمريكا - شيكاغو (الوسطى)', 'America/Chicago'],
+  ['أمريكا - لوس أنجلوس (الغربي)', 'America/Los_Angeles'],
+  ['أمريكا - نيويورك (الشرقي)', 'America/New_York'],
+  ['أنغولا (لواندا)', 'Africa/Luanda'],
+  ['أوزبكستان (طشقند)', 'Asia/Tashkent'],
+  ['أوغندا (كمبالا)', 'Africa/Kampala'],
+  ['أوكرانيا (كييف)', 'Europe/Kyiv'],
+  ['أيرلندا (دبلن)', 'Europe/Dublin'],
+  ['إثيوبيا (أديس أبابا)', 'Africa/Addis_Ababa'],
+  ['إسبانيا (مدريد)', 'Europe/Madrid'],
+  ['إندونيسيا (جاكرتا)', 'Asia/Jakarta'],
+  ['إيران (طهران)', 'Asia/Tehran'],
+  ['إيطاليا (روما)', 'Europe/Rome'],
+  ['الأرجنتين (بوينس آيرس)', 'America/Argentina/Buenos_Aires'],
+  ['الأردن (عمّان)', 'Asia/Amman'],
+  ['الإمارات (أبوظبي/دبي)', 'Asia/Dubai'],
+  ['البحرين', 'Asia/Bahrain'],
+  ['البرازيل (ساو باولو)', 'America/Sao_Paulo'],
+  ['البرتغال (لشبونة)', 'Europe/Lisbon'],
+  ['التشيك (براغ)', 'Europe/Prague'],
+  ['الجزائر', 'Africa/Algiers'],
+  ['الدنمارك (كوبنهاغن)', 'Europe/Copenhagen'],
+  ['السنغال (داكار)', 'Africa/Dakar'],
+  ['السودان (الخرطوم)', 'Africa/Khartoum'],
+  ['السويد (ستوكهولم)', 'Europe/Stockholm'],
+  ['الصومال (مقديشو)', 'Africa/Mogadishu'],
+  ['الصين (بكين)', 'Asia/Shanghai'],
+  ['العراق (بغداد)', 'Asia/Baghdad'],
+  ['الفلبين (مانيلا)', 'Asia/Manila'],
+  ['الكونغو الديمقراطية (كينشاسا)', 'Africa/Kinshasa'],
+  ['الكويت', 'Asia/Kuwait'],
+  ['المغرب (الرباط)', 'Africa/Casablanca'],
+  ['المكسيك (مكسيكو سيتي)', 'America/Mexico_City'],
+  ['المملكة المتحدة (لندن)', 'Europe/London'],
+  ['النرويج (أوسلو)', 'Europe/Oslo'],
+  ['النمسا (فيينا)', 'Europe/Vienna'],
+  ['الهند (نيودلهي)', 'Asia/Kolkata'],
+  ['اليابان (طوكيو)', 'Asia/Tokyo'],
+  ['اليمن (صنعاء)', 'Asia/Aden'],
+  ['اليونان (أثينا)', 'Europe/Athens'],
+  ['باكستان (إسلام آباد)', 'Asia/Karachi'],
+  ['بلجيكا (بروكسل)', 'Europe/Brussels'],
+  ['بنغلاديش (دكا)', 'Asia/Dhaka'],
+  ['بولندا (وارسو)', 'Europe/Warsaw'],
+  ['بيرو (ليما)', 'America/Lima'],
+  ['تايلاند (بانكوك)', 'Asia/Bangkok'],
+  ['تايوان (تايبيه)', 'Asia/Taipei'],
+  ['تركمانستان (عشق آباد)', 'Asia/Ashgabat'],
+  ['تركيا (إسطنبول)', 'Europe/Istanbul'],
+  ['تشيلي (سانتياغو)', 'America/Santiago'],
+  ['تنزانيا (دار السلام)', 'Africa/Dar_es_Salaam'],
+  ['تونس', 'Africa/Tunis'],
+  ['جنوب أفريقيا (جوهانسبرغ)', 'Africa/Johannesburg'],
+  ['جورجيا (تبليسي)', 'Asia/Tbilisi'],
+  ['جيبوتي', 'Africa/Djibouti'],
+  ['روسيا (موسكو)', 'Europe/Moscow'],
+  ['رومانيا (بوخارست)', 'Europe/Bucharest'],
+  ['سريلانكا (كولومبو)', 'Asia/Colombo'],
+  ['سنغافورة', 'Asia/Singapore'],
+  ['سوريا (دمشق)', 'Asia/Damascus'],
+  ['سويسرا (زيورخ)', 'Europe/Zurich'],
+  ['طاجيكستان (دوشنبه)', 'Asia/Dushanbe'],
+  ['عُمان (مسقط)', 'Asia/Muscat'],
+  ['غانا (أكرا)', 'Africa/Accra'],
+  ['فرنسا (باريس)', 'Europe/Paris'],
+  ['فلسطين (القدس/غزة)', 'Asia/Gaza'],
+  ['فنلندا (هلسنكي)', 'Europe/Helsinki'],
+  ['فيتنام (هانوي)', 'Asia/Ho_Chi_Minh'],
+  ['قطر', 'Asia/Qatar'],
+  ['قيرغيزستان (بيشكيك)', 'Asia/Bishkek'],
+  ['كازاخستان (ألماتي)', 'Asia/Almaty'],
   ['كندا (تورونتو)', 'America/Toronto'],
   ['كندا (فانكوفر)', 'America/Vancouver'],
-  ['أمريكا - نيويورك (الشرقي)', 'America/New_York'],
-  ['أمريكا - شيكاغو (الوسطى)', 'America/Chicago'],
-  ['أمريكا - دنفر (الجبلي)', 'America/Denver'],
-  ['أمريكا - لوس أنجلوس (الغربي)', 'America/Los_Angeles'],
-  ['المكسيك (مكسيكو سيتي)', 'America/Mexico_City'],
-  // أمريكا الجنوبية
-  ['البرازيل (ساو باولو)', 'America/Sao_Paulo'],
-  ['الأرجنتين (بوينس آيرس)', 'America/Argentina/Buenos_Aires'],
-  ['تشيلي (سانتياغو)', 'America/Santiago'],
+  ['كوريا الجنوبية (سيول)', 'Asia/Seoul'],
   ['كولومبيا (بوغوتا)', 'America/Bogota'],
-  ['بيرو (ليما)', 'America/Lima']
+  ['كينيا (نيروبي)', 'Africa/Nairobi'],
+  ['لبنان (بيروت)', 'Asia/Beirut'],
+  ['ليبيا (طرابلس)', 'Africa/Tripoli'],
+  ['ماليزيا (كوالالمبور)', 'Asia/Kuala_Lumpur'],
+  ['مصر (القاهرة)', 'Africa/Cairo'],
+  ['موريتانيا (نواكشوط)', 'Africa/Nouakchott'],
+  ['ميانمار (يانغون)', 'Asia/Yangon'],
+  ['نيبال (كاتماندو)', 'Asia/Kathmandu'],
+  ['نيجيريا (لاغوس)', 'Africa/Lagos'],
+  ['نيوزيلندا (أوكلاند)', 'Pacific/Auckland'],
+  ['هولندا (أمستردام)', 'Europe/Amsterdam'],
+  ['هونغ كونغ', 'Asia/Hong_Kong'],
 ];
 const RIYADH_UTC_OFFSET_MIN = 180; // Asia/Riyadh is fixed UTC+3, no daylight saving
 function convertSessionTimeToTZ(hijriDateStr, timeStr, targetTz){
