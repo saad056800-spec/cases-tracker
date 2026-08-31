@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>أداة استرجاع البيانات</title>
+<style>
+  body{ font-family: system-ui, -apple-system, 'Segoe UI', sans-serif; background:#F6F4EE; color:#1A2432; padding:20px; max-width:800px; margin:0 auto; }
+  h1{ font-size:20px; }
+  .panel{ background:#fff; border:1px solid #DAD6C8; border-radius:12px; padding:18px; margin-bottom:16px; }
+  button{ background:#14243B; color:#fff; border:none; padding:10px 18px; border-radius:8px; font-size:14px; cursor:pointer; margin-inline-end:8px; }
+  button:hover{ opacity:0.9; }
+  button.danger{ background:#8C3A2B; }
+  button.good{ background:#0F4C3A; }
+  input{ padding:8px 10px; border-radius:6px; border:1px solid #DAD6C8; width:100px; text-align:center; font-size:14px; }
+  .version-row{ display:flex; align-items:center; gap:10px; padding:10px; border-bottom:1px solid #EFEAD9; font-size:13.5px; }
+  .version-row:last-child{ border-bottom:none; }
+  pre{ background:#F6F4EE; padding:10px; border-radius:8px; font-size:11.5px; max-height:300px; overflow:auto; direction:ltr; text-align:left; }
+  .status{ font-size:13px; padding:10px; border-radius:8px; margin-top:10px; }
+  .status.ok{ background:#E7ECF2; color:#0F4C3A; }
+  .status.err{ background:#FBEBE6; color:#8C3A2B; }
+  .badge{ background:#F6EBDB; color:#8C5A2B; padding:2px 8px; border-radius:999px; font-size:11.5px; }
+</style>
+</head>
+<body>
+
+<h1>🔧 أداة استرجاع بيانات سجل الجلسات القضائية</h1>
+<p>هذي أداة طوارئ منفصلة عن التطبيق الأساسي، تساعدك تتصفح النسخ القديمة من البيانات المحفوظة على JSONBin وتسترجع أي نسخة سابقة إذا فقدت بيانات.</p>
+
+<div class="panel">
+  <h3>الخطوة ١: تحقق من عدد النسخ المتوفرة</h3>
+  <button id="checkCountBtn">تحقق من عدد النسخ</button>
+  <div id="countResult"></div>
+</div>
+
+<div class="panel">
+  <h3>الخطوة ٢: افحص نسخة معينة</h3>
+  <p>أدخل رقم النسخة (0 = أقدم نسخة، وكل رقم أعلى أحدث) واضغط "فحص" لتشوف كم قضية وجلسة فيها قبل ما تسترجعها.</p>
+  <input type="number" id="versionNumberInput" min="0" placeholder="0">
+  <button id="inspectBtn">فحص هذي النسخة</button>
+  <div id="inspectResult"></div>
+</div>
+
+<div class="panel" id="restorePanel" style="display:none;">
+  <h3>الخطوة ٣: استرجاع</h3>
+  <p style="color:#8C3A2B; font-weight:bold;">⚠️ الاسترجاع بيستبدل البيانات الحالية بالكامل بمحتوى هذي النسخة. تأكد من الفحص أولاً بالخطوة ٢.</p>
+  <button class="danger" id="restoreBtn">استرجاع هذي النسخة الآن</button>
+  <div id="restoreResult"></div>
+</div>
+
+<script>
+const JSONBIN_KEY = '$2a$10$jZROjPQjlzailtbhDoxlHeEmnS93kd/qjN5gLz4/X81hgFTTpcyhu';
+const JSONBIN_BIN_ID = '6a8dc4b9f5f4af5e2940f6dd';
+let lastInspectedVersion = null;
+let lastInspectedData = null;
+
+document.getElementById('checkCountBtn').addEventListener('click', async () => {
+  const el = document.getElementById('countResult');
+  el.innerHTML = 'جاري التحقق...';
+  try{
+    const res = await fetch(`https://api.jsonbin.io/v3/b/${JSONBIN_BIN_ID}/versions/count`, {
+      headers: { 'X-Master-Key': JSONBIN_KEY }, cache: 'no-store'
+    });
+    const data = await res.json();
+    if(!res.ok) throw new Error(JSON.stringify(data));
+    const count = data.metadata ? data.metadata.versionCount : (data.versionCount || 0);
+    el.innerHTML = `<div class="status ok">عدد النسخ المتوفرة: <b>${count}</b> (من 0 إلى ${count - 1})</div>`;
+  }catch(e){
+    el.innerHTML = `<div class="status err">تعذّر التحقق: ${e.message}. ربما التحكم بالنسخ (Version Control) غير مفعّل لهذا البن.</div>`;
+  }
+});
+
+document.getElementById('inspectBtn').addEventListener('click', async () => {
+  const v = document.getElementById('versionNumberInput').value.trim();
+  const el = document.getElementById('inspectResult');
+  if(v === ''){ el.innerHTML = '<div class="status err">أدخل رقم نسخة أولاً.</div>'; return; }
+  el.innerHTML = 'جاري الفحص...';
+  document.getElementById('restorePanel').style.display = 'none';
+  try{
+    const res = await fetch(`https://api.jsonbin.io/v3/b/${JSONBIN_BIN_ID}/${v}?t=${Date.now()}`, {
+      headers: { 'X-Master-Key': JSONBIN_KEY }, cache: 'no-store'
+    });
+    const data = await res.json();
+    if(!res.ok) throw new Error(JSON.stringify(data));
+    const record = data.record || {};
+    const keys = Object.keys(record).filter(k => k.startsWith('case:'));
+    let totalSessions = 0;
+    keys.forEach(k => { const c = record[k]; if(c && c.sessions) totalSessions += c.sessions.length; });
+    const createdAt = data.metadata && data.metadata.createdAt ? new Date(data.metadata.createdAt).toLocaleString('ar-SA') : 'غير معروف';
+    lastInspectedVersion = v;
+    lastInspectedData = record;
+    el.innerHTML = `
+      <div class="status ok">
+        وقت هذي النسخة: <b>${createdAt}</b><br>
+        عدد القضايا: <span class="badge">${keys.length}</span>
+        عدد الجلسات الإجمالي: <span class="badge">${totalSessions}</span>
+      </div>
+      <pre>${JSON.stringify(keys.map(k => ({caseNumber: record[k].caseNumber, sessions: (record[k].sessions||[]).length})), null, 2)}</pre>
+    `;
+    document.getElementById('restorePanel').style.display = 'block';
+  }catch(e){
+    el.innerHTML = `<div class="status err">تعذّر جلب هذي النسخة: ${e.message}</div>`;
+  }
+});
+
+document.getElementById('restoreBtn').addEventListener('click', async () => {
+  if(lastInspectedVersion === null || !lastInspectedData){
+    document.getElementById('restoreResult').innerHTML = '<div class="status err">افحص نسخة أولاً بالخطوة ٢.</div>';
+    return;
+  }
+  if(!confirm(`متأكد تبي تسترجع النسخة رقم ${lastInspectedVersion}؟ هذا بيستبدل كل البيانات الحالية.`)) return;
+  const el = document.getElementById('restoreResult');
+  el.innerHTML = 'جاري الاسترجاع...';
+  try{
+    const res = await fetch(`https://api.jsonbin.io/v3/b/${JSONBIN_BIN_ID}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json', 'X-Master-Key': JSONBIN_KEY },
+      body: JSON.stringify(lastInspectedData),
+      cache: 'no-store'
+    });
+    if(!res.ok) throw new Error(await res.text());
+    el.innerHTML = '<div class="status ok">✅ تم الاسترجاع بنجاح! افتح التطبيق الأساسي الآن وتأكد إن بياناتك رجعت.</div>';
+  }catch(e){
+    el.innerHTML = `<div class="status err">فشل الاسترجاع: ${e.message}</div>`;
+  }
+});
+</script>
+
+</body>
+</html>
