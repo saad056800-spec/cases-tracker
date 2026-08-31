@@ -418,12 +418,6 @@
 
   <!-- ===== ADD VIEW ===== -->
   <section class="view active" id="view-add">
-    <div class="panel" id="setupBanner" style="display:none; margin-bottom:20px; border-color:var(--gold);">
-      <h2>إعداد أولي للتخزين (مرة واحدة فقط)</h2>
-      <p class="hint">هذي الأداة تحتاج مخزن بيانات مرتبط بها. اضغط الزر أدناه مرة واحدة فقط لإنشائه، وأرسل لي المعرّف الناتج لأثبته نهائيًا في الملف.</p>
-      <button class="btn btn-gold" id="setupBtn">إنشاء المخزن الآن</button>
-      <div class="parse-note show ok" id="setupResult" style="display:none;"></div>
-    </div>
     <div class="intake-grid">
       <div class="panel">
         <h2>لصق نص الرسالة</h2>
@@ -517,12 +511,16 @@
 <div class="toast" id="toast"></div>
 
 <script type="module">
-// ---------- Firebase Authentication (real login, works on any hosted site) ----------
+// ---------- Firebase Authentication + Firestore (real login + real database, works on any hosted site) ----------
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-app.js";
 import {
   getAuth, onAuthStateChanged, signInWithEmailAndPassword,
   createUserWithEmailAndPassword, signOut
 } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-auth.js";
+import {
+  getFirestore, doc, getDoc, setDoc, deleteDoc, collection, query,
+  where, orderBy, getDocs, documentId
+} from "https://www.gstatic.com/firebasejs/10.13.0/firebase-firestore.js";
 
 // After Firebase project setup, replace this whole object with the real config from the console.
 const firebaseConfig = {
@@ -534,6 +532,7 @@ const firebaseConfig = {
 
 let currentUserEmail = null;
 let firebaseReady = false;
+let db = null;
 
 function firebaseConfigured(){
   return firebaseConfig.apiKey && firebaseConfig.apiKey !== 'PASTE_API_KEY_HERE';
@@ -542,6 +541,7 @@ function firebaseConfigured(){
 if(firebaseConfigured()){
   const app = initializeApp(firebaseConfig);
   const auth = getAuth(app);
+  db = getFirestore(app);
   firebaseReady = true;
 
   onAuthStateChanged(auth, (user) => {
@@ -599,102 +599,34 @@ function arabicAuthError(code){
   return map[code] || code;
 }
 
-// ---------- Storage adapter (JSONBin.io — works on any hosted site, not just inside Claude) ----------
-const JSONBIN_KEY = '$2a$10$jZROjPQjlzailtbhDoxlHeEmnS93kd/qjN5gLz4/X81hgFTTpcyhu';
-// After the one-time setup below, replace this placeholder with the real Bin ID and it's done permanently.
-let JSONBIN_BIN_ID = '6a8dc4b9f5f4af5e2940f6dd';
-
-async function jsonbinReadAll(){
-  const res = await fetch(`https://api.jsonbin.io/v3/b/${JSONBIN_BIN_ID}/latest?t=${Date.now()}`, {
-    headers: { 'X-Master-Key': JSONBIN_KEY },
-    cache: 'no-store'
-  });
-  if(!res.ok) throw new Error(`JSONBin read failed (${res.status}): ${await res.text()}`);
-  const data = await res.json();
-  return data.record || {};
-}
-async function jsonbinWriteAll(obj){
-  const res = await fetch(`https://api.jsonbin.io/v3/b/${JSONBIN_BIN_ID}`, {
-    method: 'PUT',
-    headers: { 'Content-Type': 'application/json', 'X-Master-Key': JSONBIN_KEY },
-    body: JSON.stringify(obj),
-    cache: 'no-store'
-  });
-  if(!res.ok) throw new Error(`JSONBin write failed (${res.status}): ${await res.text()}`);
-}
-
-// Drop-in replacement for the old window.storage API used throughout the app below.
-// Writes are queued (run one at a time) so two concurrent saves can never overwrite
-// each other's changes — this is what caused the "archived case reappears" bug.
-let storageWriteQueue = Promise.resolve();
-function queueStorageWrite(fn){
-  const run = storageWriteQueue.then(fn, fn);
-  storageWriteQueue = run.catch(() => {});
-  return run;
-}
+// ---------- Storage adapter (Firestore — real database, no request quota, no race conditions) ----------
+// Each key (e.g. "case:4772484324", "notif:user@x.com:n_123") becomes its own Firestore
+// document in the "kv" collection, so writes to different cases never collide with each other.
 const storage = {
   async get(key){
-    const all = await jsonbinReadAll();
-    if(!(key in all)) throw new Error('key not found');
-    return { key, value: all[key] };
+    const snap = await getDoc(doc(db, 'kv', key));
+    if(!snap.exists()) throw new Error('key not found');
+    return { key, value: snap.data().value };
   },
   async set(key, value){
-    return queueStorageWrite(async () => {
-      const all = await jsonbinReadAll();
-      all[key] = value;
-      await jsonbinWriteAll(all);
-      return { key, value };
-    });
+    await setDoc(doc(db, 'kv', key), { value, updatedAt: Date.now() });
+    return { key, value };
   },
   async delete(key){
-    return queueStorageWrite(async () => {
-      const all = await jsonbinReadAll();
-      delete all[key];
-      await jsonbinWriteAll(all);
-      return { key, deleted: true };
-    });
+    await deleteDoc(doc(db, 'kv', key));
+    return { key, deleted: true };
   },
   async list(prefix){
-    const all = await jsonbinReadAll();
-    const keys = Object.keys(all).filter(k => !prefix || k.startsWith(prefix));
+    const kvCol = collection(db, 'kv');
+    const q = prefix
+      ? query(kvCol, orderBy(documentId()), where(documentId(), '>=', prefix), where(documentId(), '<', prefix + '\uf8ff'))
+      : query(kvCol);
+    const snap = await getDocs(q);
+    const keys = [];
+    snap.forEach(d => keys.push(d.id));
     return { keys };
   }
 };
-
-// One-time setup: creates the JSONBin storage bin. Only needed once ever.
-async function createStorageBin(){
-  const res = await fetch('https://api.jsonbin.io/v3/b', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json', 'X-Master-Key': JSONBIN_KEY, 'X-Bin-Name': 'cases-tracker' },
-    body: JSON.stringify({ _init: true })
-  });
-  const text = await res.text();
-  if(!res.ok) throw new Error(`(${res.status}) ${text}`);
-  const data = JSON.parse(text);
-  return data.metadata.id;
-}
-function initSetupBanner(){
-  if(JSONBIN_BIN_ID && JSONBIN_BIN_ID !== 'PASTE_BIN_ID_HERE') return;
-  const banner = document.getElementById('setupBanner');
-  banner.style.display = 'block';
-  document.getElementById('setupBtn').addEventListener('click', async () => {
-    document.getElementById('setupBtn').disabled = true;
-    document.getElementById('setupBtn').textContent = 'جاري الإنشاء...';
-    try{
-      const id = await createStorageBin();
-      JSONBIN_BIN_ID = id;
-      document.getElementById('setupResult').innerHTML =
-        `تم الإنشاء بنجاح. انسخ هذا المعرف وأرسله لإتمام التثبيت النهائي في الملف:<br><code>${id}</code>`;
-      document.getElementById('setupResult').style.display = 'block';
-    }catch(e){
-      document.getElementById('setupResult').textContent = 'حدث خطأ أثناء الإنشاء: ' + e.message;
-      document.getElementById('setupResult').style.display = 'block';
-      console.error(e);
-    }
-    document.getElementById('setupBtn').disabled = false;
-    document.getElementById('setupBtn').textContent = 'إنشاء المخزن الآن';
-  });
-}
 
 const PREFIX = 'case:';
 let currentParsed = null;
@@ -734,26 +666,13 @@ document.getElementById('archiveSubSessions').addEventListener('click', () => {
 });
 // ---------- International time zone conversion (session times are always Saudi/Riyadh local time) ----------
 const TIMEZONE_OPTIONS = [
+  ['إثيوبيا (أديس أبابا)', 'Africa/Addis_Ababa'],
   ['أذربيجان (باكو)', 'Asia/Baku'],
   ['أرمينيا (يريفان)', 'Asia/Yerevan'],
+  ['إسبانيا (مدريد)', 'Europe/Madrid'],
   ['أستراليا (بيرث)', 'Australia/Perth'],
   ['أستراليا (سيدني)', 'Australia/Sydney'],
   ['أفغانستان (كابل)', 'Asia/Kabul'],
-  ['ألمانيا (برلين)', 'Europe/Berlin'],
-  ['أمريكا - دنفر (الجبلي)', 'America/Denver'],
-  ['أمريكا - شيكاغو (الوسطى)', 'America/Chicago'],
-  ['أمريكا - لوس أنجلوس (الغربي)', 'America/Los_Angeles'],
-  ['أمريكا - نيويورك (الشرقي)', 'America/New_York'],
-  ['أنغولا (لواندا)', 'Africa/Luanda'],
-  ['أوزبكستان (طشقند)', 'Asia/Tashkent'],
-  ['أوغندا (كمبالا)', 'Africa/Kampala'],
-  ['أوكرانيا (كييف)', 'Europe/Kyiv'],
-  ['أيرلندا (دبلن)', 'Europe/Dublin'],
-  ['إثيوبيا (أديس أبابا)', 'Africa/Addis_Ababa'],
-  ['إسبانيا (مدريد)', 'Europe/Madrid'],
-  ['إندونيسيا (جاكرتا)', 'Asia/Jakarta'],
-  ['إيران (طهران)', 'Asia/Tehran'],
-  ['إيطاليا (روما)', 'Europe/Rome'],
   ['الأرجنتين (بوينس آيرس)', 'America/Argentina/Buenos_Aires'],
   ['الأردن (عمّان)', 'Asia/Amman'],
   ['الإمارات (أبوظبي/دبي)', 'Asia/Dubai'],
@@ -772,6 +691,7 @@ const TIMEZONE_OPTIONS = [
   ['الفلبين (مانيلا)', 'Asia/Manila'],
   ['الكونغو الديمقراطية (كينشاسا)', 'Africa/Kinshasa'],
   ['الكويت', 'Asia/Kuwait'],
+  ['ألمانيا (برلين)', 'Europe/Berlin'],
   ['المغرب (الرباط)', 'Africa/Casablanca'],
   ['المكسيك (مكسيكو سيتي)', 'America/Mexico_City'],
   ['المملكة المتحدة (لندن)', 'Europe/London'],
@@ -781,6 +701,18 @@ const TIMEZONE_OPTIONS = [
   ['اليابان (طوكيو)', 'Asia/Tokyo'],
   ['اليمن (صنعاء)', 'Asia/Aden'],
   ['اليونان (أثينا)', 'Europe/Athens'],
+  ['أمريكا - دنفر (الجبلي)', 'America/Denver'],
+  ['أمريكا - شيكاغو (الوسطى)', 'America/Chicago'],
+  ['أمريكا - لوس أنجلوس (الغربي)', 'America/Los_Angeles'],
+  ['أمريكا - نيويورك (الشرقي)', 'America/New_York'],
+  ['إندونيسيا (جاكرتا)', 'Asia/Jakarta'],
+  ['أنغولا (لواندا)', 'Africa/Luanda'],
+  ['أوزبكستان (طشقند)', 'Asia/Tashkent'],
+  ['أوغندا (كمبالا)', 'Africa/Kampala'],
+  ['أوكرانيا (كييف)', 'Europe/Kyiv'],
+  ['إيران (طهران)', 'Asia/Tehran'],
+  ['أيرلندا (دبلن)', 'Europe/Dublin'],
+  ['إيطاليا (روما)', 'Europe/Rome'],
   ['باكستان (إسلام آباد)', 'Asia/Karachi'],
   ['بلجيكا (بروكسل)', 'Europe/Brussels'],
   ['بنغلاديش (دكا)', 'Asia/Dhaka'],
@@ -1343,15 +1275,6 @@ async function renderList(){
   const grid = document.getElementById('casesGrid');
   const empty = document.getElementById('emptyState');
 
-  if(!JSONBIN_BIN_ID || JSONBIN_BIN_ID === 'PASTE_BIN_ID_HERE'){
-    grid.innerHTML = '';
-    document.getElementById('caseCount').textContent = '0';
-    empty.style.display = 'block';
-    empty.querySelector('h3').textContent = 'يلزم إكمال الإعداد الأولي أولاً';
-    empty.querySelector('p').textContent = 'روح لتبويب "إضافة قضية" واضغط "إنشاء المخزن الآن" لتفعيل الحفظ.';
-    return;
-  }
-
   let rawCases = (await loadAllCases()).map(normalizeCase);
 
   // When logged in, only show cases this person owns or that were shared with them.
@@ -1637,8 +1560,6 @@ async function renderCasesGrouped(){
   const grid = document.getElementById('casesGroupGrid');
   const empty = document.getElementById('casesGroupEmpty');
 
-  if(!JSONBIN_BIN_ID || JSONBIN_BIN_ID === 'PASTE_BIN_ID_HERE'){ grid.innerHTML = ''; empty.style.display='block'; return; }
-
   let cases = (await loadAllCases()).map(normalizeCase).filter(c => !c.archived);
   if(currentUserEmail){
     cases = cases.filter(c => !c.ownerEmail || c.ownerEmail === currentUserEmail || (c.sharedWithEmails || []).includes(currentUserEmail));
@@ -1730,8 +1651,6 @@ async function renderCasesGrouped(){
 async function renderArchive(){
   const grid = document.getElementById('archiveGrid');
   const empty = document.getElementById('archiveEmpty');
-
-  if(!JSONBIN_BIN_ID || JSONBIN_BIN_ID === 'PASTE_BIN_ID_HERE'){ grid.innerHTML=''; empty.style.display='block'; return; }
 
   let cases = (await loadAllCases()).map(normalizeCase);
   if(currentUserEmail){
@@ -1857,19 +1776,17 @@ let appStarted = false;
 function startApp(){
   if(appStarted) return;
   appStarted = true;
-  initSetupBanner();
-  if(JSONBIN_BIN_ID && JSONBIN_BIN_ID !== 'PASTE_BIN_ID_HERE'){
-    renderList();
+  renderList();
+  renderNotifBadge();
+  setInterval(() => {
+    if(document.getElementById('view-list').classList.contains('active')) renderList();
     renderNotifBadge();
-    setInterval(() => {
-      if(document.getElementById('view-list').classList.contains('active')) renderList();
-      renderNotifBadge();
-    }, 60000);
-  }
+  }, 60000);
 }
 
 // If Firebase login hasn't been configured yet, skip it entirely so the app
 // keeps working exactly as before (no breakage while setup is in progress).
+// (Not applicable anymore — Firebase is already configured above — kept as a safety net.)
 if(!firebaseConfigured()){
   document.getElementById('authScreen').style.display = 'none';
   document.querySelector('.topbar').style.display = '';
