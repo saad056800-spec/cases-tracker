@@ -190,6 +190,34 @@
   .update-flag.show{ display:block; }
 
   /* ===== List view ===== */
+  /* ===== Calendar view ===== */
+  .calendar-header{ display:flex; align-items:center; justify-content:space-between; margin-bottom:16px; gap:10px; flex-wrap:wrap; }
+  .calendar-header h2{ font-family:'Amiri',serif; font-size:19px; color:var(--green-deeper); margin:0; }
+  .calendar-weekdays{
+    display:grid; grid-template-columns:repeat(7,1fr); text-align:center; font-size:12px; font-weight:700;
+    color:var(--ink-soft); margin-bottom:6px;
+  }
+  .calendar-grid{ display:grid; grid-template-columns:repeat(7,1fr); gap:4px; }
+  .cal-day{
+    aspect-ratio:1; border-radius:8px; border:1px solid var(--paper-dim); background:#fff;
+    padding:5px; font-size:12px; cursor:pointer; display:flex; flex-direction:column; gap:2px;
+    transition: background .12s, border-color .12s; min-height:56px; position:relative;
+  }
+  .cal-day:hover{ border-color:var(--gold); }
+  .cal-day.outside{ opacity:0.35; }
+  .cal-day.today{ border-color:var(--green-deep); border-width:2px; }
+  .cal-day.has-selected{ background:var(--green-mist); }
+  .cal-day .cal-num{ font-weight:700; color:var(--ink); }
+  .cal-day .cal-dots{ display:flex; gap:3px; flex-wrap:wrap; margin-top:auto; }
+  .cal-dot{ width:6px; height:6px; border-radius:50%; }
+  .cal-dot.session{ background:var(--gold); }
+  .cal-dot.appt{ background:#2A5A8C; }
+  .day-item{
+    padding:9px 12px; border-radius:8px; background:var(--paper-dim); margin-bottom:8px; font-size:13px;
+  }
+  .day-item .di-title{ font-weight:700; color:var(--ink); }
+  .day-item .di-sub{ color:var(--ink-soft); font-size:11.5px; margin-top:2px; }
+
   .list-toolbar{
     display:flex; gap:10px; margin-bottom:20px; flex-wrap:wrap; align-items:center;
   }
@@ -409,6 +437,7 @@
       <button class="tab-btn active" data-view="add" id="tabAdd">إضافة قضية</button>
       <button class="tab-btn" data-view="list" id="tabList">الجلسات <span class="count" id="caseCount">0</span></button>
       <button class="tab-btn" data-view="cases" id="tabCases">القضايا <span class="count" id="casesGroupCount">0</span></button>
+      <button class="tab-btn" data-view="calendar" id="tabCalendar">التقويم</button>
       <button class="tab-btn" data-view="archive" id="tabArchive">الأرشيف</button>
     </div>
   </div>
@@ -503,6 +532,40 @@
       <div class="glyph"><span class="mark"></span></div>
       <h3>الأرشيف فارغ</h3>
       <p>القضايا والجلسات المؤرشفة بتظهر هنا.</p>
+    </div>
+  </section>
+
+  <!-- ===== CALENDAR VIEW ===== -->
+  <section class="view" id="view-calendar">
+    <div class="panel">
+      <div class="calendar-header">
+        <button class="btn btn-ghost" id="calPrevBtn">‹ الشهر السابق</button>
+        <h2 id="calMonthLabel"></h2>
+        <button class="btn btn-ghost" id="calNextBtn">الشهر التالي ›</button>
+      </div>
+      <div class="calendar-weekdays">
+        <span>أحد</span><span>اثنين</span><span>ثلاثاء</span><span>أربعاء</span><span>خميس</span><span>جمعة</span><span>سبت</span>
+      </div>
+      <div class="calendar-grid" id="calendarGrid"></div>
+    </div>
+
+    <div class="panel" id="dayDetailPanel" style="display:none;">
+      <h2 id="dayDetailTitle"></h2>
+      <div id="dayDetailContent"></div>
+    </div>
+
+    <div class="panel">
+      <h2>إضافة موعد مع عميل</h2>
+      <p class="hint">مواعيد عامة (استشارة، اجتماع، توقيع عقد...) منفصلة عن جلسات المحكمة.</p>
+      <div class="field-grid">
+        <div class="field full"><label>اسم العميل</label><input id="appt_client" placeholder="اسم العميل"></div>
+        <div class="field"><label>التاريخ</label><input id="appt_date" type="date"></div>
+        <div class="field"><label>الوقت</label><input id="appt_time" type="time"></div>
+        <div class="field full"><label>ملاحظات</label><textarea id="appt_notes" style="min-height:60px; font-size:13.5px; padding:9px 12px; border-radius:8px; border:1px solid var(--line); background:#fff;" placeholder="تفاصيل الموعد..."></textarea></div>
+      </div>
+      <div class="btn-row">
+        <button class="btn btn-primary" id="apptSaveBtn">حفظ الموعد</button>
+      </div>
     </div>
   </section>
 
@@ -669,26 +732,47 @@ async function markMyNotificationsRead(email){
   }catch(e){}
 }
 
+// ---------- Appointments (client meetings — separate from court sessions) ----------
+async function fetchMyAppointments(email){
+  if(!email) return [];
+  try{
+    const q = query(collection(db, 'appointments'), where('ownerEmail', '==', email));
+    const snap = await getDocs(q);
+    const out = [];
+    snap.forEach(d => out.push({ ...d.data(), _id: d.id }));
+    return out;
+  }catch(e){ console.error('fetchMyAppointments failed', e); return []; }
+}
+async function saveAppointmentDoc(data){
+  await setDoc(doc(collection(db, 'appointments')), data);
+}
+async function deleteAppointmentDoc(id){
+  await deleteDoc(doc(db, 'appointments', id));
+}
+
 let currentParsed = null;
 let isUpdate = false;
 
 // ---------- View switching ----------
 function switchView(view){
-  ['add','list','cases','archive'].forEach(v => {
+  ['add','list','cases','archive','calendar'].forEach(v => {
     document.getElementById('view-' + v).classList.toggle('active', v === view);
   });
   document.getElementById('tabAdd').classList.toggle('active', view === 'add');
   document.getElementById('tabList').classList.toggle('active', view === 'list');
   document.getElementById('tabCases').classList.toggle('active', view === 'cases');
   document.getElementById('tabArchive').classList.toggle('active', view === 'archive');
+  document.getElementById('tabCalendar').classList.toggle('active', view === 'calendar');
   if(view === 'list') renderList();
   if(view === 'cases') renderCasesGrouped();
   if(view === 'archive') renderArchive();
+  if(view === 'calendar') renderCalendar();
 }
 document.getElementById('tabAdd').addEventListener('click', () => switchView('add'));
 document.getElementById('tabList').addEventListener('click', () => switchView('list'));
 document.getElementById('tabCases').addEventListener('click', () => switchView('cases'));
 document.getElementById('tabArchive').addEventListener('click', () => switchView('archive'));
+document.getElementById('tabCalendar').addEventListener('click', () => switchView('calendar'));
 document.getElementById('emptyAddBtn').addEventListener('click', () => switchView('add'));
 
 let archiveSubView = 'cases';
@@ -1526,6 +1610,168 @@ async function renderNotifications(){
     </div>
   `).join('');
 }
+
+// ---------- Calendar view ----------
+const AR_MONTHS = ['يناير','فبراير','مارس','أبريل','مايو','يونيو','يوليو','أغسطس','سبتمبر','أكتوبر','نوفمبر','ديسمبر'];
+let calendarCursor = new Date();
+calendarCursor.setDate(1);
+let selectedDayKey = null;
+
+function dateKey(y, m, d){
+  return `${y}-${String(m + 1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+}
+
+async function renderCalendar(){
+  const grid = document.getElementById('calendarGrid');
+  const label = document.getElementById('calMonthLabel');
+  const year = calendarCursor.getFullYear();
+  const month = calendarCursor.getMonth();
+  label.textContent = `${AR_MONTHS[month]} ${year}`;
+
+  // Build a map of dateKey -> { sessions:[], appts:[] }
+  const dayMap = new Map();
+  function addToDay(key, kind, item){
+    if(!dayMap.has(key)) dayMap.set(key, { sessions: [], appts: [] });
+    dayMap.get(key)[kind].push(item);
+  }
+
+  let cases = (await loadAllCases()).map(normalizeCase).filter(c => !c.archived);
+  cases.forEach(c => {
+    getActiveSessions(c).forEach(s => {
+      const parts = (s.date || '').split('/');
+      if(parts.length !== 3) return;
+      const day = parseInt(parts[0],10), mon = parseInt(parts[1],10), yr = parseInt(parts[2],10);
+      if(!day || !mon || !yr) return;
+      const gDate = hijriToGregorianExact(day, mon, yr);
+      const key = dateKey(gDate.getFullYear(), gDate.getMonth(), gDate.getDate());
+      addToDay(key, 'sessions', { caseNumber: c.caseNumber, time: s.time, label: c.plaintiff || c.caseType || c.caseNumber });
+    });
+  });
+
+  const appts = await fetchMyAppointments(currentUserEmail);
+  appts.forEach(a => {
+    if(!a.date) return;
+    addToDay(a.date, 'appts', a);
+  });
+
+  // Build the 6x7 grid (Sunday-first, matching the "أحد" header)
+  const firstOfMonth = new Date(year, month, 1);
+  const startOffset = firstOfMonth.getDay(); // 0 = Sunday
+  const daysInMonth = new Date(year, month + 1, 0).getDate();
+  const daysInPrevMonth = new Date(year, month, 0).getDate();
+  const todayKey = dateKey(new Date().getFullYear(), new Date().getMonth(), new Date().getDate());
+
+  const cells = [];
+  for(let i = 0; i < startOffset; i++){
+    const d = daysInPrevMonth - startOffset + 1 + i;
+    cells.push({ day: d, outside: true, key: dateKey(month === 0 ? year - 1 : year, month === 0 ? 11 : month - 1, d) });
+  }
+  for(let d = 1; d <= daysInMonth; d++){
+    cells.push({ day: d, outside: false, key: dateKey(year, month, d) });
+  }
+  while(cells.length < 42){
+    const d = cells.length - (startOffset + daysInMonth) + 1;
+    cells.push({ day: d, outside: true, key: dateKey(month === 11 ? year + 1 : year, month === 11 ? 0 : month + 1, d) });
+  }
+
+  grid.innerHTML = cells.map(c => {
+    const info = dayMap.get(c.key);
+    const classes = ['cal-day'];
+    if(c.outside) classes.push('outside');
+    if(c.key === todayKey) classes.push('today');
+    if(c.key === selectedDayKey) classes.push('has-selected');
+    const dots = info ? `
+      <div class="cal-dots">
+        ${info.sessions.length ? `<span class="cal-dot session" title="${info.sessions.length} جلسة"></span>` : ''}
+        ${info.appts.length ? `<span class="cal-dot appt" title="${info.appts.length} موعد"></span>` : ''}
+      </div>` : '';
+    return `<div class="${classes.join(' ')}" data-key="${c.key}"><span class="cal-num">${c.day}</span>${dots}</div>`;
+  }).join('');
+
+  grid.querySelectorAll('.cal-day').forEach(cell => {
+    cell.addEventListener('click', () => {
+      selectedDayKey = cell.dataset.key;
+      showDayDetail(selectedDayKey, dayMap.get(selectedDayKey));
+      renderCalendar();
+    });
+  });
+
+  if(selectedDayKey && dayMap.has(selectedDayKey)){
+    showDayDetail(selectedDayKey, dayMap.get(selectedDayKey));
+  }
+}
+
+function showDayDetail(key, info){
+  const panel = document.getElementById('dayDetailPanel');
+  const title = document.getElementById('dayDetailTitle');
+  const content = document.getElementById('dayDetailContent');
+  const [y,m,d] = key.split('-').map(n => parseInt(n,10));
+  title.textContent = `${d} ${AR_MONTHS[m-1]} ${y}`;
+
+  if(!info || (info.sessions.length === 0 && info.appts.length === 0)){
+    content.innerHTML = '<p class="hint">ما فيه جلسات أو مواعيد بهذا اليوم.</p>';
+    panel.style.display = 'block';
+    return;
+  }
+
+  let html = '';
+  info.sessions.forEach(s => {
+    html += `<div class="day-item"><div class="di-title">⚖ قضية رقم ${escapeHtml(s.caseNumber)}</div><div class="di-sub">${escapeHtml(s.label)} — ${escapeHtml(s.time || '')}</div></div>`;
+  });
+  info.appts.forEach(a => {
+    html += `<div class="day-item"><div class="di-title">🤝 ${escapeHtml(a.clientName)}</div><div class="di-sub">${escapeHtml(a.time || '')} ${a.notes ? '— ' + escapeHtml(a.notes) : ''}</div>
+      <button class="delete-btn" style="margin-top:6px;" data-appt="${a._id}">حذف الموعد</button></div>`;
+  });
+  content.innerHTML = html;
+  panel.style.display = 'block';
+
+  content.querySelectorAll('[data-appt]').forEach(btn => {
+    btn.addEventListener('click', async () => {
+      if(!confirm('حذف هذا الموعد؟')) return;
+      try{
+        await deleteAppointmentDoc(btn.dataset.appt);
+        showToast('تم حذف الموعد.');
+        renderCalendar();
+      }catch(e){ showToast('حدث خطأ. حاول مجددًا.'); }
+    });
+  });
+}
+
+document.getElementById('calPrevBtn').addEventListener('click', () => {
+  calendarCursor.setMonth(calendarCursor.getMonth() - 1);
+  selectedDayKey = null;
+  document.getElementById('dayDetailPanel').style.display = 'none';
+  renderCalendar();
+});
+document.getElementById('calNextBtn').addEventListener('click', () => {
+  calendarCursor.setMonth(calendarCursor.getMonth() + 1);
+  selectedDayKey = null;
+  document.getElementById('dayDetailPanel').style.display = 'none';
+  renderCalendar();
+});
+
+document.getElementById('apptSaveBtn').addEventListener('click', async () => {
+  const clientName = document.getElementById('appt_client').value.trim();
+  const date = document.getElementById('appt_date').value;
+  const time = document.getElementById('appt_time').value;
+  const notes = document.getElementById('appt_notes').value.trim();
+  if(!clientName || !date){
+    showToast('اسم العميل والتاريخ حقلان مطلوبان.');
+    return;
+  }
+  try{
+    await saveAppointmentDoc({ clientName, date, time, notes, ownerEmail: currentUserEmail, createdAt: Date.now() });
+    showToast('تم حفظ الموعد.');
+    document.getElementById('appt_client').value = '';
+    document.getElementById('appt_date').value = '';
+    document.getElementById('appt_time').value = '';
+    document.getElementById('appt_notes').value = '';
+    renderCalendar();
+  }catch(e){
+    showToast('حدث خطأ أثناء الحفظ.');
+    console.error(e);
+  }
+});
 
 function isOwnerOf(c){
   if(!currentUserEmail) return true; // legacy no-login mode: everyone can manage everything
