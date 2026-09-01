@@ -193,6 +193,7 @@
   /* ===== Calendar view ===== */
   .calendar-header{ display:flex; align-items:center; justify-content:space-between; margin-bottom:16px; gap:10px; flex-wrap:wrap; }
   .calendar-header h2{ font-family:'Amiri',serif; font-size:19px; color:var(--green-deeper); margin:0; }
+  .cal-hijri-sub{ display:block; font-family:'Cairo',sans-serif; font-size:12px; font-weight:600; color:var(--gold); margin-top:3px; }
   .calendar-weekdays{
     display:grid; grid-template-columns:repeat(7,1fr); text-align:center; font-size:12px; font-weight:700;
     color:var(--ink-soft); margin-bottom:6px;
@@ -208,6 +209,7 @@
   .cal-day.today{ border-color:var(--green-deep); border-width:2px; }
   .cal-day.has-selected{ background:var(--green-mist); }
   .cal-day .cal-num{ font-weight:700; color:var(--ink); }
+  .cal-day .cal-hijri-num{ font-size:9.5px; color:var(--gold); font-weight:600; }
   .cal-day .cal-dots{ display:flex; gap:3px; flex-wrap:wrap; margin-top:auto; }
   .cal-dot{ width:6px; height:6px; border-radius:50%; }
   .cal-dot.session{ background:var(--gold); }
@@ -1613,6 +1615,7 @@ async function renderNotifications(){
 
 // ---------- Calendar view ----------
 const AR_MONTHS = ['يناير','فبراير','مارس','أبريل','مايو','يونيو','يوليو','أغسطس','سبتمبر','أكتوبر','نوفمبر','ديسمبر'];
+const HIJRI_MONTHS = ['محرم','صفر','ربيع الأول','ربيع الآخر','جمادى الأولى','جمادى الآخرة','رجب','شعبان','رمضان','شوال','ذو القعدة','ذو الحجة'];
 let calendarCursor = new Date();
 calendarCursor.setDate(1);
 let selectedDayKey = null;
@@ -1626,7 +1629,12 @@ async function renderCalendar(){
   const label = document.getElementById('calMonthLabel');
   const year = calendarCursor.getFullYear();
   const month = calendarCursor.getMonth();
-  label.textContent = `${AR_MONTHS[month]} ${year}`;
+  const firstHijri = gregorianDateToHijri(new Date(year, month, 1));
+  const lastHijri = gregorianDateToHijri(new Date(year, month + 1, 0));
+  const hijriLabel = (firstHijri.month === lastHijri.month && firstHijri.year === lastHijri.year)
+    ? `${HIJRI_MONTHS[firstHijri.month - 1]} ${firstHijri.year}هـ`
+    : `${HIJRI_MONTHS[firstHijri.month - 1]}/${HIJRI_MONTHS[lastHijri.month - 1]} ${lastHijri.year}هـ`;
+  label.innerHTML = `${AR_MONTHS[month]} ${year} <span class="cal-hijri-sub">الموافق ${hijriLabel} (أم القرى)</span>`;
 
   // Build a map of dateKey -> { sessions:[], appts:[] }
   const dayMap = new Map();
@@ -1680,12 +1688,14 @@ async function renderCalendar(){
     if(c.outside) classes.push('outside');
     if(c.key === todayKey) classes.push('today');
     if(c.key === selectedDayKey) classes.push('has-selected');
+    const [cy, cm, cd] = c.key.split('-').map(n => parseInt(n,10));
+    const cellHijri = gregorianDateToHijri(new Date(cy, cm - 1, cd));
     const dots = info ? `
       <div class="cal-dots">
         ${info.sessions.length ? `<span class="cal-dot session" title="${info.sessions.length} جلسة"></span>` : ''}
         ${info.appts.length ? `<span class="cal-dot appt" title="${info.appts.length} موعد"></span>` : ''}
       </div>` : '';
-    return `<div class="${classes.join(' ')}" data-key="${c.key}"><span class="cal-num">${c.day}</span>${dots}</div>`;
+    return `<div class="${classes.join(' ')}" data-key="${c.key}"><span class="cal-num">${c.day}</span><span class="cal-hijri-num">${cellHijri.day}هـ</span>${dots}</div>`;
   }).join('');
 
   grid.querySelectorAll('.cal-day').forEach(cell => {
@@ -1706,7 +1716,8 @@ function showDayDetail(key, info){
   const title = document.getElementById('dayDetailTitle');
   const content = document.getElementById('dayDetailContent');
   const [y,m,d] = key.split('-').map(n => parseInt(n,10));
-  title.textContent = `${d} ${AR_MONTHS[m-1]} ${y}`;
+  const h = gregorianDateToHijri(new Date(y, m - 1, d));
+  title.innerHTML = `${d} ${AR_MONTHS[m-1]} ${y} <span class="cal-hijri-sub">الموافق ${h.day} ${HIJRI_MONTHS[h.month-1]} ${h.year}هـ</span>`;
 
   if(!info || (info.sessions.length === 0 && info.appts.length === 0)){
     content.innerHTML = '<p class="hint">ما فيه جلسات أو مواعيد بهذا اليوم.</p>';
