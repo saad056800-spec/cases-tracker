@@ -618,7 +618,6 @@ async function deleteCaseDoc(caseNumber){
 }
 async function fetchMyCases(email){
   if(!email) return [];
-  console.log('fetchMyCases using email:', JSON.stringify(email));
   const casesCol = collection(db, 'cases');
   const map = new Map();
 
@@ -628,7 +627,6 @@ async function fetchMyCases(email){
     ownerSnap.forEach(d => map.set(d.id, d.data()));
   }catch(e){
     console.error('owner query failed', e);
-    alert('فشل استعلام "قضاياي" (owner):\n' + (e.code || '') + '\n' + (e.message || e));
   }
 
   try{
@@ -637,7 +635,6 @@ async function fetchMyCases(email){
     sharedSnap.forEach(d => map.set(d.id, d.data()));
   }catch(e){
     console.error('shared query failed', e);
-    alert('فشل استعلام "المشاركة معي" (shared):\n' + (e.code || '') + '\n' + (e.message || e));
   }
 
   return Array.from(map.values());
@@ -1122,7 +1119,6 @@ document.getElementById('saveBtn').addEventListener('click', async () => {
   }catch(e){
     showToast('حدث خطأ أثناء الحفظ. حاول مرة أخرى.');
     console.error(e);
-    alert('تفاصيل الخطأ (مؤقت للتشخيص):\n' + (e.code || '') + '\n' + (e.message || e));
   }
 });
 
