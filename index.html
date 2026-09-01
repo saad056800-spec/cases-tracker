@@ -618,20 +618,29 @@ async function deleteCaseDoc(caseNumber){
 }
 async function fetchMyCases(email){
   if(!email) return [];
+  console.log('fetchMyCases using email:', JSON.stringify(email));
+  const casesCol = collection(db, 'cases');
+  const map = new Map();
+
   try{
-    const casesCol = collection(db, 'cases');
     const ownerQ = query(casesCol, where('ownerEmail', '==', email));
-    const sharedQ = query(casesCol, where('sharedWithEmails', 'array-contains', email));
-    const [ownerSnap, sharedSnap] = await Promise.all([getDocs(ownerQ), getDocs(sharedQ)]);
-    const map = new Map();
+    const ownerSnap = await getDocs(ownerQ);
     ownerSnap.forEach(d => map.set(d.id, d.data()));
-    sharedSnap.forEach(d => map.set(d.id, d.data()));
-    return Array.from(map.values());
   }catch(e){
-    console.error('fetchMyCases failed', e);
-    alert('تفاصيل خطأ القراءة (مؤقت للتشخيص):\n' + (e.code || '') + '\n' + (e.message || e));
-    return [];
+    console.error('owner query failed', e);
+    alert('فشل استعلام "قضاياي" (owner):\n' + (e.code || '') + '\n' + (e.message || e));
   }
+
+  try{
+    const sharedQ = query(casesCol, where('sharedWithEmails', 'array-contains', email));
+    const sharedSnap = await getDocs(sharedQ);
+    sharedSnap.forEach(d => map.set(d.id, d.data()));
+  }catch(e){
+    console.error('shared query failed', e);
+    alert('فشل استعلام "المشاركة معي" (shared):\n' + (e.code || '') + '\n' + (e.message || e));
+  }
+
+  return Array.from(map.values());
 }
 
 // Notifications: also a real collection, readable only by their intended recipient (see security rules).
