@@ -518,8 +518,8 @@ import {
   createUserWithEmailAndPassword, signOut
 } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-auth.js";
 import {
-  getFirestore, doc, getDoc, setDoc, deleteDoc, collection, query,
-  where, orderBy, getDocs, documentId
+  getFirestore, doc, getDoc, setDoc, updateDoc, deleteDoc, collection, query,
+  where, getDocs, arrayUnion, arrayRemove
 } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-firestore.js";
 
 // After Firebase project setup, replace this whole object with the real config from the console.
@@ -599,36 +599,64 @@ function arabicAuthError(code){
   return map[code] || code;
 }
 
-// ---------- Storage adapter (Firestore — real database, no request quota, no race conditions) ----------
-// Each key (e.g. "case:4772484324", "notif:user@x.com:n_123") becomes its own Firestore
-// document in the "kv" collection, so writes to different cases never collide with each other.
-const storage = {
-  async get(key){
-    const snap = await getDoc(doc(db, 'kv', key));
-    if(!snap.exists()) throw new Error('key not found');
-    return { key, value: snap.data().value };
-  },
-  async set(key, value){
-    await setDoc(doc(db, 'kv', key), { value, updatedAt: Date.now() });
-    return { key, value };
-  },
-  async delete(key){
-    await deleteDoc(doc(db, 'kv', key));
-    return { key, deleted: true };
-  },
-  async list(prefix){
-    const kvCol = collection(db, 'kv');
-    const q = prefix
-      ? query(kvCol, orderBy(documentId()), where(documentId(), '>=', prefix), where(documentId(), '<', prefix + '\uf8ff'))
-      : query(kvCol);
-    const snap = await getDocs(q);
-    const keys = [];
-    snap.forEach(d => keys.push(d.id));
-    return { keys };
-  }
-};
+// ---------- Firestore data access (structured documents — real security-rule enforcement) ----------
+// Cases are real documents in the "cases" collection (doc id = case number), with real fields
+// like ownerEmail/sharedWithEmails, so Firestore's own security rules can verify ownership —
+// unlike a generic key-value blob, which only the client-side JS could "trust".
+async function fetchCase(caseNumber){
+  const snap = await getDoc(doc(db, 'cases', caseNumber));
+  return snap.exists() ? snap.data() : null;
+}
+async function saveCaseDoc(caseNumber, data){
+  await setDoc(doc(db, 'cases', caseNumber), data);
+}
+async function patchCaseDoc(caseNumber, partialData){
+  await updateDoc(doc(db, 'cases', caseNumber), partialData);
+}
+async function deleteCaseDoc(caseNumber){
+  await deleteDoc(doc(db, 'cases', caseNumber));
+}
+async function fetchMyCases(email){
+  if(!email) return [];
+  const casesCol = collection(db, 'cases');
+  const ownerQ = query(casesCol, where('ownerEmail', '==', email));
+  const sharedQ = query(casesCol, where('sharedWithEmails', 'array-contains', email));
+  const [ownerSnap, sharedSnap] = await Promise.all([getDocs(ownerQ), getDocs(sharedQ)]);
+  const map = new Map();
+  ownerSnap.forEach(d => map.set(d.id, d.data()));
+  sharedSnap.forEach(d => map.set(d.id, d.data()));
+  return Array.from(map.values());
+}
 
-const PREFIX = 'case:';
+// Notifications: also a real collection, readable only by their intended recipient (see security rules).
+async function addNotificationDoc(targetEmail, message){
+  if(!targetEmail) return;
+  try{
+    await setDoc(doc(collection(db, 'notifications')), { targetEmail, message, createdAt: Date.now(), read: false });
+  }catch(e){ /* best-effort — never block the main action if this fails */ }
+}
+async function fetchMyNotifications(email){
+  if(!email) return [];
+  try{
+    const q = query(collection(db, 'notifications'), where('targetEmail', '==', email));
+    const snap = await getDocs(q);
+    const out = [];
+    snap.forEach(d => out.push({ ...d.data(), _id: d.id }));
+    out.sort((a,b) => b.createdAt - a.createdAt);
+    return out;
+  }catch(e){ return []; }
+}
+async function markMyNotificationsRead(email){
+  if(!email) return;
+  try{
+    const q = query(collection(db, 'notifications'), where('targetEmail', '==', email), where('read', '==', false));
+    const snap = await getDocs(q);
+    const updates = [];
+    snap.forEach(d => updates.push(updateDoc(doc(db, 'notifications', d.id), { read: true })));
+    await Promise.all(updates);
+  }catch(e){}
+}
+
 let currentParsed = null;
 let isUpdate = false;
 
@@ -786,7 +814,7 @@ document.getElementById('notifBellBtn').addEventListener('click', async () => {
   if(isOpen){ panel.style.display = 'none'; return; }
   panel.style.display = 'block';
   await renderNotifications();
-  await markAllNotificationsRead();
+  await markMyNotificationsRead(currentUserEmail);
   document.getElementById('notifBadge').style.display = 'none';
 });
 document.addEventListener('click', (e) => {
@@ -893,10 +921,10 @@ async function parseAndPreview(){
     updateFlag.classList.remove('show');
     sessionNumberHint.textContent = 'قضية جديدة — أدخل رقم الجلسة يدويًا (إلزامي).';
     try{
-      const res = await storage.get(PREFIX + parsed.caseNumber);
-      if(res && res.value){
+      const data = await fetchCase(parsed.caseNumber);
+      if(data){
         isUpdate = true;
-        const old = normalizeCase(JSON.parse(res.value));
+        const old = normalizeCase(data);
         const latest = getLatestSession(old);
         updateFlag.textContent = `يوجد بالفعل سجل لهذه القضية بتاريخ ${latest.date} — ${latest.time} (${old.sessions.length} جلسة/جلسات مسجّلة). الحفظ بيضيف جلسة جديدة للقضية نفسها ويحتفظ بكل السجل السابق.`;
         updateFlag.classList.add('show');
@@ -952,9 +980,9 @@ document.getElementById('f_caseNumber').addEventListener('blur', async () => {
   const updateFlag = document.getElementById('updateFlag');
   if(!caseNumber) return;
   try{
-    const res = await storage.get(PREFIX + caseNumber);
-    if(res && res.value){
-      const old = normalizeCase(JSON.parse(res.value));
+    const data = await fetchCase(caseNumber);
+    if(data){
+      const old = normalizeCase(data);
       if(!document.getElementById('f_sessionNumber').value.trim()){
         document.getElementById('f_sessionNumber').value = suggestNextSessionNumber(old);
       }
@@ -1020,8 +1048,8 @@ document.getElementById('saveBtn').addEventListener('click', async () => {
   // "treat this as a new case" — it must never block the save below.
   let existing = null;
   try{
-    const res = await storage.get(PREFIX + caseNumber);
-    if(res && res.value) existing = normalizeCase(JSON.parse(res.value));
+    const data = await fetchCase(caseNumber);
+    if(data) existing = normalizeCase(data);
   }catch(e){
     existing = null;
   }
@@ -1070,7 +1098,7 @@ document.getElementById('saveBtn').addEventListener('click', async () => {
 
   // Step 2: the actual save. Only this step should report a real error.
   try{
-    await storage.set(PREFIX + caseNumber, JSON.stringify(record));
+    await saveCaseDoc(caseNumber, record);
     showToast(!existing ? 'تمت إضافة القضية إلى السجل.' : (addedNewSession ? 'تمت إضافة جلسة جديدة لنفس القضية.' : 'تم تحديث بيانات القضية.'));
     document.getElementById('rawMessage').value = '';
     document.getElementById('previewPanel').style.display = 'none';
@@ -1079,6 +1107,7 @@ document.getElementById('saveBtn').addEventListener('click', async () => {
   }catch(e){
     showToast('حدث خطأ أثناء الحفظ. حاول مرة أخرى.');
     console.error(e);
+    alert('تفاصيل الخطأ (مؤقت للتشخيص):\n' + (e.code || '') + '\n' + (e.message || e));
   }
 });
 
@@ -1251,16 +1280,8 @@ function getSessionMeta(dateStr, timeStr){
 
 
 async function loadAllCases(){
-  const list = await storage.list(PREFIX);
-  if(!list || !list.keys || list.keys.length === 0) return [];
-  const cases = [];
-  for(const key of list.keys){
-    try{
-      const item = await storage.get(key);
-      if(item) cases.push(JSON.parse(item.value));
-    }catch(e){ /* skip missing */ }
-  }
-  return cases;
+  // Structured queries scoped to this user's own/shared cases — matches the security rules exactly.
+  return await fetchMyCases(currentUserEmail);
 }
 
 function dateSortKey(d){
@@ -1396,10 +1417,7 @@ async function renderList(){
   grid.querySelectorAll('.notes-textarea').forEach(ta => {
     ta.addEventListener('blur', async () => {
       try{
-        const res = await storage.get(PREFIX + ta.dataset.case);
-        const rec = JSON.parse(res.value);
-        rec.notes = ta.value.trim();
-        await storage.set(PREFIX + ta.dataset.case, JSON.stringify(rec));
+        await patchCaseDoc(ta.dataset.case, { notes: ta.value.trim() });
         showToast('تم حفظ الملاحظة.');
       }catch(e){ showToast('تعذّر حفظ الملاحظة.'); }
     });
@@ -1408,10 +1426,7 @@ async function renderList(){
   grid.querySelectorAll('.link-input').forEach(inp => {
     inp.addEventListener('blur', async () => {
       try{
-        const res = await storage.get(PREFIX + inp.dataset.case);
-        const rec = JSON.parse(res.value);
-        rec.sessionLink = inp.value.trim();
-        await storage.set(PREFIX + inp.dataset.case, JSON.stringify(rec));
+        await patchCaseDoc(inp.dataset.case, { sessionLink: inp.value.trim() });
         showToast('تم حفظ رابط الجلسة.');
         renderList();
       }catch(e){ showToast('تعذّر حفظ الرابط.'); }
@@ -1422,13 +1437,12 @@ async function renderList(){
     btn.addEventListener('click', async () => {
       if(!confirm('هل تريد حذف هذه القضية نهائيًا من السجل (بكل جلساتها)؟')) return;
       try{
-        const res = await storage.get(PREFIX + btn.dataset.case);
-        const rec = res ? JSON.parse(res.value) : null;
+        const rec = await fetchCase(btn.dataset.case);
         if(rec && rec.ownerEmail && currentUserEmail && rec.ownerEmail !== currentUserEmail){
-          await addNotification(rec.ownerEmail, `${currentUserEmail} حذف القضية رقم ${btn.dataset.case} المشاركة معه.`);
+          await addNotificationDoc(rec.ownerEmail, `${currentUserEmail} حذف القضية رقم ${btn.dataset.case} المشاركة معه.`);
         }
       }catch(e){}
-      await storage.delete(PREFIX + btn.dataset.case);
+      await deleteCaseDoc(btn.dataset.case);
       showToast('تم حذف القضية.');
       renderList();
     });
@@ -1437,11 +1451,11 @@ async function renderList(){
   grid.querySelectorAll('.archive-session-btn').forEach(btn => {
     btn.addEventListener('click', async () => {
       try{
-        const res = await storage.get(PREFIX + btn.dataset.case);
-        const rec = normalizeCase(JSON.parse(res.value));
+        const data = await fetchCase(btn.dataset.case);
+        const rec = normalizeCase(data);
         const s = rec.sessions.find(s => s.id === btn.dataset.session);
         if(s) s.archived = true;
-        await storage.set(PREFIX + btn.dataset.case, JSON.stringify(rec));
+        await patchCaseDoc(btn.dataset.case, { sessions: rec.sessions });
         showToast('تمت أرشفة الجلسة.');
         renderList();
       }catch(e){
@@ -1456,12 +1470,8 @@ async function renderList(){
       if(!email || !email.trim()) return;
       const clean = email.trim().toLowerCase();
       try{
-        const res = await storage.get(PREFIX + btn.dataset.case);
-        const rec = JSON.parse(res.value);
-        rec.sharedWithEmails = rec.sharedWithEmails || [];
-        if(!rec.sharedWithEmails.includes(clean)) rec.sharedWithEmails.push(clean);
-        await storage.set(PREFIX + btn.dataset.case, JSON.stringify(rec));
-        await addNotification(clean, `${currentUserEmail || 'شخص'} شارك معك القضية رقم ${btn.dataset.case}.`);
+        await patchCaseDoc(btn.dataset.case, { sharedWithEmails: arrayUnion(clean) });
+        await addNotificationDoc(clean, `${currentUserEmail || 'شخص'} شارك معك القضية رقم ${btn.dataset.case}.`);
         showToast('تمت مشاركة القضية مع ' + clean);
         renderList();
       }catch(e){
@@ -1473,10 +1483,7 @@ async function renderList(){
   grid.querySelectorAll('.unshare-btn').forEach(btn => {
     btn.addEventListener('click', async () => {
       try{
-        const res = await storage.get(PREFIX + btn.dataset.case);
-        const rec = JSON.parse(res.value);
-        rec.sharedWithEmails = (rec.sharedWithEmails || []).filter(e => e !== btn.dataset.email);
-        await storage.set(PREFIX + btn.dataset.case, JSON.stringify(rec));
+        await patchCaseDoc(btn.dataset.case, { sharedWithEmails: arrayRemove(btn.dataset.email) });
         showToast('تمت إزالة المشاركة.');
         renderList();
       }catch(e){
@@ -1486,40 +1493,16 @@ async function renderList(){
   });
 }
 
-// ---------- Notification helpers ----------
-async function addNotification(targetEmail, message){
-  if(!targetEmail) return;
-  const id = 'n_' + Date.now() + '_' + Math.random().toString(36).slice(2,7);
-  const notif = { id, message, createdAt: Date.now(), read: false };
-  try{
-    await storage.set('notif:' + targetEmail + ':' + id, JSON.stringify(notif));
-  }catch(e){ /* best-effort — never block the main action if this fails */ }
-}
-async function loadNotifications(){
-  if(!currentUserEmail) return [];
-  try{
-    const list = await storage.list('notif:' + currentUserEmail + ':');
-    if(!list || !list.keys) return [];
-    const notifs = [];
-    for(const key of list.keys){
-      try{
-        const item = await storage.get(key);
-        if(item) notifs.push({ ...JSON.parse(item.value), _key: key });
-      }catch(e){}
-    }
-    notifs.sort((a,b) => b.createdAt - a.createdAt);
-    return notifs;
-  }catch(e){ return []; }
-}
+// ---------- Notification render helpers (data access via fetchMyNotifications/markMyNotificationsRead) ----------
 async function renderNotifBadge(){
-  const notifs = await loadNotifications();
+  const notifs = await fetchMyNotifications(currentUserEmail);
   const unread = notifs.filter(n => !n.read).length;
   const badge = document.getElementById('notifBadge');
   if(unread > 0){ badge.style.display = 'inline-block'; badge.textContent = unread > 9 ? '9+' : unread; }
   else badge.style.display = 'none';
 }
 async function renderNotifications(){
-  const notifs = await loadNotifications();
+  const notifs = await fetchMyNotifications(currentUserEmail);
   const list = document.getElementById('notifList');
   if(notifs.length === 0){
     list.innerHTML = '<div class="notif-empty">ما فيه إشعارات حاليًا.</div>';
@@ -1531,23 +1514,6 @@ async function renderNotifications(){
       <span class="notif-time">${new Date(n.createdAt).toLocaleString('ar-SA')}</span>
     </div>
   `).join('');
-}
-async function markAllNotificationsRead(){
-  if(!currentUserEmail) return;
-  try{
-    const list = await storage.list('notif:' + currentUserEmail + ':');
-    if(!list || !list.keys) return;
-    for(const key of list.keys){
-      try{
-        const item = await storage.get(key);
-        const n = JSON.parse(item.value);
-        if(!n.read){
-          n.read = true;
-          await storage.set(key, JSON.stringify(n));
-        }
-      }catch(e){}
-    }
-  }catch(e){}
 }
 
 function isOwnerOf(c){
@@ -1621,11 +1587,11 @@ async function renderCasesGrouped(){
   grid.querySelectorAll('.mini-archive-btn').forEach(btn => {
     btn.addEventListener('click', async () => {
       try{
-        const res = await storage.get(PREFIX + btn.dataset.case);
-        const rec = normalizeCase(JSON.parse(res.value));
+        const data = await fetchCase(btn.dataset.case);
+        const rec = normalizeCase(data);
         const s = rec.sessions.find(s => s.id === btn.dataset.session);
         if(s) s.archived = true;
-        await storage.set(PREFIX + btn.dataset.case, JSON.stringify(rec));
+        await patchCaseDoc(btn.dataset.case, { sessions: rec.sessions });
         showToast('تمت أرشفة الجلسة.');
         renderCasesGrouped();
       }catch(e){ showToast('حدث خطأ. حاول مجددًا.'); }
@@ -1636,10 +1602,7 @@ async function renderCasesGrouped(){
     btn.addEventListener('click', async () => {
       if(!confirm('أرشفة هذي القضية بالكامل؟ تقدر تسترجعها لاحقًا من الأرشيف.')) return;
       try{
-        const res = await storage.get(PREFIX + btn.dataset.case);
-        const rec = normalizeCase(JSON.parse(res.value));
-        rec.archived = true;
-        await storage.set(PREFIX + btn.dataset.case, JSON.stringify(rec));
+        await patchCaseDoc(btn.dataset.case, { archived: true, updatedAt: Date.now() });
         showToast('تمت أرشفة القضية.');
         renderCasesGrouped();
       }catch(e){ showToast('حدث خطأ. حاول مجددًا.'); }
@@ -1696,10 +1659,7 @@ async function renderArchive(){
     grid.querySelectorAll('.restore-case-btn').forEach(btn => {
       btn.addEventListener('click', async () => {
         try{
-          const res = await storage.get(PREFIX + btn.dataset.case);
-          const rec = normalizeCase(JSON.parse(res.value));
-          rec.archived = false;
-          await storage.set(PREFIX + btn.dataset.case, JSON.stringify(rec));
+          await patchCaseDoc(btn.dataset.case, { archived: false, updatedAt: Date.now() });
           showToast('تم استرجاع القضية.');
           renderArchive();
         }catch(e){ showToast('حدث خطأ. حاول مجددًا.'); }
@@ -1741,11 +1701,11 @@ async function renderArchive(){
     grid.querySelectorAll('.restore-session-btn').forEach(btn => {
       btn.addEventListener('click', async () => {
         try{
-          const res = await storage.get(PREFIX + btn.dataset.case);
-          const rec = normalizeCase(JSON.parse(res.value));
+          const data = await fetchCase(btn.dataset.case);
+          const rec = normalizeCase(data);
           const s = rec.sessions.find(s => s.id === btn.dataset.session);
           if(s) s.archived = false;
-          await storage.set(PREFIX + btn.dataset.case, JSON.stringify(rec));
+          await patchCaseDoc(btn.dataset.case, { sessions: rec.sessions });
           showToast('تم استرجاع الجلسة.');
           renderArchive();
         }catch(e){ showToast('حدث خطأ. حاول مجددًا.'); }
