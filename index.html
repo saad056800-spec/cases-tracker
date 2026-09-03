@@ -392,7 +392,21 @@
     transition: opacity .2s, transform .2s; z-index:50;
   }
   .toast.show{ opacity:1; transform:translateX(50%) translateY(-6px); }
+
+  /* ===== Export toolbar & print layout ===== */
+  .export-toolbar{ display:flex; gap:8px; margin-bottom:16px; flex-wrap:wrap; }
+  #printArea{ display:none; }
+  @media print{
+    body *{ visibility:hidden; }
+    #printArea, #printArea *{ visibility:visible; }
+    #printArea{ display:block; position:absolute; top:0; right:0; left:0; width:100%; padding:20px; }
+    #printArea h2{ font-family:'Amiri',serif; text-align:center; margin-bottom:16px; }
+    #printArea table{ width:100%; border-collapse:collapse; font-size:11px; }
+    #printArea th, #printArea td{ border:1px solid #999; padding:5px 7px; text-align:right; }
+    #printArea th{ background:#eee; }
+  }
 </style>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 </head>
 <body>
 
@@ -522,6 +536,10 @@
 
   <!-- ===== CASES (GROUPED) VIEW ===== -->
   <section class="view" id="view-cases">
+    <div class="export-toolbar">
+      <button class="btn btn-gold" id="exportExcelBtn">📊 تصدير Excel</button>
+      <button class="btn btn-ghost" id="exportPrintBtn">🖨️ طباعة / حفظ PDF</button>
+    </div>
     <div class="list-toolbar">
       <div class="search-box">
         <input type="text" id="casesSearchInput" placeholder="ابحث برقم القضية أو اسم أحد الأطراف...">
@@ -534,6 +552,8 @@
       <p>القضايا اللي تضيفها بتظهر هنا مجمّعة مع كل جلساتها.</p>
     </div>
   </section>
+
+  <div id="printArea"></div>
 
   <!-- ===== ARCHIVE VIEW ===== -->
   <section class="view" id="view-archive">
@@ -916,6 +936,62 @@ function convertSessionTimeToTZ(hijriDateStr, timeStr, targetTz){
 }
 
 document.getElementById('casesSearchInput').addEventListener('input', renderCasesGrouped);
+
+// ---------- Export (Excel + Print/PDF) ----------
+async function buildExportRows(){
+  const cases = (await loadAllCases()).map(normalizeCase).filter(c => !c.archived);
+  const rows = [];
+  cases.forEach(c => {
+    const statusInfo = caseStatusInfo(c.caseStatus);
+    const sessions = [...c.sessions].sort((a,b) => a.addedAt - b.addedAt);
+    sessions.forEach(s => {
+      rows.push({
+        'رقم القضية': c.caseNumber,
+        'رقم الجلسة': s.number,
+        'تاريخ الجلسة (هـ)': s.date,
+        'الوقت': s.time || '',
+        'حالة الجلسة': s.archived ? 'مؤرشفة' : 'نشطة',
+        'حالة القضية': statusInfo.label,
+        'المدعي': c.plaintiff || '',
+        'المدعى عليه': c.defendant || '',
+        'نوع القضية': c.caseType || '',
+        'رقم الهوية': c.idHolder || '',
+        'ملاحظات': c.notes || ''
+      });
+    });
+  });
+  return rows;
+}
+
+document.getElementById('exportExcelBtn').addEventListener('click', async () => {
+  const rows = await buildExportRows();
+  if(rows.length === 0){ showToast('ما فيه بيانات للتصدير.'); return; }
+  const ws = XLSX.utils.json_to_sheet(rows);
+  ws['!cols'] = Object.keys(rows[0]).map(() => ({ wch: 18 }));
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, 'القضايا والجلسات');
+  const dateLabel = new Date().toISOString().slice(0,10);
+  XLSX.writeFile(wb, `سجل_القضايا_${dateLabel}.xlsx`);
+  showToast('تم تصدير ملف Excel.');
+});
+
+document.getElementById('exportPrintBtn').addEventListener('click', async () => {
+  const rows = await buildExportRows();
+  if(rows.length === 0){ showToast('ما فيه بيانات للتصدير.'); return; }
+  const cols = Object.keys(rows[0]);
+  const printArea = document.getElementById('printArea');
+  printArea.innerHTML = `
+    <h2>سجل الجلسات القضائية — ${new Date().toLocaleDateString('ar-SA')}</h2>
+    <table>
+      <thead><tr>${cols.map(c => `<th>${escapeHtml(c)}</th>`).join('')}</tr></thead>
+      <tbody>
+        ${rows.map(r => `<tr>${cols.map(c => `<td>${escapeHtml(String(r[c] ?? ''))}</td>`).join('')}</tr>`).join('')}
+      </tbody>
+    </table>
+  `;
+  window.print();
+});
+
 
 // ---------- Notifications ----------
 document.getElementById('notifBellBtn').addEventListener('click', async () => {
