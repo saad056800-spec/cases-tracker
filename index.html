@@ -191,6 +191,35 @@
 
   /* ===== List view ===== */
   /* ===== Calendar view ===== */
+  /* ===== Dashboard ===== */
+  .dash-greeting{ margin-bottom:18px; }
+  .dash-greeting h2{ font-family:'Amiri',serif; font-size:24px; color:var(--green-deeper); margin:0 0 4px; }
+  .dash-obj-alert{
+    padding:12px 16px; border-radius:10px; font-size:13.5px; margin-bottom:18px; line-height:1.8; border:1px solid;
+  }
+  .dash-obj-alert.obj-green{ background:var(--green-mist); border-color:#C8DBCF; color:var(--green-deeper); }
+  .dash-obj-alert.obj-orange{ background:#FBF0DE; border-color:#F0D9A8; color:#8C5A2B; }
+  .dash-obj-alert.obj-red{ background:#FBEBE6; border-color:#E9C6BA; color:#8C3A2B; }
+  .dash-obj-alert b{ display:block; margin-bottom:4px; font-size:14.5px; }
+  .dash-stats-grid{ display:grid; grid-template-columns:repeat(4,1fr); gap:12px; margin-bottom:18px; }
+  @media (max-width:640px){ .dash-stats-grid{ grid-template-columns:repeat(2,1fr); } }
+  .dash-stat-box{
+    background:var(--card-bg); border:1px solid var(--line); border-radius:12px; padding:16px 12px;
+    text-align:center; box-shadow:var(--shadow);
+  }
+  .dash-stat-num{ display:block; font-family:'Amiri',serif; font-size:30px; font-weight:700; color:var(--green-deep); }
+  .dash-stat-label{ display:block; font-size:12px; color:var(--ink-soft); margin-top:4px; }
+  .dash-nearest-grid{ display:grid; grid-template-columns:1fr 1fr; gap:16px; margin-bottom:18px; }
+  @media (max-width:640px){ .dash-nearest-grid{ grid-template-columns:1fr; } }
+  .dash-nearest-box h2{ font-size:16px; margin:0 0 10px; }
+  .dash-item{
+    padding:10px 12px; background:var(--paper-dim); border-radius:8px; font-size:13px; margin-bottom:8px;
+  }
+  .dash-item:last-child{ margin-bottom:0; }
+  .dash-item .di-title{ font-weight:700; color:var(--ink); }
+  .dash-item .di-sub{ color:var(--ink-soft); font-size:11.5px; margin-top:2px; }
+  .dash-item .di-time{ float:left; color:var(--gold); font-weight:700; font-size:12px; }
+
   .calendar-header{ display:flex; align-items:center; justify-content:space-between; margin-bottom:16px; gap:10px; flex-wrap:wrap; }
   .calendar-header h2{ font-family:'Amiri',serif; font-size:19px; color:var(--green-deeper); margin:0; }
   .cal-hijri-sub{ display:block; font-family:'Cairo',sans-serif; font-size:12px; font-weight:600; color:var(--gold); margin-top:3px; }
@@ -448,6 +477,24 @@
         <h1>سجل الجلسات القضائية</h1>
       </div>
       <div style="margin-inline-start:auto; text-align:left; display:flex; align-items:center; gap:10px; position:relative;">
+        <div id="profileWrap" style="position:relative;">
+          <button id="profileBtn" class="notif-bell" title="الملف الشخصي">⚙️</button>
+          <div id="profilePanel" class="notif-panel" style="display:none; width:270px; padding:14px;">
+            <div class="notif-panel-header" style="padding:0 0 10px;">بيانات الحساب</div>
+            <div class="field" style="margin-bottom:10px;">
+              <label>الاسم</label>
+              <input id="profileName" placeholder="اسمك">
+            </div>
+            <div class="field" style="margin-bottom:10px;">
+              <label>رقم الجوال</label>
+              <div style="display:flex; gap:6px;">
+                <select id="profileCountryCode" style="width:110px; padding:9px 6px; border-radius:8px; border:1px solid var(--line); font-size:12.5px;"></select>
+                <input id="profilePhone" dir="ltr" placeholder="5xxxxxxxx" style="flex:1;">
+              </div>
+            </div>
+            <button class="btn btn-primary" id="profileSaveBtn" style="width:100%;">حفظ</button>
+          </div>
+        </div>
         <div id="notifBellWrap" style="position:relative;">
           <button id="notifBellBtn" class="notif-bell" title="الإشعارات">
             🔔<span id="notifBadge" class="notif-badge" style="display:none;">0</span>
@@ -462,9 +509,9 @@
       </div>
     </div>
     <div class="tabs">
-      <button class="tab-btn active" data-view="add" id="tabAdd">إضافة قضية</button>
-      <button class="tab-btn" data-view="list" id="tabList">الجلسات <span class="count" id="caseCount">0</span></button>
-      <button class="tab-btn" data-view="cases" id="tabCases">القضايا <span class="count" id="casesGroupCount">0</span></button>
+      <button class="tab-btn active" data-view="home" id="tabHome">🏠 الرئيسية</button>
+      <button class="tab-btn" data-view="add" id="tabAdd">إضافة قضية</button>
+      <button class="tab-btn" data-view="sessioncases" id="tabSessionCases">الجلسات والقضايا</button>
       <button class="tab-btn" data-view="calendar" id="tabCalendar">التقويم</button>
       <button class="tab-btn" data-view="archive" id="tabArchive">الأرشيف</button>
     </div>
@@ -474,7 +521,52 @@
 <main style="display:none;">
 
   <!-- ===== ADD VIEW ===== -->
-  <section class="view active" id="view-add">
+  <!-- ===== HOME / DASHBOARD VIEW ===== -->
+  <section class="view active" id="view-home">
+    <div class="dash-greeting">
+      <h2 id="dashGreeting">مرحبًا 👋</h2>
+      <p class="hint">هذا ملخص يومك وأسبوعك.</p>
+    </div>
+
+    <div id="dashObjectionAlert" style="display:none;"></div>
+
+    <div class="dash-stats-grid">
+      <div class="dash-stat-box">
+        <span class="dash-stat-num" id="statSessionsToday">0</span>
+        <span class="dash-stat-label">جلسات اليوم</span>
+      </div>
+      <div class="dash-stat-box">
+        <span class="dash-stat-num" id="statSessionsWeek">0</span>
+        <span class="dash-stat-label">جلسات الأسبوع</span>
+      </div>
+      <div class="dash-stat-box">
+        <span class="dash-stat-num" id="statApptsToday">0</span>
+        <span class="dash-stat-label">مواعيد اليوم</span>
+      </div>
+      <div class="dash-stat-box">
+        <span class="dash-stat-num" id="statApptsWeek">0</span>
+        <span class="dash-stat-label">مواعيد الأسبوع</span>
+      </div>
+    </div>
+
+    <div class="dash-nearest-grid">
+      <div class="panel dash-nearest-box">
+        <h2>⚖ أقرب جلسة</h2>
+        <div id="dashNearestSession"><p class="hint">لا توجد جلسات قادمة.</p></div>
+      </div>
+      <div class="panel dash-nearest-box">
+        <h2>🤝 أقرب موعد</h2>
+        <div id="dashNearestAppt"><p class="hint">لا توجد مواعيد قادمة.</p></div>
+      </div>
+    </div>
+
+    <div class="panel">
+      <h2>أجندة اليوم</h2>
+      <div id="dashTodayAgenda"><p class="hint">ما فيه شي مجدول اليوم.</p></div>
+    </div>
+  </section>
+
+  <section class="view" id="view-add">
     <div class="intake-grid">
       <div class="panel">
         <h2>لصق نص الرسالة</h2>
@@ -514,42 +606,49 @@
   </section>
 
   <!-- ===== LIST VIEW ===== -->
-  <section class="view" id="view-list">
-    <div class="list-toolbar">
-      <div class="search-box">
-        <input type="text" id="searchInput" placeholder="ابحث برقم القضية أو اسم أحد الأطراف...">
-      </div>
-      <select class="sort-select" id="sortSelect">
-        <option value="added">الأحدث إضافة</option>
-        <option value="date">ترتيب حسب تاريخ الجلسة</option>
-        <option value="case">رقم القضية</option>
-      </select>
+  <!-- ===== SESSIONS + CASES (MERGED) VIEW ===== -->
+  <section class="view" id="view-sessioncases">
+    <div class="tabs" style="background:transparent; padding:0; margin-bottom:18px; border-bottom:1px solid var(--line); gap:0;">
+      <button class="tab-btn sc-subtab active" data-sub="sessions" id="scSubSessions" style="color:var(--ink-soft);">الجلسات</button>
+      <button class="tab-btn sc-subtab" data-sub="cases" id="scSubCases" style="color:var(--ink-soft);">القضايا</button>
     </div>
-    <div class="cases-grid" id="casesGrid"></div>
-    <div class="empty" id="emptyState" style="display:none;">
-      <div class="glyph"><span class="mark"></span></div>
-      <h3>لا توجد قضايا في السجل بعد</h3>
-      <p>ابدأ بلصق أول إشعار جلسة لإضافته إلى السجل.</p>
-      <button class="btn btn-primary" id="emptyAddBtn">إضافة أول قضية</button>
-    </div>
-  </section>
 
-  <!-- ===== CASES (GROUPED) VIEW ===== -->
-  <section class="view" id="view-cases">
-    <div class="export-toolbar">
-      <button class="btn btn-gold" id="exportExcelBtn">📊 تصدير Excel</button>
-      <button class="btn btn-ghost" id="exportPrintBtn">🖨️ طباعة / حفظ PDF</button>
-    </div>
-    <div class="list-toolbar">
-      <div class="search-box">
-        <input type="text" id="casesSearchInput" placeholder="ابحث برقم القضية أو اسم أحد الأطراف...">
+    <div id="scPanelSessions">
+      <div class="list-toolbar">
+        <div class="search-box">
+          <input type="text" id="searchInput" placeholder="ابحث برقم القضية أو اسم أحد الأطراف...">
+        </div>
+        <select class="sort-select" id="sortSelect">
+          <option value="added">الأحدث إضافة</option>
+          <option value="date">ترتيب حسب تاريخ الجلسة</option>
+          <option value="case">رقم القضية</option>
+        </select>
+      </div>
+      <div class="cases-grid" id="casesGrid"></div>
+      <div class="empty" id="emptyState" style="display:none;">
+        <div class="glyph"><span class="mark"></span></div>
+        <h3>لا توجد قضايا في السجل بعد</h3>
+        <p>ابدأ بلصق أول إشعار جلسة لإضافته إلى السجل.</p>
+        <button class="btn btn-primary" id="emptyAddBtn">إضافة أول قضية</button>
       </div>
     </div>
-    <div class="cases-grid" id="casesGroupGrid"></div>
-    <div class="empty" id="casesGroupEmpty" style="display:none;">
-      <div class="glyph"><span class="mark"></span></div>
-      <h3>لا توجد قضايا بعد</h3>
-      <p>القضايا اللي تضيفها بتظهر هنا مجمّعة مع كل جلساتها.</p>
+
+    <div id="scPanelCases" style="display:none;">
+      <div class="export-toolbar">
+        <button class="btn btn-gold" id="exportExcelBtn">📊 تصدير Excel</button>
+        <button class="btn btn-ghost" id="exportPrintBtn">🖨️ طباعة / حفظ PDF</button>
+      </div>
+      <div class="list-toolbar">
+        <div class="search-box">
+          <input type="text" id="casesSearchInput" placeholder="ابحث برقم القضية أو اسم أحد الأطراف...">
+        </div>
+      </div>
+      <div class="cases-grid" id="casesGroupGrid"></div>
+      <div class="empty" id="casesGroupEmpty" style="display:none;">
+        <div class="glyph"><span class="mark"></span></div>
+        <h3>لا توجد قضايا بعد</h3>
+        <p>القضايا اللي تضيفها بتظهر هنا مجمّعة مع كل جلساتها.</p>
+      </div>
     </div>
   </section>
 
@@ -784,30 +883,61 @@ async function deleteAppointmentDoc(id){
   await deleteDoc(doc(db, 'appointments', id));
 }
 
+// ---------- Profile (account name + phone) ----------
+async function fetchMyProfile(email){
+  if(!email) return null;
+  try{
+    const snap = await getDoc(doc(db, 'profiles', email));
+    return snap.exists() ? snap.data() : null;
+  }catch(e){ console.error('fetchMyProfile failed', e); return null; }
+}
+async function saveMyProfile(email, data){
+  await setDoc(doc(db, 'profiles', email), data);
+}
+
 let currentParsed = null;
 let isUpdate = false;
 
 // ---------- View switching ----------
+let scSubView = 'sessions';
+
 function switchView(view){
-  ['add','list','cases','archive','calendar'].forEach(v => {
+  ['home','add','sessioncases','archive','calendar'].forEach(v => {
     document.getElementById('view-' + v).classList.toggle('active', v === view);
   });
+  document.getElementById('tabHome').classList.toggle('active', view === 'home');
   document.getElementById('tabAdd').classList.toggle('active', view === 'add');
-  document.getElementById('tabList').classList.toggle('active', view === 'list');
-  document.getElementById('tabCases').classList.toggle('active', view === 'cases');
+  document.getElementById('tabSessionCases').classList.toggle('active', view === 'sessioncases');
   document.getElementById('tabArchive').classList.toggle('active', view === 'archive');
   document.getElementById('tabCalendar').classList.toggle('active', view === 'calendar');
-  if(view === 'list') renderList();
-  if(view === 'cases') renderCasesGrouped();
+  if(view === 'home') renderDashboard();
+  if(view === 'sessioncases') (scSubView === 'sessions' ? renderList() : renderCasesGrouped());
   if(view === 'archive') renderArchive();
   if(view === 'calendar') renderCalendar();
 }
+document.getElementById('tabHome').addEventListener('click', () => switchView('home'));
 document.getElementById('tabAdd').addEventListener('click', () => switchView('add'));
-document.getElementById('tabList').addEventListener('click', () => switchView('list'));
-document.getElementById('tabCases').addEventListener('click', () => switchView('cases'));
+document.getElementById('tabSessionCases').addEventListener('click', () => switchView('sessioncases'));
 document.getElementById('tabArchive').addEventListener('click', () => switchView('archive'));
 document.getElementById('tabCalendar').addEventListener('click', () => switchView('calendar'));
 document.getElementById('emptyAddBtn').addEventListener('click', () => switchView('add'));
+
+document.getElementById('scSubSessions').addEventListener('click', () => {
+  scSubView = 'sessions';
+  document.getElementById('scSubSessions').classList.add('active');
+  document.getElementById('scSubCases').classList.remove('active');
+  document.getElementById('scPanelSessions').style.display = '';
+  document.getElementById('scPanelCases').style.display = 'none';
+  renderList();
+});
+document.getElementById('scSubCases').addEventListener('click', () => {
+  scSubView = 'cases';
+  document.getElementById('scSubCases').classList.add('active');
+  document.getElementById('scSubSessions').classList.remove('active');
+  document.getElementById('scPanelCases').style.display = '';
+  document.getElementById('scPanelSessions').style.display = 'none';
+  renderCasesGrouped();
+});
 
 let archiveSubView = 'cases';
 document.getElementById('archiveSubCases').addEventListener('click', () => {
@@ -1007,6 +1137,58 @@ document.addEventListener('click', (e) => {
   const wrap = document.getElementById('notifBellWrap');
   if(wrap && !wrap.contains(e.target)){
     document.getElementById('notifPanel').style.display = 'none';
+  }
+});
+
+// ---------- Profile (account name + phone with country code) ----------
+const COUNTRY_CODES = [
+  ['الأردن', '+962'], ['الإمارات', '+971'], ['ألمانيا', '+49'], ['أمريكا', '+1'],
+  ['أستراليا', '+61'], ['إسبانيا', '+34'], ['إندونيسيا', '+62'], ['إيطاليا', '+39'],
+  ['باكستان', '+92'], ['البحرين', '+973'], ['بريطانيا', '+44'], ['تركيا', '+90'],
+  ['تونس', '+216'], ['الجزائر', '+213'], ['جنوب أفريقيا', '+27'], ['السعودية', '+966'],
+  ['السودان', '+249'], ['سوريا', '+963'], ['سنغافورة', '+65'], ['العراق', '+964'],
+  ['عُمان', '+968'], ['فرنسا', '+33'], ['الفلبين', '+63'], ['فلسطين', '+970'],
+  ['قطر', '+974'], ['كندا', '+1'], ['الكويت', '+965'], ['لبنان', '+961'],
+  ['ليبيا', '+218'], ['ماليزيا', '+60'], ['مصر', '+20'], ['المغرب', '+212'],
+  ['الهند', '+91'], ['اليابان', '+81'], ['اليمن', '+967']
+];
+function populateCountryCodeSelect(){
+  const sel = document.getElementById('profileCountryCode');
+  sel.innerHTML = COUNTRY_CODES.map(([name, code]) => `<option value="${code}">${name} ${code}</option>`).join('');
+  sel.value = '+966'; // default: Saudi Arabia
+}
+populateCountryCodeSelect();
+
+document.getElementById('profileBtn').addEventListener('click', async () => {
+  const panel = document.getElementById('profilePanel');
+  const isOpen = panel.style.display === 'block';
+  if(isOpen){ panel.style.display = 'none'; return; }
+  panel.style.display = 'block';
+  const profile = await fetchMyProfile(currentUserEmail);
+  if(profile){
+    document.getElementById('profileName').value = profile.name || '';
+    document.getElementById('profileCountryCode').value = profile.countryCode || '+966';
+    document.getElementById('profilePhone').value = profile.phone || '';
+  }
+});
+document.addEventListener('click', (e) => {
+  const wrap = document.getElementById('profileWrap');
+  if(wrap && !wrap.contains(e.target)){
+    document.getElementById('profilePanel').style.display = 'none';
+  }
+});
+document.getElementById('profileSaveBtn').addEventListener('click', async () => {
+  const name = document.getElementById('profileName').value.trim();
+  const countryCode = document.getElementById('profileCountryCode').value;
+  const phone = document.getElementById('profilePhone').value.trim();
+  try{
+    await saveMyProfile(currentUserEmail, { name, countryCode, phone, updatedAt: Date.now() });
+    showToast('تم حفظ بيانات الحساب.');
+    document.getElementById('profilePanel').style.display = 'none';
+    if(document.getElementById('view-home').classList.contains('active')) renderDashboard();
+  }catch(e){
+    showToast('تعذّر الحفظ. حاول مجددًا.');
+    console.error(e);
   }
 });
 
@@ -1502,7 +1684,7 @@ async function renderList(){
     .map(c => ({ c, session: getLatestSession(c) }))
     .filter(x => x.session && !x.session.archived);
 
-  document.getElementById('caseCount').textContent = items.length;
+  // (session count badge removed — tabs merged into one "الجلسات والقضايا" tab)
 
   const query = document.getElementById('searchInput').value.trim().toLowerCase();
   if(query){
@@ -1720,6 +1902,115 @@ function dateKey(y, m, d){
   return `${y}-${String(m + 1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
 }
 
+// ---------- Dashboard (home) ----------
+async function renderDashboard(){
+  const profile = await fetchMyProfile(currentUserEmail);
+  const friendlyName = (profile && profile.name) ? profile.name : (currentUserEmail ? currentUserEmail.split('@')[0] : '');
+  document.getElementById('dashGreeting').textContent = friendlyName ? `مرحبًا، ${friendlyName} 👋` : 'مرحبًا 👋';
+
+  let cases = (await loadAllCases()).map(normalizeCase).filter(c => !c.archived);
+  const appts = await fetchMyAppointments(currentUserEmail);
+
+  const now = new Date();
+  const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  const todayEnd = new Date(todayStart); todayEnd.setDate(todayEnd.getDate() + 1);
+  const weekEnd = new Date(todayStart); weekEnd.setDate(weekEnd.getDate() + 7);
+
+  // Build session items with real datetimes (Umm al-Qura Hijri → Gregorian + parsed time)
+  const sessionItems = [];
+  cases.forEach(c => {
+    getActiveSessions(c).forEach(s => {
+      const parts = (s.date || '').split('/');
+      if(parts.length !== 3) return;
+      const day = parseInt(parts[0],10), mon = parseInt(parts[1],10), yr = parseInt(parts[2],10);
+      if(!day || !mon || !yr) return;
+      const gDate = hijriToGregorianExact(day, mon, yr);
+      const dt = new Date(gDate);
+      dt.setHours(0,0,0,0);
+      const t = parseArabicTime(s.time);
+      if(t) dt.setHours(t.hour, t.minute, 0, 0);
+      sessionItems.push({ caseNumber: c.caseNumber, label: c.plaintiff || c.caseType || c.caseNumber, time: s.time, dt });
+    });
+  });
+
+  // Build appointment items with real datetimes
+  const apptItems = [];
+  appts.forEach(a => {
+    if(!a.date) return;
+    const [y,m,d] = a.date.split('-').map(n => parseInt(n,10));
+    if(!y || !m || !d) return;
+    const dt = new Date(y, m-1, d);
+    if(a.time){
+      const [h,mi] = a.time.split(':').map(n => parseInt(n,10));
+      dt.setHours(h||0, mi||0, 0, 0);
+    }
+    apptItems.push({ clientName: a.clientName, time: a.time, notes: a.notes, dt, id: a._id });
+  });
+
+  const sessionsToday = sessionItems.filter(x => x.dt >= todayStart && x.dt < todayEnd);
+  const sessionsWeek = sessionItems.filter(x => x.dt >= todayStart && x.dt < weekEnd);
+  const apptsToday = apptItems.filter(x => x.dt >= todayStart && x.dt < todayEnd);
+  const apptsWeek = apptItems.filter(x => x.dt >= todayStart && x.dt < weekEnd);
+
+  document.getElementById('statSessionsToday').textContent = sessionsToday.length;
+  document.getElementById('statSessionsWeek').textContent = sessionsWeek.length;
+  document.getElementById('statApptsToday').textContent = apptsToday.length;
+  document.getElementById('statApptsWeek').textContent = apptsWeek.length;
+
+  // Nearest session
+  const upcomingSessions = sessionItems.filter(x => x.dt >= now).sort((a,b) => a.dt - b.dt);
+  const nearestSessionEl = document.getElementById('dashNearestSession');
+  if(upcomingSessions.length){
+    const n = upcomingSessions[0];
+    nearestSessionEl.innerHTML = `<div class="dash-item"><span class="di-time">${escapeHtml(n.time || '')}</span><div class="di-title">قضية رقم ${escapeHtml(n.caseNumber)}</div><div class="di-sub">${escapeHtml(n.label)} — ${n.dt.toLocaleDateString('ar-SA')}</div></div>`;
+  } else {
+    nearestSessionEl.innerHTML = '<p class="hint">لا توجد جلسات قادمة.</p>';
+  }
+
+  // Nearest appointment
+  const upcomingAppts = apptItems.filter(x => x.dt >= now).sort((a,b) => a.dt - b.dt);
+  const nearestApptEl = document.getElementById('dashNearestAppt');
+  if(upcomingAppts.length){
+    const n = upcomingAppts[0];
+    nearestApptEl.innerHTML = `<div class="dash-item"><span class="di-time">${escapeHtml(n.time || '')}</span><div class="di-title">${escapeHtml(n.clientName)}</div><div class="di-sub">${n.dt.toLocaleDateString('ar-SA')}${n.notes ? ' — ' + escapeHtml(n.notes) : ''}</div></div>`;
+  } else {
+    nearestApptEl.innerHTML = '<p class="hint">لا توجد مواعيد قادمة.</p>';
+  }
+
+  // Today's agenda (sessions + appointments combined, chronological)
+  const agenda = [
+    ...sessionsToday.map(x => ({ ...x, kind: 'session' })),
+    ...apptsToday.map(x => ({ ...x, kind: 'appt' }))
+  ].sort((a,b) => a.dt - b.dt);
+  const agendaEl = document.getElementById('dashTodayAgenda');
+  if(agenda.length === 0){
+    agendaEl.innerHTML = '<p class="hint">ما فيه شي مجدول اليوم.</p>';
+  } else {
+    agendaEl.innerHTML = agenda.map(x => {
+      if(x.kind === 'session'){
+        return `<div class="dash-item"><span class="di-time">${escapeHtml(x.time || '')}</span><div class="di-title">⚖ قضية رقم ${escapeHtml(x.caseNumber)}</div><div class="di-sub">${escapeHtml(x.label)}</div></div>`;
+      }
+      return `<div class="dash-item"><span class="di-time">${escapeHtml(x.time || '')}</span><div class="di-title">🤝 ${escapeHtml(x.clientName)}</div><div class="di-sub">${x.notes ? escapeHtml(x.notes) : ''}</div></div>`;
+    }).join('');
+  }
+
+  // Objection-deadline status (always visible — green/orange/red)
+  const tracked = cases.filter(c => c.caseStatus === 'non_final' && typeof c.objectionDaysRemaining === 'number');
+  const alertEl = document.getElementById('dashObjectionAlert');
+  if(tracked.length === 0){
+    alertEl.innerHTML = `<div class="dash-obj-alert obj-green"><b>✅ لا يوجد لديك اعتراضات قادمة</b></div>`;
+  } else {
+    const minDays = Math.min(...tracked.map(c => c.objectionDaysRemaining));
+    const isRed = minDays <= 10;
+    const urgentCases = tracked.filter(c => isRed ? c.objectionDaysRemaining <= 10 : true).sort((a,b) => a.objectionDaysRemaining - b.objectionDaysRemaining);
+    alertEl.innerHTML = `<div class="dash-obj-alert ${isRed ? 'obj-red' : 'obj-orange'}">
+      <b>${isRed ? '🔴 تنبيه عاجل: اقتربت مدة الاعتراض على حكم' : '🟠 لديك اعتراضات قادمة يجب متابعتها'}</b>
+      ${urgentCases.map(c => `قضية رقم ${escapeHtml(c.caseNumber)} — متبقٍ ${c.objectionDaysRemaining} يوم/أيام`).join('<br>')}
+    </div>`;
+  }
+  alertEl.style.display = 'block';
+}
+
 async function renderCalendar(){
   const grid = document.getElementById('calendarGrid');
   const label = document.getElementById('calMonthLabel');
@@ -1906,7 +2197,7 @@ async function renderCasesGrouped(){
   }
   cases.sort((a,b) => b.updatedAt - a.updatedAt);
 
-  document.getElementById('casesGroupCount').textContent = cases.length;
+  // (case count badge removed — tabs merged into one "الجلسات والقضايا" tab)
 
   if(cases.length === 0){ grid.innerHTML = ''; empty.style.display = 'block'; return; }
   empty.style.display = 'none';
@@ -2137,10 +2428,11 @@ let appStarted = false;
 function startApp(){
   if(appStarted) return;
   appStarted = true;
-  renderList();
+  renderDashboard();
   renderNotifBadge();
   setInterval(() => {
-    if(document.getElementById('view-list').classList.contains('active')) renderList();
+    if(document.getElementById('view-home').classList.contains('active')) renderDashboard();
+    if(document.getElementById('view-sessioncases').classList.contains('active') && scSubView === 'sessions') renderList();
     renderNotifBadge();
   }, 60000);
 }
