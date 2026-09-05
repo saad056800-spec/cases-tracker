@@ -54,7 +54,7 @@
     max-width: 980px; margin: 0 auto;
     display:flex; flex-direction:column; gap:14px;
   }
-  .brand{ display:flex; align-items:center; gap:14px; }
+  .brand{ display:flex; align-items:center; gap:14px; flex-wrap:wrap; }
   .brand-seal{
     width:44px; height:44px; border-radius:50%;
     border:2px solid var(--gold-light);
@@ -77,6 +77,10 @@
     font-family:'Amiri',serif; color:var(--gold-light); font-size:14.5px; font-weight:700; margin:0 0 2px;
   }
   .brand-license{ color:#8FA0B0; font-size:11.5px; margin:0; }
+  @media (max-width:640px){
+    .topbar-actions{ flex-basis:100%; justify-content:flex-start; margin-inline-start:0 !important; }
+    #currentUserLabel{ display:none; }
+  }
   .notif-bell{
     background:none; border:none; cursor:pointer; font-size:18px; position:relative;
     padding:4px 6px; line-height:1;
@@ -476,7 +480,7 @@
       <div>
         <h1>سجل الجلسات القضائية</h1>
       </div>
-      <div style="margin-inline-start:auto; text-align:left; display:flex; align-items:center; gap:10px; position:relative;">
+      <div class="topbar-actions" style="margin-inline-start:auto; text-align:left; display:flex; align-items:center; gap:10px; position:relative;">
         <div id="profileWrap" style="position:relative;">
           <button id="profileBtn" class="notif-bell" title="الملف الشخصي">⚙️</button>
           <div id="profilePanel" class="notif-panel" style="display:none; width:270px; padding:14px;">
