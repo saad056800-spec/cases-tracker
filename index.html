@@ -234,18 +234,18 @@
   }
   .calendar-grid{ display:grid; grid-template-columns:repeat(7, minmax(0,1fr)); gap:3px; }
   .cal-day{
-    aspect-ratio:1; border-radius:8px; border:1px solid var(--paper-dim); background:#fff;
-    padding:4px; font-size:11px; cursor:pointer; display:flex; flex-direction:column; gap:2px;
-    transition: background .12s, border-color .12s; position:relative; min-width:0; overflow:hidden;
+    aspect-ratio:0.8; border-radius:8px; border:1px solid var(--paper-dim); background:#fff;
+    padding:3px; font-size:11px; cursor:pointer; display:flex; flex-direction:column; gap:1px;
+    transition: background .12s, border-color .12s; position:relative; min-width:0;
   }
   .cal-day:hover{ border-color:var(--gold); }
   .cal-day.outside{ opacity:0.35; }
   .cal-day.today{ border-color:var(--green-deep); border-width:2px; }
   .cal-day.has-selected{ background:var(--green-mist); }
-  .cal-day .cal-num{ font-weight:700; color:var(--ink); }
-  .cal-day .cal-hijri-num{ font-size:9.5px; color:var(--gold); font-weight:600; }
-  .cal-day .cal-dots{ display:flex; gap:3px; flex-wrap:wrap; margin-top:auto; }
-  .cal-dot{ width:6px; height:6px; border-radius:50%; }
+  .cal-day .cal-num{ font-weight:700; color:var(--ink); line-height:1.2; }
+  .cal-day .cal-hijri-num{ font-size:9px; color:var(--gold); font-weight:600; line-height:1.2; }
+  .cal-day .cal-dots{ display:flex; gap:2px; flex-wrap:wrap; margin-top:auto; min-height:6px; }
+  .cal-dot{ width:5px; height:5px; border-radius:50%; flex-shrink:0; }
   .cal-dot.session{ background:var(--gold); }
   .cal-dot.appt{ background:#2A5A8C; }
   .day-item{
