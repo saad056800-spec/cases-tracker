@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>سجل الجلسات القضائية</title>
+<title>مرساة المواعيد</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Amiri:wght@400;700&family=Cairo:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <style>
@@ -223,6 +223,13 @@
   .dash-item .di-title{ font-weight:700; color:var(--ink); }
   .dash-item .di-sub{ color:var(--ink-soft); font-size:11.5px; margin-top:2px; }
   .dash-item .di-time{ float:left; color:var(--gold); font-weight:700; font-size:12px; }
+  .contact-btn{
+    display:inline-block; font-size:11.5px; font-weight:700; padding:4px 10px; border-radius:999px;
+    text-decoration:none; margin-inline-end:6px; margin-top:6px; border:1px solid var(--line); color:var(--ink);
+  }
+  .contact-btn:hover{ background:var(--paper-dim); }
+  .contact-btn.wa{ background:#E7F5EC; border-color:#BFE3CC; color:#0F4C3A; }
+  .contact-btn.wa:hover{ background:#D7EEDD; }
 
   .calendar-header{ margin-bottom:16px; }
   .calendar-nav{ display:flex; justify-content:space-between; gap:10px; flex-wrap:wrap; margin-bottom:12px; }
@@ -449,7 +456,7 @@
     <div style="text-align:center; margin-bottom:8px;">
       <div class="brand-seal" style="margin:0 auto 10px; color:var(--gold); border-color:var(--gold);"><span class="mark"></span></div>
     </div>
-    <h2 style="text-align:center;">سجل الجلسات القضائية</h2>
+    <h2 style="text-align:center;">مرساة المواعيد</h2>
     <p class="hint" style="text-align:center;">سجّل دخولك للوصول إلى قضاياك</p>
 
     <div id="authSetupNotice" style="display:none; background:#FBEBE6; color:#8C3A2B; border:1px solid #E9C6BA; padding:12px; border-radius:8px; font-size:13px; margin-bottom:10px;">
@@ -479,7 +486,7 @@
     <div class="brand">
       <div class="brand-seal"><span class="mark"></span></div>
       <div>
-        <h1>سجل الجلسات القضائية</h1>
+        <h1>مرساة المواعيد</h1>
       </div>
       <div class="topbar-actions" style="margin-inline-start:auto; text-align:left; display:flex; align-items:center; gap:10px; position:relative;">
         <div id="profileWrap" style="position:relative;">
@@ -695,12 +702,28 @@
     </div>
 
     <div class="panel">
-      <h2>إضافة موعد مع عميل</h2>
-      <p class="hint">مواعيد عامة (استشارة، اجتماع، توقيع عقد...) منفصلة عن جلسات المحكمة.</p>
+      <h2>إضافة موعد</h2>
+      <p class="hint">مواعيد عامة (استشارة، اجتماع، مراجعة...) منفصلة عن جلسات المحكمة.</p>
       <div class="field-grid">
-        <div class="field full"><label>اسم العميل</label><input id="appt_client" placeholder="اسم العميل"></div>
+        <div class="field full">
+          <label>نوع الموعد</label>
+          <select id="appt_type" style="width:100%; font-family:'Cairo',sans-serif; font-size:13.5px; padding:10px 12px; border-radius:8px; border:1px solid var(--line); background:#fff;">
+            <option value="client">عميل</option>
+            <option value="review">مراجعة</option>
+            <option value="private">خاص</option>
+            <option value="other">أخرى</option>
+          </select>
+        </div>
+        <div class="field full"><label id="apptNameLabel">اسم العميل</label><input id="appt_client" placeholder="اسم العميل"></div>
         <div class="field"><label>التاريخ</label><input id="appt_date" type="date"></div>
         <div class="field"><label>الوقت</label><input id="appt_time" type="time"></div>
+        <div class="field full">
+          <label>رقم الجوال (اختياري — لتفعيل الاتصال والواتساب)</label>
+          <div style="display:flex; gap:6px;">
+            <select id="appt_countryCode" style="width:110px; padding:9px 6px; border-radius:8px; border:1px solid var(--line); font-size:12.5px;"></select>
+            <input id="appt_phone" dir="ltr" placeholder="5xxxxxxxx" style="flex:1;">
+          </div>
+        </div>
         <div class="field full"><label>ملاحظات</label><textarea id="appt_notes" style="min-height:60px; font-size:13.5px; padding:9px 12px; border-radius:8px; border:1px solid var(--line); background:#fff;" placeholder="تفاصيل الموعد..."></textarea></div>
       </div>
       <div class="btn-row">
@@ -1118,7 +1141,7 @@ document.getElementById('exportPrintBtn').addEventListener('click', async () => 
   const cols = Object.keys(rows[0]);
   const printArea = document.getElementById('printArea');
   printArea.innerHTML = `
-    <h2>سجل الجلسات القضائية — ${new Date().toLocaleDateString('ar-SA')}</h2>
+    <h2>مرساة المواعيد — ${new Date().toLocaleDateString('ar-SA')}</h2>
     <table>
       <thead><tr>${cols.map(c => `<th>${escapeHtml(c)}</th>`).join('')}</tr></thead>
       <tbody>
@@ -1159,12 +1182,13 @@ const COUNTRY_CODES = [
   ['ليبيا', '+218'], ['ماليزيا', '+60'], ['مصر', '+20'], ['المغرب', '+212'],
   ['الهند', '+91'], ['اليابان', '+81'], ['اليمن', '+967']
 ];
-function populateCountryCodeSelect(){
-  const sel = document.getElementById('profileCountryCode');
+function populateCountryCodeSelect(selectId){
+  const sel = document.getElementById(selectId);
   sel.innerHTML = COUNTRY_CODES.map(([name, code]) => `<option value="${code}">${name} ${code}</option>`).join('');
   sel.value = '+966'; // default: Saudi Arabia
 }
-populateCountryCodeSelect();
+populateCountryCodeSelect('profileCountryCode');
+populateCountryCodeSelect('appt_countryCode');
 
 document.getElementById('profileBtn').addEventListener('click', async () => {
   const panel = document.getElementById('profilePanel');
@@ -1951,7 +1975,7 @@ async function renderDashboard(){
       const [h,mi] = a.time.split(':').map(n => parseInt(n,10));
       dt.setHours(h||0, mi||0, 0, 0);
     }
-    apptItems.push({ clientName: a.clientName, time: a.time, notes: a.notes, dt, id: a._id });
+    apptItems.push({ clientName: a.clientName, time: a.time, notes: a.notes, type: a.type, countryCode: a.countryCode, phone: a.phone, dt, id: a._id });
   });
 
   const sessionsToday = sessionItems.filter(x => x.dt >= todayStart && x.dt < todayEnd);
@@ -1979,7 +2003,7 @@ async function renderDashboard(){
   const nearestApptEl = document.getElementById('dashNearestAppt');
   if(upcomingAppts.length){
     const n = upcomingAppts[0];
-    nearestApptEl.innerHTML = `<div class="dash-item"><span class="di-time">${escapeHtml(n.time || '')}</span><div class="di-title">${escapeHtml(n.clientName)}</div><div class="di-sub">${n.dt.toLocaleDateString('ar-SA')}${n.notes ? ' — ' + escapeHtml(n.notes) : ''}</div></div>`;
+    nearestApptEl.innerHTML = `<div class="dash-item"><span class="di-time">${escapeHtml(n.time || '')}</span><div class="di-title">${apptIcon(n.type)} ${escapeHtml(n.clientName)}</div><div class="di-sub">${n.dt.toLocaleDateString('ar-SA')}${n.notes ? ' — ' + escapeHtml(n.notes) : ''}</div><div>${contactButtonsHtml(n.countryCode, n.phone)}</div></div>`;
   } else {
     nearestApptEl.innerHTML = '<p class="hint">لا توجد مواعيد قادمة.</p>';
   }
@@ -1997,7 +2021,7 @@ async function renderDashboard(){
       if(x.kind === 'session'){
         return `<div class="dash-item"><span class="di-time">${escapeHtml(x.time || '')}</span><div class="di-title">⚖ قضية رقم ${escapeHtml(x.caseNumber)}</div><div class="di-sub">${escapeHtml(x.label)}</div></div>`;
       }
-      return `<div class="dash-item"><span class="di-time">${escapeHtml(x.time || '')}</span><div class="di-title">🤝 ${escapeHtml(x.clientName)}</div><div class="di-sub">${x.notes ? escapeHtml(x.notes) : ''}</div></div>`;
+      return `<div class="dash-item"><span class="di-time">${escapeHtml(x.time || '')}</span><div class="di-title">${apptIcon(x.type)} ${escapeHtml(x.clientName)}</div><div class="di-sub">${x.notes ? escapeHtml(x.notes) : ''}</div><div>${contactButtonsHtml(x.countryCode, x.phone)}</div></div>`;
     }).join('');
   }
 
@@ -2124,7 +2148,8 @@ function showDayDetail(key, info){
     html += `<div class="day-item"><div class="di-title">⚖ قضية رقم ${escapeHtml(s.caseNumber)}</div><div class="di-sub">${escapeHtml(s.label)} — ${escapeHtml(s.time || '')}</div></div>`;
   });
   info.appts.forEach(a => {
-    html += `<div class="day-item"><div class="di-title">🤝 ${escapeHtml(a.clientName)}</div><div class="di-sub">${escapeHtml(a.time || '')} ${a.notes ? '— ' + escapeHtml(a.notes) : ''}</div>
+    html += `<div class="day-item"><div class="di-title">${apptIcon(a.type)} ${escapeHtml(a.clientName)}</div><div class="di-sub">${escapeHtml(a.time || '')} ${a.notes ? '— ' + escapeHtml(a.notes) : ''}</div>
+      <div>${contactButtonsHtml(a.countryCode, a.phone)}</div>
       <button class="delete-btn" style="margin-top:6px;" data-appt="${a._id}">حذف الموعد</button></div>`;
   });
   content.innerHTML = html;
@@ -2155,21 +2180,35 @@ document.getElementById('calNextBtn').addEventListener('click', () => {
   renderCalendar();
 });
 
+const APPT_TYPE_LABELS = {
+  client: 'اسم العميل',
+  review: 'عنوان المراجعة',
+  private: 'العنوان',
+  other: 'اسم الموعد'
+};
+document.getElementById('appt_type').addEventListener('change', () => {
+  document.getElementById('apptNameLabel').textContent = APPT_TYPE_LABELS[document.getElementById('appt_type').value] || 'اسم الموعد';
+});
+
 document.getElementById('apptSaveBtn').addEventListener('click', async () => {
+  const type = document.getElementById('appt_type').value;
   const clientName = document.getElementById('appt_client').value.trim();
   const date = document.getElementById('appt_date').value;
   const time = document.getElementById('appt_time').value;
+  const countryCode = document.getElementById('appt_countryCode').value;
+  const phone = document.getElementById('appt_phone').value.trim();
   const notes = document.getElementById('appt_notes').value.trim();
   if(!clientName || !date){
-    showToast('اسم العميل والتاريخ حقلان مطلوبان.');
+    showToast(`${APPT_TYPE_LABELS[type]} والتاريخ حقلان مطلوبان.`);
     return;
   }
   try{
-    await saveAppointmentDoc({ clientName, date, time, notes, ownerEmail: currentUserEmail, createdAt: Date.now() });
+    await saveAppointmentDoc({ type, clientName, date, time, countryCode, phone, notes, ownerEmail: currentUserEmail, createdAt: Date.now() });
     showToast('تم حفظ الموعد.');
     document.getElementById('appt_client').value = '';
     document.getElementById('appt_date').value = '';
     document.getElementById('appt_time').value = '';
+    document.getElementById('appt_phone').value = '';
     document.getElementById('appt_notes').value = '';
     renderCalendar();
   }catch(e){
@@ -2415,6 +2454,19 @@ async function renderArchive(){
 
 function escapeHtml(str){
   return String(str).replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
+}
+
+const APPT_TYPE_ICONS = { client: '🤝', review: '🔎', private: '🔒', other: '📌' };
+function apptIcon(type){ return APPT_TYPE_ICONS[type] || '📌'; }
+function contactButtonsHtml(countryCode, phone){
+  if(!phone) return '';
+  const clean = phone.replace(/\D/g, '').replace(/^0+/, '');
+  const cc = (countryCode || '+966').replace('+', '');
+  const full = cc + clean;
+  return `
+    <a class="contact-btn" href="tel:+${full}" title="اتصال">📞 اتصال</a>
+    <a class="contact-btn wa" href="https://wa.me/${full}" target="_blank" rel="noopener" title="واتساب">💬 واتساب</a>
+  `;
 }
 
 document.getElementById('searchInput').addEventListener('input', renderList);
