@@ -413,6 +413,7 @@
     display:inline-block; background:var(--paper-dim); border-radius:999px; padding:2px 8px; margin:2px 3px 0 0;
     direction:ltr; unicode-bidi:isolate;
   }
+  .shared-chip.pending{ background:var(--amber-bg); color:var(--amber); }
   .unshare-btn{
     background:none; border:none; color:#B0463A; font-weight:800; cursor:pointer; padding:0 0 0 4px; font-size:12px;
   }
@@ -856,21 +857,29 @@ async function fetchMyCases(email){
   }
 
   try{
-    const sharedQ = query(casesCol, where('sharedWithEmails', 'array-contains', email));
-    const sharedSnap = await getDocs(sharedQ);
-    sharedSnap.forEach(d => map.set(d.id, d.data()));
+    const fullQ = query(casesCol, where('sharedWithEmailsFull', 'array-contains', email));
+    const fullSnap = await getDocs(fullQ);
+    fullSnap.forEach(d => map.set(d.id, d.data()));
   }catch(e){
-    console.error('shared query failed', e);
+    console.error('full-share query failed', e);
+  }
+
+  try{
+    const roQ = query(casesCol, where('sharedWithEmailsReadOnly', 'array-contains', email));
+    const roSnap = await getDocs(roQ);
+    roSnap.forEach(d => map.set(d.id, d.data()));
+  }catch(e){
+    console.error('readonly-share query failed', e);
   }
 
   return Array.from(map.values());
 }
 
 // Notifications: also a real collection, readable only by their intended recipient (see security rules).
-async function addNotificationDoc(targetEmail, message){
+async function addNotificationDoc(targetEmail, message, type, extra){
   if(!targetEmail) return;
   try{
-    await setDoc(doc(collection(db, 'notifications')), { targetEmail, message, createdAt: Date.now(), read: false });
+    await setDoc(doc(collection(db, 'notifications')), { targetEmail, message, createdAt: Date.now(), read: false, type: type || 'info', ...(extra || {}) });
   }catch(e){ /* best-effort — never block the main action if this fails */ }
 }
 async function fetchMyNotifications(email){
@@ -1528,9 +1537,24 @@ function normalizeCase(rec){
   if(rec.archived === undefined) rec.archived = false;
   if(!rec.createdAt) rec.createdAt = rec.addedAt || Date.now();
   if(!rec.updatedAt) rec.updatedAt = Date.now();
-  if(!rec.sharedWithEmails) rec.sharedWithEmails = [];
+  if(!rec.sharedWithEmailsFull) rec.sharedWithEmailsFull = rec.sharedWithEmails || []; // migrate legacy field
+  if(!rec.sharedWithEmailsReadOnly) rec.sharedWithEmailsReadOnly = [];
+  if(!rec.pendingShares) rec.pendingShares = [];
+  if(!rec.pendingShareEmails) rec.pendingShareEmails = [];
   if(!rec.caseStatus) rec.caseStatus = 'pending';
   return rec;
+}
+// 'owner' | 'full' | 'readonly' | 'none'
+function getAccessLevel(c){
+  if(!currentUserEmail) return 'owner'; // legacy no-login mode: everyone can manage everything
+  if(!c.ownerEmail || c.ownerEmail === currentUserEmail) return 'owner';
+  if((c.sharedWithEmailsFull || []).includes(currentUserEmail)) return 'full';
+  if((c.sharedWithEmailsReadOnly || []).includes(currentUserEmail)) return 'readonly';
+  return 'none';
+}
+function canEdit(c){
+  const lvl = getAccessLevel(c);
+  return lvl === 'owner' || lvl === 'full';
 }
 function caseStatusInfo(status){
   if(status === 'non_final') return { label: 'محكوم بحكم غير نهائي', cls: 'rescheduled' };
@@ -1701,13 +1725,7 @@ async function renderList(){
   const empty = document.getElementById('emptyState');
 
   let rawCases = (await loadAllCases()).map(normalizeCase);
-
-  // When logged in, only show cases this person owns or that were shared with them.
-  if(currentUserEmail){
-    rawCases = rawCases.filter(c =>
-      !c.ownerEmail || c.ownerEmail === currentUserEmail || (c.sharedWithEmails || []).includes(currentUserEmail)
-    );
-  }
+  // (loadAllCases/fetchMyCases already scopes to owner + full + read-only shares via Firestore queries)
 
   // This view shows one card per non-archived case, using its latest active session.
   let items = rawCases
@@ -1787,24 +1805,26 @@ async function renderList(){
       </div>
       <div class="notes-box">
         <label>ملاحظات</label>
-        <textarea class="notes-textarea" data-case="${escapeHtml(c.caseNumber)}" placeholder="اكتب ملاحظاتك هنا...">${escapeHtml(c.notes || '')}</textarea>
+        <textarea class="notes-textarea" data-case="${escapeHtml(c.caseNumber)}" placeholder="اكتب ملاحظاتك هنا..." ${canEdit(c) ? '' : 'disabled'}>${escapeHtml(c.notes || '')}</textarea>
       </div>
       <div class="notes-box">
         <label>رابط الجلسة</label>
-        <input class="link-input" dir="ltr" data-case="${escapeHtml(c.caseNumber)}" value="${escapeHtml(c.sessionLink || '')}" placeholder="https://...">
+        <input class="link-input" dir="ltr" data-case="${escapeHtml(c.caseNumber)}" value="${escapeHtml(c.sessionLink || '')}" placeholder="https://..." ${canEdit(c) ? '' : 'disabled'}>
         ${c.sessionLink ? `<a href="${escapeHtml(c.sessionLink)}" target="_blank" rel="noopener" class="link-open">فتح الرابط ↗</a>` : ''}
       </div>
       <div class="card-footer">
         <span class="id-holder">هوية: ${escapeHtml(c.idHolder || '—')}</span>
         <div style="display:flex; gap:6px; align-items:center;">
-          ${isOwnerOf(c) ? `<button class="share-btn" data-case="${escapeHtml(c.caseNumber)}">مشاركة</button>` : (c.ownerEmail ? `<span class="shared-tag">مشتركة من ${escapeHtml(c.ownerEmail)}</span>` : '')}
-          ${isOwnerOf(c) ? `<button class="archive-session-btn" data-case="${escapeHtml(c.caseNumber)}" data-session="${escapeHtml(session.id)}">أرشفة الجلسة</button>` : ''}
-          ${isOwnerOf(c) || (c.sharedWithEmails||[]).includes(currentUserEmail) ? `<button class="delete-btn" data-case="${escapeHtml(c.caseNumber)}">حذف</button>` : ''}
+          ${isOwnerOf(c) ? `<button class="share-btn" data-case="${escapeHtml(c.caseNumber)}">مشاركة</button>` : (c.ownerEmail ? `<span class="shared-tag">${getAccessLevel(c) === 'readonly' ? 'قراءة فقط — مشتركة من' : 'مشتركة من'} ${escapeHtml(c.ownerEmail)}</span>` : '')}
+          ${canEdit(c) ? `<button class="archive-session-btn" data-case="${escapeHtml(c.caseNumber)}" data-session="${escapeHtml(session.id)}">أرشفة الجلسة</button>` : ''}
+          ${canEdit(c) ? `<button class="delete-btn" data-case="${escapeHtml(c.caseNumber)}">حذف</button>` : ''}
         </div>
       </div>
-      ${isOwnerOf(c) && (c.sharedWithEmails||[]).length ? `
+      ${isOwnerOf(c) && ((c.sharedWithEmailsFull||[]).length || (c.sharedWithEmailsReadOnly||[]).length || (c.pendingShares||[]).length) ? `
         <div class="shared-list">
-          مشترك مع: ${(c.sharedWithEmails||[]).map(em => `<span class="shared-chip">${escapeHtml(em)} <button class="unshare-btn" data-case="${escapeHtml(c.caseNumber)}" data-email="${escapeHtml(em)}">×</button></span>`).join(' ')}
+          ${(c.sharedWithEmailsFull||[]).map(em => `<span class="shared-chip">${escapeHtml(em)} (تعديل) <button class="unshare-btn" data-case="${escapeHtml(c.caseNumber)}" data-email="${escapeHtml(em)}" data-list="sharedWithEmailsFull">×</button></span>`).join(' ')}
+          ${(c.sharedWithEmailsReadOnly||[]).map(em => `<span class="shared-chip">${escapeHtml(em)} (قراءة) <button class="unshare-btn" data-case="${escapeHtml(c.caseNumber)}" data-email="${escapeHtml(em)}" data-list="sharedWithEmailsReadOnly">×</button></span>`).join(' ')}
+          ${(c.pendingShares||[]).map(p => `<span class="shared-chip pending">${escapeHtml(p.email)} (بانتظار الموافقة)</span>`).join(' ')}
         </div>
       ` : ''}
     </div>
@@ -1875,10 +1895,12 @@ async function renderList(){
       const email = prompt('أدخل البريد الإلكتروني للشخص اللي تبي تشارك معه هذي القضية:');
       if(!email || !email.trim()) return;
       const clean = email.trim().toLowerCase();
+      const fullAccess = confirm('امنحه صلاحية تعديل كامل (إضافة/حذف/أرشفة)؟\n\nاضغط "موافق" لتعديل كامل، أو "إلغاء" لقراءة فقط.');
+      const permission = fullAccess ? 'full' : 'readonly';
       try{
-        await patchCaseDoc(btn.dataset.case, { sharedWithEmails: arrayUnion(clean) });
-        await addNotificationDoc(clean, `${currentUserEmail || 'شخص'} شارك معك القضية رقم ${btn.dataset.case}.`);
-        showToast('تمت مشاركة القضية مع ' + clean);
+        await patchCaseDoc(btn.dataset.case, { pendingShares: arrayUnion({ email: clean, permission }), pendingShareEmails: arrayUnion(clean) });
+        await addNotificationDoc(clean, `${currentUserEmail || 'شخص'} يريد مشاركة القضية رقم ${btn.dataset.case} معك (${permission === 'full' ? 'صلاحية تعديل كامل' : 'صلاحية قراءة فقط'}).`, 'share_invite', { caseNumber: btn.dataset.case, permission, fromEmail: currentUserEmail });
+        showToast('تم إرسال طلب المشاركة، بانتظار موافقة ' + clean);
         renderList();
       }catch(e){
         showToast('تعذّرت المشاركة. حاول مجددًا.');
@@ -1889,7 +1911,7 @@ async function renderList(){
   grid.querySelectorAll('.unshare-btn').forEach(btn => {
     btn.addEventListener('click', async () => {
       try{
-        await patchCaseDoc(btn.dataset.case, { sharedWithEmails: arrayRemove(btn.dataset.email) });
+        await patchCaseDoc(btn.dataset.case, { [btn.dataset.list]: arrayRemove(btn.dataset.email) });
         showToast('تمت إزالة المشاركة.');
         renderList();
       }catch(e){
@@ -1918,8 +1940,56 @@ async function renderNotifications(){
     <div class="notif-item ${n.read ? '' : 'unread'}">
       ${escapeHtml(n.message)}
       <span class="notif-time">${new Date(n.createdAt).toLocaleString('ar-SA')}</span>
+      ${n.type === 'share_invite' && !n.actioned ? `
+        <div class="btn-row" style="margin-top:8px;">
+          <button class="btn btn-primary share-accept-btn" style="padding:6px 14px; font-size:12px;" data-notif="${n._id}" data-case="${escapeHtml(n.caseNumber || '')}" data-permission="${n.permission || 'readonly'}">قبول</button>
+          <button class="btn btn-ghost share-reject-btn" style="padding:6px 14px; font-size:12px;" data-notif="${n._id}" data-case="${escapeHtml(n.caseNumber || '')}" data-permission="${n.permission || 'readonly'}">رفض</button>
+        </div>
+      ` : ''}
     </div>
   `).join('');
+
+  list.querySelectorAll('.share-accept-btn').forEach(btn => {
+    btn.addEventListener('click', () => acceptShareInvite(btn.dataset.notif, btn.dataset.case, btn.dataset.permission));
+  });
+  list.querySelectorAll('.share-reject-btn').forEach(btn => {
+    btn.addEventListener('click', () => rejectShareInvite(btn.dataset.notif, btn.dataset.case, btn.dataset.permission));
+  });
+}
+
+async function acceptShareInvite(notifId, caseNumber, permission){
+  try{
+    const field = permission === 'full' ? 'sharedWithEmailsFull' : 'sharedWithEmailsReadOnly';
+    await updateDoc(doc(db, 'cases', caseNumber), {
+      [field]: arrayUnion(currentUserEmail),
+      pendingShares: arrayRemove({ email: currentUserEmail, permission }),
+      pendingShareEmails: arrayRemove(currentUserEmail)
+    });
+    await updateDoc(doc(db, 'notifications', notifId), { actioned: true, read: true });
+    showToast('تم قبول المشاركة.');
+    renderNotifications();
+    renderNotifBadge();
+    if(document.getElementById('view-home').classList.contains('active')) renderDashboard();
+    if(document.getElementById('view-sessioncases').classList.contains('active')) (scSubView === 'sessions' ? renderList() : renderCasesGrouped());
+  }catch(e){
+    showToast('حدث خطأ أثناء القبول. حاول مجددًا.');
+    console.error(e);
+  }
+}
+async function rejectShareInvite(notifId, caseNumber, permission){
+  try{
+    await updateDoc(doc(db, 'cases', caseNumber), {
+      pendingShares: arrayRemove({ email: currentUserEmail, permission }),
+      pendingShareEmails: arrayRemove(currentUserEmail)
+    });
+    await updateDoc(doc(db, 'notifications', notifId), { actioned: true, read: true });
+    showToast('تم رفض المشاركة.');
+    renderNotifications();
+    renderNotifBadge();
+  }catch(e){
+    showToast('حدث خطأ أثناء الرفض. حاول مجددًا.');
+    console.error(e);
+  }
 }
 
 // ---------- Calendar view ----------
@@ -2228,9 +2298,7 @@ async function renderCasesGrouped(){
   const empty = document.getElementById('casesGroupEmpty');
 
   let cases = (await loadAllCases()).map(normalizeCase).filter(c => !c.archived);
-  if(currentUserEmail){
-    cases = cases.filter(c => !c.ownerEmail || c.ownerEmail === currentUserEmail || (c.sharedWithEmails || []).includes(currentUserEmail));
-  }
+  // (loadAllCases/fetchMyCases already scopes to owner + full + read-only shares)
 
   const query = document.getElementById('casesSearchInput').value.trim().toLowerCase();
   if(query){
@@ -2275,14 +2343,14 @@ async function renderCasesGrouped(){
       ${c.notes ? `<div class="case-notes">📝 ${escapeHtml(c.notes)}</div>` : ''}
       <div class="status-box">
         <label>حالة القضية</label>
-        <select class="status-select" data-case="${escapeHtml(c.caseNumber)}">
+        <select class="status-select" data-case="${escapeHtml(c.caseNumber)}" ${canEdit(c) ? '' : 'disabled'}>
           <option value="pending" ${c.caseStatus === 'pending' ? 'selected' : ''}>منظورة</option>
           <option value="non_final" ${c.caseStatus === 'non_final' ? 'selected' : ''}>محكوم بها بحكم غير نهائي</option>
           <option value="final" ${c.caseStatus === 'final' ? 'selected' : ''}>محكوم بها بحكم نهائي</option>
         </select>
         <div class="objection-box" style="${c.caseStatus === 'non_final' ? '' : 'display:none;'}">
           <label>المدة المتبقية للاعتراض على الحكم (باليوم)</label>
-          <input type="number" min="0" class="objection-input" data-case="${escapeHtml(c.caseNumber)}" value="${c.objectionDaysRemaining !== undefined && c.objectionDaysRemaining !== null ? c.objectionDaysRemaining : ''}" placeholder="مثال: 15">
+          <input type="number" min="0" class="objection-input" data-case="${escapeHtml(c.caseNumber)}" value="${c.objectionDaysRemaining !== undefined && c.objectionDaysRemaining !== null ? c.objectionDaysRemaining : ''}" placeholder="مثال: 15" ${canEdit(c) ? '' : 'disabled'}>
         </div>
       </div>
       <div class="sessions-list">
@@ -2290,13 +2358,13 @@ async function renderCasesGrouped(){
           <div class="session-row ${s.archived ? 'is-archived' : ''} ${!s.archived && latest && s.id === latest.id ? 'is-current' : ''}">
             <span class="session-row-date">${escapeHtml(s.date)} — ${escapeHtml(s.time || '—')}</span>
             <span class="session-row-tag">جلسة ${escapeHtml(String(s.number))} ${s.archived ? '· مؤرشفة' : (latest && s.id === latest.id ? '· الحالية' : '')}</span>
-            ${isOwnerOf(c) && !s.archived ? `<button class="mini-archive-btn" data-case="${escapeHtml(c.caseNumber)}" data-session="${escapeHtml(s.id)}">أرشفة</button>` : ''}
+            ${canEdit(c) && !s.archived ? `<button class="mini-archive-btn" data-case="${escapeHtml(c.caseNumber)}" data-session="${escapeHtml(s.id)}">أرشفة</button>` : ''}
           </div>
         `).join('')}
       </div>
       <div class="card-footer">
         <span class="id-holder">هوية: ${escapeHtml(c.idHolder || '—')}</span>
-        ${isOwnerOf(c) ? `<button class="archive-case-btn" data-case="${escapeHtml(c.caseNumber)}">أرشفة القضية بالكامل</button>` : ''}
+        ${canEdit(c) ? `<button class="archive-case-btn" data-case="${escapeHtml(c.caseNumber)}">أرشفة القضية بالكامل</button>` : ''}
       </div>
     </div>`;
   }).join('');
@@ -2354,9 +2422,7 @@ async function renderArchive(){
   const empty = document.getElementById('archiveEmpty');
 
   let cases = (await loadAllCases()).map(normalizeCase);
-  if(currentUserEmail){
-    cases = cases.filter(c => !c.ownerEmail || c.ownerEmail === currentUserEmail || (c.sharedWithEmails || []).includes(currentUserEmail));
-  }
+  // (loadAllCases/fetchMyCases already scopes to owner + full + read-only shares)
 
   if(archiveSubView === 'cases'){
     const archived = cases.filter(c => c.archived).sort((a,b) => b.updatedAt - a.updatedAt);
