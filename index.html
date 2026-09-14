@@ -4,24 +4,72 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>مرساة الميزان</title>
+<link rel="icon" type="image/png" href="assets/logo-mizan-square-512.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Amiri:wght@400;700&family=Cairo:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Amiri:wght@400;700&family=IBM+Plex+Sans+Arabic:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 <style>
   :root{
-    --paper:#F6F4EE;
-    --paper-dim:#EAEAE4;
-    --ink:#1A2432;
-    --ink-soft:#57626D;
-    --green-deep:#14243B;
-    --green-deeper:#0B1626;
-    --green-mist:#E7ECF2;
-    --gold:#AD8A3B;
-    --gold-light:#C9A854;
-    --line:#DAD6C8;
-    --card-bg:#FFFFFF;
-    --amber:#8C5A2B;
-    --amber-bg:#F6EBDB;
-    --shadow: 0 1px 2px rgba(11,22,38,0.07), 0 8px 24px -12px rgba(11,22,38,0.22);
+    color-scheme: light only;
+
+    /* ===== مرساة الميزان — الرموز الرسمية (tokens.css) ===== */
+    --paper:      #FBF4E3;
+    --paper-2:    #F5ECD8;
+    --surface:    #FFFFFF;
+    --ink:        #0E2444;
+    --ink-2:      #31465F;
+    --muted:      #7C8AA0;
+    --line:       #EAE0C9;
+    --bar:        #12203A;
+    --bar-ink:    #F6F1E3;
+    --blue-deep:  #0B3C9E;
+    --blue:       #1A5FD0;
+    --blue-bright:#4FA3FF;
+    --icon:       #7FC5FF;
+    --gold:       #C2A05A;
+    --alert:      #B4432F;
+    --alert-bg:   #FBE9E4;
+    --radius-card: 16px;
+    --radius-field:12px;
+    --radius-btn:  10px;
+    --shadow: 0 10px 30px rgba(18,32,58,.10);
+    --font-ui:      "IBM Plex Sans Arabic", system-ui, -apple-system, sans-serif;
+    --font-display: "Amiri", "IBM Plex Sans Arabic", serif;
+
+    /* ===== أسماء متغيرات قديمة، مربوطة بالرموز الجديدة (يبقي كل CSS الحالي شغّال بدون تعديل كل قاعدة) ===== */
+    --paper-dim: var(--paper-2);
+    --card-bg: var(--surface);
+    --ink-soft: var(--ink-2);
+    --green-deep: var(--blue);
+    --green-deeper: var(--bar);
+    --green-mist: #EAF1FB;
+    --gold-light: var(--blue-bright);
+    --amber: var(--alert);
+    --amber-bg: var(--alert-bg);
+  }
+
+  [data-theme="dark"]{
+    color-scheme: dark;
+    --paper:   #23262A;
+    --paper-2: #2A2E33;
+    --surface: #2E3238;
+    --ink:     #F3EDDF;
+    --ink-2:   #D6D2C6;
+    --muted:   #9BA4B0;
+    --line:    #3C424A;
+    --bar:     #1A1D21;
+    --bar-ink: #F3EDDF;
+    --blue:    #4FA3FF;
+    --alert:   #F09A86;
+    --alert-bg:#3B2B29;
+    --shadow:  0 10px 30px rgba(0,0,0,.40);
+    --paper-dim: var(--paper-2);
+    --card-bg: var(--surface);
+    --ink-soft: var(--ink-2);
+    --green-deep: var(--blue);
+    --green-deeper: var(--bar);
+    --green-mist: #29405C;
+    --amber: var(--alert);
+    --amber-bg: var(--alert-bg);
   }
 
   *{box-sizing:border-box;}
@@ -29,7 +77,7 @@
   body{
     background:var(--paper);
     color:var(--ink);
-    font-family:'Cairo',sans-serif;
+    font-family:'IBM Plex Sans Arabic',sans-serif;
     min-height:100vh;
     background-image:
       repeating-linear-gradient(45deg, rgba(20,36,59,0.035) 0 3px, transparent 3px 26px),
@@ -56,17 +104,18 @@
   }
   .brand{ display:flex; align-items:center; gap:14px; flex-wrap:wrap; }
   .brand-seal{
-    width:44px; height:44px; border-radius:50%;
-    border:2px solid var(--gold-light);
+    width:44px; height:44px; border-radius:10px;
     display:flex; align-items:center; justify-content:center;
-    color:var(--gold-light); flex-shrink:0;
-    background: rgba(255,255,255,0.03);
+    flex-shrink:0;
+    background: #FBF4E3;
+    padding:4px;
   }
   .mark{
-    display:inline-block; width:16px; height:16px; background:currentColor;
-    clip-path: polygon(50% 0%, 100% 30%, 100% 100%, 62% 100%, 62% 52%, 38% 52%, 38% 100%, 0% 100%, 0% 30%);
+    display:inline-block; width:100%; height:100%;
+    background-image:url('assets/logo-mizan.png');
+    background-size:contain; background-repeat:no-repeat; background-position:center;
   }
-  .brand-seal .mark{ width:20px; height:20px; }
+  .brand-seal .mark{ width:30px; height:30px; }
   .brand h1{
     font-family:'Amiri',serif; font-weight:700;
     font-size: clamp(20px,3vw,28px);
@@ -81,9 +130,11 @@
     .topbar-actions{ flex-basis:100%; justify-content:flex-start; margin-inline-start:0 !important; }
     #currentUserLabel{ display:none; }
   }
+  .icon{ width:20px; height:20px; stroke:currentColor; fill:none;
+         stroke-width:1.7; stroke-linecap:round; stroke-linejoin:round; }
   .notif-bell{
-    background:none; border:none; cursor:pointer; font-size:18px; position:relative;
-    padding:4px 6px; line-height:1;
+    background:none; border:none; cursor:pointer; position:relative;
+    padding:4px 6px; line-height:1; color:var(--icon); display:flex; align-items:center;
   }
   .notif-badge{
     position:absolute; top:-2px; left:-4px; background:#C0392B; color:#fff; font-size:10px;
@@ -112,7 +163,7 @@
     flex:1; text-align:center;
     padding:12px 10px 14px;
     background:transparent; border:none;
-    color:#CFE0D6; font-family:'Cairo',sans-serif;
+    color:#CFE0D6; font-family:'IBM Plex Sans Arabic',sans-serif;
     font-size:15px; font-weight:600; cursor:pointer;
     border-radius:10px 10px 0 0;
     position:relative; transition: background .15s, color .15s;
@@ -147,7 +198,7 @@
 
   textarea{
     width:100%; min-height:190px; resize:vertical;
-    font-family:'Cairo',sans-serif; font-size:14.5px; line-height:1.9;
+    font-family:'IBM Plex Sans Arabic',sans-serif; font-size:14.5px; line-height:1.9;
     padding:14px 16px; border-radius:10px;
     border:1.5px dashed var(--gold);
     background: var(--green-mist);
@@ -157,7 +208,7 @@
   textarea::placeholder{ color:#7C8B81; }
 
   .btn-row{ display:flex; gap:10px; margin-top:14px; flex-wrap:wrap; }
-  button{ font-family:'Cairo',sans-serif; cursor:pointer; }
+  button{ font-family:'IBM Plex Sans Arabic',sans-serif; cursor:pointer; }
   .btn{
     padding:11px 20px; border-radius:9px; border:none;
     font-size:14.5px; font-weight:700; transition: transform .1s, opacity .15s;
@@ -182,7 +233,7 @@
   .field label{ display:block; font-size:12.5px; color:var(--ink-soft); margin-bottom:5px; font-weight:600; }
   .field input{
     width:100%; padding:10px 12px; border-radius:8px;
-    border:1px solid var(--line); font-family:'Cairo',sans-serif; font-size:14px;
+    border:1px solid var(--line); font-family:'IBM Plex Sans Arabic',sans-serif; font-size:14px;
     background:#fff; color:var(--ink);
   }
   .field input:focus{ outline:2px solid var(--green-deep); outline-offset:1px; border-color:var(--green-deep); }
@@ -234,7 +285,7 @@
   .calendar-header{ margin-bottom:16px; }
   .calendar-nav{ display:flex; justify-content:space-between; gap:10px; flex-wrap:wrap; margin-bottom:12px; }
   .calendar-header h2{ font-family:'Amiri',serif; font-size:18px; color:var(--green-deeper); margin:0; text-align:center; width:100%; }
-  .cal-hijri-sub{ display:block; font-family:'Cairo',sans-serif; font-size:12px; font-weight:600; color:var(--gold); margin-top:3px; }
+  .cal-hijri-sub{ display:block; font-family:'IBM Plex Sans Arabic',sans-serif; font-size:12px; font-weight:600; color:var(--gold); margin-top:3px; }
   .calendar-weekdays{
     display:grid; grid-template-columns:repeat(7, minmax(0,1fr)); text-align:center; font-size:11px; font-weight:700;
     color:var(--ink-soft); margin-bottom:6px;
@@ -269,11 +320,11 @@
   }
   .search-box input{
     width:100%; padding:10px 14px; border-radius:9px; border:1px solid var(--line);
-    font-family:'Cairo',sans-serif; font-size:14px; background:#fff;
+    font-family:'IBM Plex Sans Arabic',sans-serif; font-size:14px; background:#fff;
   }
   select.sort-select{
     padding:10px 12px; border-radius:9px; border:1px solid var(--line);
-    font-family:'Cairo',sans-serif; font-size:13.5px; background:#fff; color:var(--ink);
+    font-family:'IBM Plex Sans Arabic',sans-serif; font-size:13.5px; background:#fff; color:var(--ink);
   }
 
   .cases-grid{ display:grid; grid-template-columns: repeat(auto-fill, minmax(310px,1fr)); gap:18px; }
@@ -286,9 +337,9 @@
   .card-top{ padding:18px 18px 14px; position:relative; }
   .seal{
     position:absolute; top:16px; left:16px;
-    width:38px; height:38px; border-radius:50%;
-    border:2px solid var(--gold); color:var(--gold);
-    display:flex; align-items:center; justify-content:center; font-size:17px;
+    width:38px; height:38px; border-radius:10px;
+    background:#FBF4E3; padding:4px;
+    display:flex; align-items:center; justify-content:center;
   }
   .case-number{
     font-family:'Amiri',serif; font-weight:700; font-size:22px; color:var(--green-deeper);
@@ -327,29 +378,29 @@
   .status-box{ padding:0 18px 14px; }
   .status-box label{ display:block; font-size:11.5px; color:var(--ink-soft); margin-bottom:5px; font-weight:600; }
   .status-select{
-    width:100%; font-family:'Cairo',sans-serif; font-size:13px; padding:9px 12px; border-radius:8px;
+    width:100%; font-family:'IBM Plex Sans Arabic',sans-serif; font-size:13px; padding:9px 12px; border-radius:8px;
     border:1px solid var(--line); background:#fff; color:var(--ink);
   }
   .objection-box{ margin-top:10px; }
   .objection-input{
-    width:100%; font-family:'Cairo',sans-serif; font-size:13px; padding:9px 12px; border-radius:8px;
+    width:100%; font-family:'IBM Plex Sans Arabic',sans-serif; font-size:13px; padding:9px 12px; border-radius:8px;
     border:1px solid var(--line); background:#fff; color:var(--ink);
   }
   .notes-box label{ display:block; font-size:11.5px; color:var(--ink-soft); margin-bottom:5px; font-weight:600; }
   .notes-textarea{
-    width:100%; min-height:56px; resize:vertical; font-family:'Cairo',sans-serif; font-size:13px;
+    width:100%; min-height:56px; resize:vertical; font-family:'IBM Plex Sans Arabic',sans-serif; font-size:13px;
     padding:9px 12px; border-radius:8px; border:1px solid var(--line); background:#fff; color:var(--ink);
   }
   .notes-textarea:focus{ outline:2px solid var(--green-deep); outline-offset:1px; }
   .link-input{
-    width:100%; font-family:'Cairo',sans-serif; font-size:13px; padding:9px 12px; border-radius:8px;
+    width:100%; font-family:'IBM Plex Sans Arabic',sans-serif; font-size:13px; padding:9px 12px; border-radius:8px;
     border:1px solid var(--line); background:#fff; color:var(--ink);
   }
   .link-input:focus{ outline:2px solid var(--green-deep); outline-offset:1px; }
   .link-open{ display:inline-block; margin-top:6px; font-size:11.5px; color:var(--green-deep); font-weight:700; text-decoration:none; }
   .link-open:hover{ text-decoration:underline; }
   .tz-select{
-    display:block; margin-top:6px; font-family:'Cairo',sans-serif; font-size:11.5px; color:var(--ink-soft);
+    display:block; margin-top:6px; font-family:'IBM Plex Sans Arabic',sans-serif; font-size:11.5px; color:var(--ink-soft);
     border:1px solid var(--line); border-radius:6px; padding:3px 6px; background:#fff; max-width:100%;
   }
   .tz-result{ display:block; margin-top:4px; font-size:12px; font-weight:700; color:var(--green-deep); direction:ltr; unicode-bidi:isolate; text-align:right; }
@@ -443,8 +494,8 @@
   .empty{
     text-align:center; padding: 60px 20px; color:var(--ink-soft);
   }
-  .empty .glyph{ color:var(--gold); margin-bottom:14px; }
-  .empty .glyph .mark{ width:40px; height:40px; }
+  .empty .glyph{ margin-bottom:14px; display:flex; justify-content:center; }
+  .empty .glyph .mark{ width:52px; height:52px; }
   .empty h3{ font-family:'Amiri',serif; color:var(--green-deeper); font-size:20px; margin:0 0 8px; }
   .empty p{ font-size:14px; margin:0 0 18px; }
 
@@ -476,7 +527,7 @@
 <div id="authScreen" style="display:none; min-height:100vh; align-items:center; justify-content:center; background:var(--paper); padding:20px;">
   <div class="panel" style="max-width:380px; width:100%;">
     <div style="text-align:center; margin-bottom:8px;">
-      <div class="brand-seal" style="margin:0 auto 10px; color:var(--gold); border-color:var(--gold);"><span class="mark"></span></div>
+      <div class="brand-seal" style="margin:0 auto 10px;"><span class="mark"></span></div>
     </div>
     <h2 style="text-align:center;">مرساة الميزان</h2>
     <p class="hint" style="text-align:center;">سجّل دخولك للوصول إلى قضاياك</p>
@@ -543,7 +594,9 @@
       </div>
       <div class="topbar-actions" style="margin-inline-start:auto; text-align:left; display:flex; align-items:center; gap:10px; position:relative;">
         <div id="profileWrap" style="position:relative;">
-          <button id="profileBtn" class="notif-bell" title="الملف الشخصي">⚙️</button>
+          <button id="profileBtn" class="notif-bell" title="الملف الشخصي">
+            <svg class="icon" viewBox="0 0 24 24"><path d="M12 15.5a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7Z"/><path d="M19.4 13.5a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V19a2 2 0 1 1-4 0v-.09a1.65 1.65 0 0 0-1.08-1.51 1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09a1.65 1.65 0 0 0 1.51-1.08 1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1Z"/></svg>
+          </button>
           <div id="profilePanel" class="notif-panel" style="display:none; width:270px; padding:14px;">
             <div class="notif-panel-header" style="padding:0 0 10px;">بيانات الحساب</div>
             <div class="field" style="margin-bottom:10px;">
@@ -565,7 +618,8 @@
         </div>
         <div id="notifBellWrap" style="position:relative;">
           <button id="notifBellBtn" class="notif-bell" title="الإشعارات">
-            🔔<span id="notifBadge" class="notif-badge" style="display:none;">0</span>
+            <svg class="icon" viewBox="0 0 24 24"><path d="M18 8a6 6 0 1 0-12 0c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
+            <span id="notifBadge" class="notif-badge" style="display:none;">0</span>
           </button>
           <div id="notifPanel" class="notif-panel" style="display:none;">
             <div class="notif-panel-header">الإشعارات</div>
@@ -741,13 +795,12 @@
         </div>
         <div class="field full">
           <label>المدة المتبقية</label>
-          <select id="wk_durationType" style="width:100%; font-family:'Cairo',sans-serif; font-size:13.5px; padding:10px 12px; border-radius:8px; border:1px solid var(--line); background:#fff;">
+          <select id="wk_durationType" style="width:100%; font-family:'IBM Plex Sans Arabic',sans-serif; font-size:13.5px; padding:10px 12px; border-radius:8px; border:1px solid var(--line); background:#fff;">
             <option value="3m">٣ أشهر</option>
             <option value="6m">٦ أشهر</option>
             <option value="12m">سنة</option>
             <option value="custom">مدة مخصصة</option>
             <option value="exact">تاريخ انتهاء محدّد</option>
-            <option value="none">بدون تاريخ انتهاء</option>
           </select>
         </div>
         <div class="field full" id="wk_customBox" style="display:none;">
@@ -818,7 +871,7 @@
       <div class="field-grid">
         <div class="field full">
           <label>نوع الموعد</label>
-          <select id="appt_type" style="width:100%; font-family:'Cairo',sans-serif; font-size:13.5px; padding:10px 12px; border-radius:8px; border:1px solid var(--line); background:#fff;">
+          <select id="appt_type" style="width:100%; font-family:'IBM Plex Sans Arabic',sans-serif; font-size:13.5px; padding:10px 12px; border-radius:8px; border:1px solid var(--line); background:#fff;">
             <option value="client">عميل</option>
             <option value="review">مراجعة</option>
             <option value="private">خاص</option>
@@ -2507,7 +2560,6 @@ function getWakalaBaseDate(){
 
 function computeWakalaExpiry(){
   const type = document.getElementById('wk_durationType').value;
-  if(type === 'none') return null;
   if(type === 'exact'){
     const val = document.getElementById('wk_exactDate').value;
     return val || null;
@@ -2537,8 +2589,8 @@ document.getElementById('wkSaveBtn').addEventListener('click', async () => {
     showToast('رقم الوكالة والموكّل حقلان مطلوبان.');
     return;
   }
-  if(!expiryDate && durationType !== 'none'){
-    showToast('اختر تاريخ انتهاء الوكالة، أو اختر "بدون تاريخ انتهاء".');
+  if(!expiryDate){
+    showToast('اختر تاريخ انتهاء الوكالة.');
     return;
   }
   const base = getWakalaBaseDate();
