@@ -94,7 +94,8 @@
     background-image:
       repeating-linear-gradient(45deg, rgba(255,255,255,0.05) 0 10px, transparent 10px 34px),
       linear-gradient(180deg, var(--green-deep), var(--green-deeper));
-    border-bottom: 3px solid var(--gold);
+    border-bottom: 2px solid transparent;
+    border-image: linear-gradient(90deg, #0B3C9E, #4FA3FF) 1;
     padding: 22px 20px 0;
     position: sticky; top:0; z-index: 20;
   }
@@ -170,6 +171,7 @@
   }
   .tab-btn:hover{ background: rgba(255,255,255,0.06); }
   .tab-btn.active{ background: var(--paper); color: var(--green-deeper); }
+  .topbar .tab-btn.active{ background: rgba(255,255,255,.12); color: var(--bar-ink); }
   .tab-btn .count{
     display:inline-block; margin-inline-start:6px;
     background: var(--gold); color:#fff; border-radius:999px;
@@ -178,6 +180,37 @@
   .tab-btn.active .count{ background: var(--green-deep); }
 
   main{ max-width: 980px; margin: 0 auto; padding: 28px 20px 60px; }
+
+  /* ===== Mobile bottom navigation ===== */
+  .bottom-nav{
+    display:none;
+    position:fixed; right:0; left:0; bottom:0; z-index:100;
+    background:var(--bar);
+    align-items:flex-end; justify-content:space-around;
+    padding:8px 10px calc(8px + env(safe-area-inset-bottom, 0px));
+    box-shadow: 0 -4px 16px rgba(0,0,0,0.15);
+  }
+  .bn-item{
+    background:none; border:none; cursor:pointer; flex:1;
+    display:flex; flex-direction:column; align-items:center; gap:4px;
+    color: rgba(246,241,227,0.55); font-family:'IBM Plex Sans Arabic',sans-serif;
+    font-size:10.5px; padding:4px 2px; transition: color .15s;
+  }
+  .bn-item .icon{ width:22px; height:22px; color:currentColor; }
+  .bn-item.active{ color: var(--blue); }
+  .bn-home{
+    width:52px; height:52px; border-radius:50%; flex-shrink:0;
+    background:#FBF4E3; border:2px solid var(--blue);
+    display:flex; align-items:center; justify-content:center;
+    margin-top:-26px; padding:9px; cursor:pointer;
+    box-shadow: var(--shadow);
+  }
+  .bn-home .mark{ width:100%; height:100%; }
+  @media (max-width:768px){
+    .bottom-nav.logged-in{ display:flex; }
+    .topbar .tabs{ display:none; }
+    main{ padding-bottom:110px; }
+  }
 
   .view{ display:none; animation: rise .35s ease; }
   .view.active{ display:block; }
@@ -632,11 +665,8 @@
     </div>
     <div class="tabs">
       <button class="tab-btn active" data-view="home" id="tabHome">🏠 الرئيسية</button>
-      <button class="tab-btn" data-view="add" id="tabAdd">إضافة قضية</button>
       <button class="tab-btn" data-view="sessioncases" id="tabSessionCases">الجلسات والقضايا</button>
       <button class="tab-btn" data-view="calendar" id="tabCalendar">التقويم</button>
-      <button class="tab-btn" data-view="wakalas" id="tabWakalas">الوكالات</button>
-      <button class="tab-btn" data-view="archive" id="tabArchive">الأرشيف</button>
     </div>
   </div>
 </div>
@@ -692,9 +722,7 @@
       <h2>أجندة اليوم</h2>
       <div id="dashTodayAgenda"><p class="hint">ما فيه شي مجدول اليوم.</p></div>
     </div>
-  </section>
 
-  <section class="view" id="view-add">
     <div class="intake-grid">
       <div class="panel">
         <h2>لصق نص الرسالة</h2>
@@ -736,9 +764,16 @@
   <!-- ===== LIST VIEW ===== -->
   <!-- ===== SESSIONS + CASES (MERGED) VIEW ===== -->
   <section class="view" id="view-sessioncases">
+    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:14px; flex-wrap:wrap; gap:10px;">
+      <h2 style="font-family:'Amiri',serif; color:var(--ink); margin:0;">الجلسات والقضايا</h2>
+      <button class="btn btn-ghost" id="scArchiveToggleBtn">الأرشيف</button>
+    </div>
+
+    <div id="scMainContent">
     <div class="tabs" style="background:transparent; padding:0; margin-bottom:18px; border-bottom:1px solid var(--line); gap:0;">
       <button class="tab-btn sc-subtab active" data-sub="sessions" id="scSubSessions" style="color:var(--ink-soft);">الجلسات</button>
       <button class="tab-btn sc-subtab" data-sub="cases" id="scSubCases" style="color:var(--ink-soft);">القضايا</button>
+      <button class="tab-btn sc-subtab" data-sub="wakalas" id="scSubWakalas" style="color:var(--ink-soft);">الوكالات</button>
     </div>
 
     <div id="scPanelSessions">
@@ -778,71 +813,69 @@
         <p>القضايا اللي تضيفها بتظهر هنا مجمّعة مع كل جلساتها.</p>
       </div>
     </div>
+
+    <div id="scPanelWakalas" style="display:none;">
+      <div class="panel">
+        <h2>إضافة وكالة</h2>
+        <div class="field-grid">
+          <div class="field"><label>رقم الوكالة</label><input id="wk_number" dir="ltr" placeholder="رقم الوكالة"></div>
+          <div class="field"><label>الموكّل</label><input id="wk_principal" placeholder="اسم الموكّل"></div>
+          <div class="field full">
+            <label>تاريخ إنشاء الوكالة (اختياري — الافتراضي اليوم)</label>
+            <input id="wk_createdDate" type="date">
+          </div>
+          <div class="field full">
+            <label>المدة المتبقية</label>
+            <select id="wk_durationType" style="width:100%; font-family:'IBM Plex Sans Arabic',sans-serif; font-size:13.5px; padding:10px 12px; border-radius:8px; border:1px solid var(--line); background:#fff;">
+              <option value="3m">٣ أشهر</option>
+              <option value="6m">٦ أشهر</option>
+              <option value="12m">سنة</option>
+              <option value="custom">مدة مخصصة</option>
+              <option value="exact">تاريخ انتهاء محدّد</option>
+            </select>
+          </div>
+          <div class="field full" id="wk_customBox" style="display:none;">
+            <label>المدة المخصصة</label>
+            <div style="display:flex; gap:6px;">
+              <input id="wk_customDays" type="number" min="0" placeholder="أيام" style="flex:1;">
+              <input id="wk_customMonths" type="number" min="0" placeholder="أشهر" style="flex:1;">
+              <input id="wk_customYears" type="number" min="0" placeholder="سنوات" style="flex:1;">
+            </div>
+          </div>
+          <div class="field full" id="wk_exactBox" style="display:none;">
+            <label>تاريخ الانتهاء</label>
+            <input id="wk_exactDate" type="date">
+          </div>
+          <div class="field full"><label>ملاحظات</label><textarea id="wk_notes" style="min-height:60px; font-size:13.5px; padding:9px 12px; border-radius:8px; border:1px solid var(--line); background:#fff;" placeholder="أي تفاصيل إضافية..."></textarea></div>
+        </div>
+        <div class="btn-row">
+          <button class="btn btn-primary" id="wkSaveBtn">حفظ الوكالة</button>
+        </div>
+      </div>
+      <div class="cases-grid" id="wkGrid"></div>
+      <div class="empty" id="wkEmpty" style="display:none;">
+        <div class="glyph"><span class="mark"></span></div>
+        <h3>لا توجد وكالات مسجّلة بعد</h3>
+        <p>الوكالات اللي تضيفها بتظهر هنا مع عدّاد المدة المتبقية.</p>
+      </div>
+    </div>
+    </div>
+
+    <div id="scArchiveContent" style="display:none;">
+      <div class="tabs" style="background:transparent; padding:0; margin-bottom:18px; border-bottom:1px solid var(--line); gap:0;">
+        <button class="tab-btn archive-subtab active" data-sub="cases" id="archiveSubCases" style="color:var(--ink-soft);">قضايا مؤرشفة</button>
+        <button class="tab-btn archive-subtab" data-sub="sessions" id="archiveSubSessions" style="color:var(--ink-soft);">جلسات مؤرشفة</button>
+      </div>
+      <div class="cases-grid" id="archiveGrid"></div>
+      <div class="empty" id="archiveEmpty" style="display:none;">
+        <div class="glyph"><span class="mark"></span></div>
+        <h3>الأرشيف فارغ</h3>
+        <p>القضايا والجلسات المؤرشفة بتظهر هنا.</p>
+      </div>
+    </div>
   </section>
 
   <div id="printArea"></div>
-
-  <!-- ===== WAKALAS VIEW ===== -->
-  <section class="view" id="view-wakalas">
-    <div class="panel">
-      <h2>إضافة وكالة</h2>
-      <div class="field-grid">
-        <div class="field"><label>رقم الوكالة</label><input id="wk_number" dir="ltr" placeholder="رقم الوكالة"></div>
-        <div class="field"><label>الموكّل</label><input id="wk_principal" placeholder="اسم الموكّل"></div>
-        <div class="field full">
-          <label>تاريخ إنشاء الوكالة (اختياري — الافتراضي اليوم)</label>
-          <input id="wk_createdDate" type="date">
-        </div>
-        <div class="field full">
-          <label>المدة المتبقية</label>
-          <select id="wk_durationType" style="width:100%; font-family:'IBM Plex Sans Arabic',sans-serif; font-size:13.5px; padding:10px 12px; border-radius:8px; border:1px solid var(--line); background:#fff;">
-            <option value="3m">٣ أشهر</option>
-            <option value="6m">٦ أشهر</option>
-            <option value="12m">سنة</option>
-            <option value="custom">مدة مخصصة</option>
-            <option value="exact">تاريخ انتهاء محدّد</option>
-          </select>
-        </div>
-        <div class="field full" id="wk_customBox" style="display:none;">
-          <label>المدة المخصصة</label>
-          <div style="display:flex; gap:6px;">
-            <input id="wk_customDays" type="number" min="0" placeholder="أيام" style="flex:1;">
-            <input id="wk_customMonths" type="number" min="0" placeholder="أشهر" style="flex:1;">
-            <input id="wk_customYears" type="number" min="0" placeholder="سنوات" style="flex:1;">
-          </div>
-        </div>
-        <div class="field full" id="wk_exactBox" style="display:none;">
-          <label>تاريخ الانتهاء</label>
-          <input id="wk_exactDate" type="date">
-        </div>
-        <div class="field full"><label>ملاحظات</label><textarea id="wk_notes" style="min-height:60px; font-size:13.5px; padding:9px 12px; border-radius:8px; border:1px solid var(--line); background:#fff;" placeholder="أي تفاصيل إضافية..."></textarea></div>
-      </div>
-      <div class="btn-row">
-        <button class="btn btn-primary" id="wkSaveBtn">حفظ الوكالة</button>
-      </div>
-    </div>
-
-    <div class="cases-grid" id="wkGrid"></div>
-    <div class="empty" id="wkEmpty" style="display:none;">
-      <div class="glyph"><span class="mark"></span></div>
-      <h3>لا توجد وكالات مسجّلة بعد</h3>
-      <p>الوكالات اللي تضيفها بتظهر هنا مع عدّاد المدة المتبقية.</p>
-    </div>
-  </section>
-
-  <!-- ===== ARCHIVE VIEW ===== -->
-  <section class="view" id="view-archive">
-    <div class="tabs" style="background:transparent; padding:0; margin-bottom:18px; border-bottom:1px solid var(--line); gap:0;">
-      <button class="tab-btn archive-subtab active" data-sub="cases" id="archiveSubCases" style="color:var(--ink-soft);">قضايا مؤرشفة</button>
-      <button class="tab-btn archive-subtab" data-sub="sessions" id="archiveSubSessions" style="color:var(--ink-soft);">جلسات مؤرشفة</button>
-    </div>
-    <div class="cases-grid" id="archiveGrid"></div>
-    <div class="empty" id="archiveEmpty" style="display:none;">
-      <div class="glyph"><span class="mark"></span></div>
-      <h3>الأرشيف فارغ</h3>
-      <p>القضايا والجلسات المؤرشفة بتظهر هنا.</p>
-    </div>
-  </section>
 
   <!-- ===== CALENDAR VIEW ===== -->
   <section class="view" id="view-calendar">
@@ -898,6 +931,20 @@
 
 </main>
 
+<nav class="bottom-nav" id="bottomNav">
+  <button class="bn-item" id="bnSessionCases">
+    <svg class="icon" viewBox="0 0 24 24"><rect x="3" y="7" width="18" height="13" rx="2"/><path d="M8 7V5a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><path d="M3 13h18"/></svg>
+    <span>الجلسات والقضايا</span>
+  </button>
+  <button class="bn-home" id="bnHome" title="الرئيسية">
+    <span class="mark"></span>
+  </button>
+  <button class="bn-item" id="bnCalendar">
+    <svg class="icon" viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M16 3v4M8 3v4M3 10h18"/></svg>
+    <span>التقويم</span>
+  </button>
+</nav>
+
 <div class="toast" id="toast"></div>
 
 <script type="module">
@@ -947,6 +994,7 @@ if(firebaseConfigured()){
       document.getElementById('authScreen').style.display = 'none';
       document.querySelector('.topbar').style.display = '';
       document.querySelector('main').style.display = '';
+      document.getElementById('bottomNav').classList.add('logged-in');
       document.getElementById('currentUserLabel').textContent = user.email;
       document.getElementById('verifyEmailBanner').style.display = user.emailVerified ? 'none' : 'flex';
       startApp();
@@ -956,6 +1004,7 @@ if(firebaseConfigured()){
       document.getElementById('authScreen').style.display = 'flex';
       document.querySelector('.topbar').style.display = 'none';
       document.querySelector('main').style.display = 'none';
+      document.getElementById('bottomNav').classList.remove('logged-in');
     }
   });
 
@@ -1183,46 +1232,76 @@ let isUpdate = false;
 
 // ---------- View switching ----------
 let scSubView = 'sessions';
+let scShowingArchive = false;
 
 function switchView(view){
-  ['home','add','sessioncases','archive','calendar','wakalas'].forEach(v => {
+  ['home','sessioncases','calendar'].forEach(v => {
     document.getElementById('view-' + v).classList.toggle('active', v === view);
   });
   document.getElementById('tabHome').classList.toggle('active', view === 'home');
-  document.getElementById('tabAdd').classList.toggle('active', view === 'add');
   document.getElementById('tabSessionCases').classList.toggle('active', view === 'sessioncases');
-  document.getElementById('tabArchive').classList.toggle('active', view === 'archive');
   document.getElementById('tabCalendar').classList.toggle('active', view === 'calendar');
-  document.getElementById('tabWakalas').classList.toggle('active', view === 'wakalas');
+  document.getElementById('bnHome').classList.toggle('active', view === 'home');
+  document.getElementById('bnSessionCases').classList.toggle('active', view === 'sessioncases');
+  document.getElementById('bnCalendar').classList.toggle('active', view === 'calendar');
   if(view === 'home') renderDashboard();
-  if(view === 'sessioncases') (scSubView === 'sessions' ? renderList() : renderCasesGrouped());
-  if(view === 'archive') renderArchive();
+  if(view === 'sessioncases'){
+    // Always land on the main (non-archive) content when arriving at this page.
+    scShowingArchive = false;
+    document.getElementById('scMainContent').style.display = '';
+    document.getElementById('scArchiveContent').style.display = 'none';
+    document.getElementById('scArchiveToggleBtn').textContent = 'الأرشيف';
+    if(scSubView === 'sessions') renderList();
+    else if(scSubView === 'cases') renderCasesGrouped();
+    else renderWakalas();
+  }
   if(view === 'calendar') renderCalendar();
-  if(view === 'wakalas') renderWakalas();
 }
 document.getElementById('tabHome').addEventListener('click', () => switchView('home'));
-document.getElementById('tabAdd').addEventListener('click', () => switchView('add'));
 document.getElementById('tabSessionCases').addEventListener('click', () => switchView('sessioncases'));
-document.getElementById('tabArchive').addEventListener('click', () => switchView('archive'));
 document.getElementById('tabCalendar').addEventListener('click', () => switchView('calendar'));
-document.getElementById('tabWakalas').addEventListener('click', () => switchView('wakalas'));
-document.getElementById('emptyAddBtn').addEventListener('click', () => switchView('add'));
+document.getElementById('bnHome').addEventListener('click', () => switchView('home'));
+document.getElementById('bnSessionCases').addEventListener('click', () => switchView('sessioncases'));
+document.getElementById('bnCalendar').addEventListener('click', () => switchView('calendar'));
+document.getElementById('emptyAddBtn').addEventListener('click', () => switchView('home'));
+
+document.getElementById('scArchiveToggleBtn').addEventListener('click', () => {
+  scShowingArchive = !scShowingArchive;
+  document.getElementById('scMainContent').style.display = scShowingArchive ? 'none' : '';
+  document.getElementById('scArchiveContent').style.display = scShowingArchive ? '' : 'none';
+  document.getElementById('scArchiveToggleBtn').textContent = scShowingArchive ? 'رجوع' : 'الأرشيف';
+  if(scShowingArchive) renderArchive();
+});
 
 document.getElementById('scSubSessions').addEventListener('click', () => {
   scSubView = 'sessions';
   document.getElementById('scSubSessions').classList.add('active');
   document.getElementById('scSubCases').classList.remove('active');
+  document.getElementById('scSubWakalas').classList.remove('active');
   document.getElementById('scPanelSessions').style.display = '';
   document.getElementById('scPanelCases').style.display = 'none';
+  document.getElementById('scPanelWakalas').style.display = 'none';
   renderList();
 });
 document.getElementById('scSubCases').addEventListener('click', () => {
   scSubView = 'cases';
   document.getElementById('scSubCases').classList.add('active');
   document.getElementById('scSubSessions').classList.remove('active');
+  document.getElementById('scSubWakalas').classList.remove('active');
   document.getElementById('scPanelCases').style.display = '';
   document.getElementById('scPanelSessions').style.display = 'none';
+  document.getElementById('scPanelWakalas').style.display = 'none';
   renderCasesGrouped();
+});
+document.getElementById('scSubWakalas').addEventListener('click', () => {
+  scSubView = 'wakalas';
+  document.getElementById('scSubWakalas').classList.add('active');
+  document.getElementById('scSubSessions').classList.remove('active');
+  document.getElementById('scSubCases').classList.remove('active');
+  document.getElementById('scPanelWakalas').style.display = '';
+  document.getElementById('scPanelSessions').style.display = 'none';
+  document.getElementById('scPanelCases').style.display = 'none';
+  renderWakalas();
 });
 
 let archiveSubView = 'cases';
@@ -3089,6 +3168,7 @@ if(!firebaseConfigured()){
   document.getElementById('authScreen').style.display = 'none';
   document.querySelector('.topbar').style.display = '';
   document.querySelector('main').style.display = '';
+  document.getElementById('bottomNav').classList.add('logged-in');
   document.getElementById('logoutBtn').style.display = 'none';
   document.getElementById('notifBellWrap').style.display = 'none';
   startApp();
