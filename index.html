@@ -736,6 +736,10 @@
         <div class="field"><label>رقم الوكالة</label><input id="wk_number" dir="ltr" placeholder="رقم الوكالة"></div>
         <div class="field"><label>الموكّل</label><input id="wk_principal" placeholder="اسم الموكّل"></div>
         <div class="field full">
+          <label>تاريخ إنشاء الوكالة (اختياري — الافتراضي اليوم)</label>
+          <input id="wk_createdDate" type="date">
+        </div>
+        <div class="field full">
           <label>المدة المتبقية</label>
           <select id="wk_durationType" style="width:100%; font-family:'Cairo',sans-serif; font-size:13.5px; padding:10px 12px; border-radius:8px; border:1px solid var(--line); background:#fff;">
             <option value="3m">٣ أشهر</option>
@@ -743,6 +747,7 @@
             <option value="12m">سنة</option>
             <option value="custom">مدة مخصصة</option>
             <option value="exact">تاريخ انتهاء محدّد</option>
+            <option value="none">بدون تاريخ انتهاء</option>
           </select>
         </div>
         <div class="field full" id="wk_customBox" style="display:none;">
@@ -2487,15 +2492,27 @@ document.getElementById('wk_durationType').addEventListener('change', () => {
   document.getElementById('wk_exactBox').style.display = val === 'exact' ? 'block' : 'none';
 });
 
-function computeWakalaExpiry(){
-  const type = document.getElementById('wk_durationType').value;
+function getWakalaBaseDate(){
+  const val = document.getElementById('wk_createdDate').value;
+  if(val){
+    const [y,m,d] = val.split('-').map(n => parseInt(n,10));
+    const dt = new Date(y, m-1, d);
+    dt.setHours(0,0,0,0);
+    return dt;
+  }
   const today = new Date();
   today.setHours(0,0,0,0);
+  return today;
+}
+
+function computeWakalaExpiry(){
+  const type = document.getElementById('wk_durationType').value;
+  if(type === 'none') return null;
   if(type === 'exact'){
     const val = document.getElementById('wk_exactDate').value;
     return val || null;
   }
-  const d = new Date(today);
+  const d = getWakalaBaseDate();
   if(type === '3m') d.setMonth(d.getMonth() + 3);
   else if(type === '6m') d.setMonth(d.getMonth() + 6);
   else if(type === '12m') d.setMonth(d.getMonth() + 12);
@@ -2520,18 +2537,21 @@ document.getElementById('wkSaveBtn').addEventListener('click', async () => {
     showToast('رقم الوكالة والموكّل حقلان مطلوبان.');
     return;
   }
-  if(!expiryDate){
-    showToast('اختر تاريخ انتهاء الوكالة.');
+  if(!expiryDate && durationType !== 'none'){
+    showToast('اختر تاريخ انتهاء الوكالة، أو اختر "بدون تاريخ انتهاء".');
     return;
   }
+  const base = getWakalaBaseDate();
+  const createdDate = `${base.getFullYear()}-${String(base.getMonth()+1).padStart(2,'0')}-${String(base.getDate()).padStart(2,'0')}`;
   try{
     await saveWakalaDoc({
-      number, principal, durationType, expiryDate, notes,
+      number, principal, durationType, createdDate, expiryDate, notes,
       ownerEmail: currentUserEmail, createdAt: Date.now()
     });
     showToast('تم حفظ الوكالة.');
     document.getElementById('wk_number').value = '';
     document.getElementById('wk_principal').value = '';
+    document.getElementById('wk_createdDate').value = '';
     document.getElementById('wk_customDays').value = '';
     document.getElementById('wk_customMonths').value = '';
     document.getElementById('wk_customYears').value = '';
@@ -2559,14 +2579,22 @@ async function renderWakalas(){
   const now = new Date();
   now.setHours(0,0,0,0);
 
-  wakalas.sort((a,b) => new Date(a.expiryDate) - new Date(b.expiryDate));
+  wakalas.sort((a,b) => {
+    if(!a.expiryDate && !b.expiryDate) return 0;
+    if(!a.expiryDate) return 1;
+    if(!b.expiryDate) return -1;
+    return new Date(a.expiryDate) - new Date(b.expiryDate);
+  });
 
   grid.innerHTML = wakalas.map(w => {
-    const expiry = new Date(w.expiryDate);
-    const daysLeft = Math.round((expiry - now) / 86400000);
-    let badgeCls = 'scheduled', badgeText = `متبقٍ ${daysLeft} يوم`;
-    if(daysLeft < 0){ badgeCls = 'final'; badgeText = 'منتهية'; }
-    else if(daysLeft <= 30){ badgeCls = 'rescheduled'; badgeText = `متبقٍ ${daysLeft} يوم — تنتهي قريبًا`; }
+    let badgeCls = 'scheduled', badgeText = 'بدون تاريخ انتهاء';
+    if(w.expiryDate){
+      const expiry = new Date(w.expiryDate);
+      const daysLeft = Math.round((expiry - now) / 86400000);
+      badgeText = `متبقٍ ${daysLeft} يوم`;
+      if(daysLeft < 0){ badgeCls = 'final'; badgeText = 'منتهية'; }
+      else if(daysLeft <= 30){ badgeCls = 'rescheduled'; badgeText = `متبقٍ ${daysLeft} يوم — تنتهي قريبًا`; }
+    }
     return `
     <div class="card">
       <div class="card-top">
@@ -2579,7 +2607,8 @@ async function renderWakalas(){
         <div class="party-row"><span class="party-role">الموكّل</span><span class="party-name">${escapeHtml(w.principal)}</span></div>
       </div>
       <div class="session-info">
-        <div class="session-block"><span class="lbl">تاريخ الانتهاء</span><span class="val">${escapeHtml(w.expiryDate)}</span></div>
+        <div class="session-block"><span class="lbl">تاريخ الإنشاء</span><span class="val">${escapeHtml(w.createdDate || '—')}</span></div>
+        <div class="session-block"><span class="lbl">تاريخ الانتهاء</span><span class="val">${escapeHtml(w.expiryDate || 'غير محدّد')}</span></div>
       </div>
       ${w.notes ? `<div class="case-notes">📝 ${escapeHtml(w.notes)}</div>` : ''}
       <div class="card-footer">
