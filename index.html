@@ -142,22 +142,33 @@
     font-weight:800; border-radius:999px; padding:1px 5px; min-width:15px; text-align:center;
   }
   .notif-panel{
-    position:absolute; top:36px; right:0; width:300px; max-width:90vw; max-height:360px; overflow-y:auto;
-    background:#fff; border:1px solid var(--line); border-radius:12px; box-shadow:var(--shadow);
-    z-index:60; text-align:right;
+    position:absolute; top:36px; right:0; width:400px; max-width:calc(100vw - 24px); max-height:68vh; overflow-y:auto;
+    background:var(--surface); border:1px solid var(--line); border-radius:14px; box-shadow:var(--shadow);
+    z-index:60; text-align:right; display:flex; flex-direction:column;
   }
   .notif-panel-header{
-    padding:12px 14px; font-weight:700; color:var(--green-deeper); border-bottom:1px solid var(--paper-dim);
-    font-family:'Amiri',serif; font-size:15px;
+    padding:14px 16px; font-weight:700; color:var(--ink); border-bottom:1px solid var(--line);
+    font-family:'Amiri',serif; font-size:15px; display:flex; justify-content:space-between; align-items:center; flex-shrink:0;
   }
-  .notif-list{ display:flex; flex-direction:column; }
+  .notif-panel-header a{ font-family:'IBM Plex Sans Arabic',sans-serif; font-size:11.5px; font-weight:600; color:var(--blue); }
+  .notif-filters{ display:flex; gap:8px; padding:10px 16px; border-bottom:1px solid var(--line); flex-shrink:0; }
+  .notif-filter-chip{
+    background:var(--paper-2); border:none; border-radius:999px; padding:5px 14px; font-size:12px;
+    font-family:'IBM Plex Sans Arabic',sans-serif; color:var(--ink-2); cursor:pointer;
+  }
+  .notif-filter-chip.active{ background:var(--blue); color:#fff; font-weight:700; }
+  .notif-list{ display:flex; flex-direction:column; overflow-y:auto; }
   .notif-item{
-    padding:10px 14px; border-bottom:1px solid var(--paper-dim); font-size:12.5px; color:var(--ink);
-    line-height:1.7; cursor:default;
+    padding:11px 16px; border-bottom:1px solid var(--line); font-size:12.5px; color:var(--ink);
+    line-height:1.7; cursor:default; display:flex; gap:10px; align-items:flex-start;
   }
-  .notif-item.unread{ background:var(--green-mist); }
-  .notif-item .notif-time{ display:block; color:var(--ink-soft); font-size:10.5px; margin-top:3px; }
-  .notif-empty{ padding:20px 14px; text-align:center; color:var(--ink-soft); font-size:12.5px; }
+  .notif-item.unread{ background:var(--paper-2); }
+  .notif-item .notif-icon{ flex-shrink:0; color:var(--blue); margin-top:1px; }
+  .notif-item .notif-body{ flex:1; min-width:0; }
+  .notif-item .notif-time{ display:block; color:var(--muted); font-size:10.5px; margin-top:3px; }
+  .notif-item .notif-unread-dot{ width:7px; height:7px; border-radius:50%; background:var(--blue); flex-shrink:0; margin-top:6px; }
+  .notif-footer{ padding:9px 16px; text-align:center; color:var(--muted); font-size:11px; border-top:1px solid var(--line); flex-shrink:0; }
+  .notif-empty{ padding:24px 14px; text-align:center; color:var(--muted); font-size:12.5px; }
 
   .tabs{ display:flex; gap:6px; }
   .tab-btn{
@@ -280,33 +291,55 @@
   /* ===== List view ===== */
   /* ===== Calendar view ===== */
   /* ===== Dashboard ===== */
-  .dash-greeting{ margin-bottom:18px; }
-  .dash-greeting h2{ font-family:'Amiri',serif; font-size:24px; color:var(--green-deeper); margin:0 0 4px; }
-  .dash-obj-alert{
-    padding:12px 16px; border-radius:10px; font-size:13.5px; margin-bottom:18px; line-height:1.8; border:1px solid;
+  .home-top-row{ margin-bottom:20px; }
+  .dash-greeting{ margin-bottom:16px; }
+  .dash-greeting h2{ font-family:'Amiri',serif; font-size:24px; color:var(--ink); margin:0 0 4px; }
+
+  .dash-stats-box{
+    display:grid; grid-template-columns:repeat(2,1fr); gap:1px; background:var(--line);
+    border:1px solid var(--line); border-radius:var(--radius-card); overflow:hidden; box-shadow:var(--shadow);
   }
-  .dash-obj-alert.obj-green{ background:var(--green-mist); border-color:#C8DBCF; color:var(--green-deeper); }
-  .dash-obj-alert.obj-orange{ background:#FBF0DE; border-color:#F0D9A8; color:#8C5A2B; }
-  .dash-obj-alert.obj-red{ background:#FBEBE6; border-color:#E9C6BA; color:#8C3A2B; }
-  .dash-obj-alert b{ display:block; margin-bottom:4px; font-size:14.5px; }
-  .dash-stats-grid{ display:grid; grid-template-columns:repeat(4,1fr); gap:12px; margin-bottom:18px; }
-  @media (max-width:640px){ .dash-stats-grid{ grid-template-columns:repeat(2,1fr); } }
-  .dash-stat-box{
-    background:var(--card-bg); border:1px solid var(--line); border-radius:12px; padding:16px 12px;
-    text-align:center; box-shadow:var(--shadow);
+  .dash-stat-cell{ background:var(--surface); padding:14px 8px; text-align:center; }
+  .dash-stat-num{ display:block; font-family:'Amiri',serif; font-size:25px; font-weight:600; color:var(--blue); }
+  .dash-stat-label{ display:block; font-size:11px; color:var(--muted); margin-top:2px; }
+
+  .home-columns{ display:block; }
+  .home-col-right, .home-col-left{ display:flex; flex-direction:column; gap:20px; }
+
+  .dash-today-scroll{ max-height:214px; overflow-y:auto; }
+  .today-row{
+    display:flex; gap:10px; align-items:flex-start; padding:10px 4px; border-bottom:1px solid var(--line);
   }
-  .dash-stat-num{ display:block; font-family:'Amiri',serif; font-size:30px; font-weight:700; color:var(--green-deep); }
-  .dash-stat-label{ display:block; font-size:12px; color:var(--ink-soft); margin-top:4px; }
-  .dash-nearest-grid{ display:grid; grid-template-columns:1fr 1fr; gap:16px; margin-bottom:18px; }
-  @media (max-width:640px){ .dash-nearest-grid{ grid-template-columns:1fr; } }
-  .dash-nearest-box h2{ font-size:16px; margin:0 0 10px; }
-  .dash-item{
-    padding:10px 12px; background:var(--paper-dim); border-radius:8px; font-size:13px; margin-bottom:8px;
+  .today-row:last-child{ border-bottom:none; }
+  .today-dot{ width:8px; height:8px; border-radius:50%; margin-top:6px; flex-shrink:0; }
+  .today-row-body{ flex:1; min-width:0; }
+  .today-row-top{ font-size:13.5px; color:var(--ink); font-weight:600; }
+  .today-row-top .today-time{ color:var(--blue); font-weight:700; margin-inline-end:6px; }
+  .today-row-sub{ font-size:11.5px; color:var(--muted); margin-top:2px; }
+  .today-row-alert{ background:var(--alert-bg); border-radius:8px; padding:10px 12px; border-bottom:none; margin-bottom:6px; }
+  .today-row-alert .today-row-top{ color:var(--alert); }
+  .today-row-alert .today-row-sub{ color:var(--alert); opacity:0.85; }
+
+  .upcoming-day{ border-bottom:1px solid var(--line); padding:4px 0; }
+  .upcoming-day:last-child{ border-bottom:none; }
+  .upcoming-day summary{
+    display:flex; align-items:center; justify-content:space-between; padding:10px 4px; cursor:pointer;
+    font-size:13.5px; font-weight:600; color:var(--ink); list-style:none; outline:none;
   }
-  .dash-item:last-child{ margin-bottom:0; }
-  .dash-item .di-title{ font-weight:700; color:var(--ink); }
-  .dash-item .di-sub{ color:var(--ink-soft); font-size:11.5px; margin-top:2px; }
-  .dash-item .di-time{ float:left; color:var(--gold); font-weight:700; font-size:12px; }
+  .upcoming-day summary::-webkit-details-marker{ display:none; }
+  .upcoming-badge{
+    background:var(--paper-2); color:var(--ink-2); font-size:11px; font-weight:700;
+    border-radius:999px; padding:2px 9px; margin-inline-start:8px;
+  }
+  .upcoming-day[open] summary .upcoming-badge{ background:var(--blue); color:#fff; }
+  .upcoming-day-body{ padding:4px 4px 10px; }
+
+  @media (min-width:900px){
+    .home-top-row{ display:flex; justify-content:space-between; align-items:center; gap:24px; }
+    .dash-stats-box{ grid-template-columns:repeat(4,1fr); max-width:520px; flex:1; }
+    .home-columns{ display:grid; grid-template-columns:1fr 1fr; gap:20px; align-items:start; }
+    .dash-today-scroll{ max-height:360px; }
+  }
   .contact-btn{
     display:inline-block; font-size:11.5px; font-weight:700; padding:4px 10px; border-radius:999px;
     text-decoration:none; margin-inline-end:6px; margin-top:6px; border:1px solid var(--line); color:var(--ink);
@@ -314,6 +347,87 @@
   .contact-btn:hover{ background:var(--paper-dim); }
   .contact-btn.wa{ background:#E7F5EC; border-color:#BFE3CC; color:#0F4C3A; }
   .contact-btn.wa:hover{ background:#D7EEDD; }
+
+  /* ===== Landing page ===== */
+  .landing-wrap{ max-width:920px; margin:0 auto; padding:50px 20px 70px; text-align:center; }
+  .landing-hero h1{ font-family:'Amiri',serif; font-size:32px; color:var(--ink); margin:0 0 6px; }
+  .landing-tagline{ font-family:'Amiri',serif; font-size:17px; color:var(--blue); margin:0 0 14px; }
+  .landing-sub{ color:var(--muted); font-size:14px; max-width:480px; margin:0 auto 24px; line-height:1.9; }
+  .landing-steps{ display:grid; grid-template-columns:1fr; gap:16px; margin:50px 0; text-align:right; }
+  .landing-step{
+    background:var(--surface); border:1px solid var(--line); border-radius:var(--radius-card);
+    padding:20px; box-shadow:var(--shadow);
+  }
+  .landing-step-num{
+    display:inline-flex; align-items:center; justify-content:center; width:30px; height:30px;
+    border-radius:50%; background:var(--blue); color:#fff; font-weight:700; margin-bottom:10px;
+  }
+  .landing-step h3{ font-family:'Amiri',serif; font-size:16px; color:var(--ink); margin:0 0 6px; }
+  .landing-step p{ color:var(--muted); font-size:13px; margin:0; }
+  .landing-features{ display:grid; grid-template-columns:1fr; gap:14px; margin:50px 0; text-align:right; }
+  .landing-feature-card{
+    background:var(--surface); border:1px solid var(--line); border-radius:var(--radius-card); padding:18px;
+  }
+  .landing-feature-card h3{ font-family:'Amiri',serif; font-size:15px; color:var(--blue-deep); margin:0 0 6px; }
+  .landing-feature-card p{ color:var(--muted); font-size:12.5px; margin:0; line-height:1.8; }
+  .landing-download{ margin:50px 0; }
+  .landing-download h2{ font-family:'Amiri',serif; font-size:20px; color:var(--ink); margin:0 0 6px; }
+  .landing-download-btns{ display:flex; gap:10px; justify-content:center; flex-wrap:wrap; margin-top:16px; }
+  .landing-download-btns button[disabled]{ opacity:0.6; cursor:not-allowed; }
+  .landing-subscription{ margin:50px 0; }
+  .landing-subscription h2{ font-family:'Amiri',serif; font-size:20px; color:var(--ink); margin:0 0 8px; }
+  .landing-login-card{
+    background:var(--bar); color:var(--bar-ink); border-radius:var(--radius-card); padding:32px 20px; margin-top:50px;
+  }
+  .landing-login-card h2{ font-family:'Amiri',serif; font-size:19px; margin:0 0 16px; }
+  @media (min-width:768px){
+    .landing-steps{ grid-template-columns:repeat(3,1fr); }
+    .landing-features{ grid-template-columns:repeat(3,1fr); }
+  }
+
+  /* ===== Settings sheet ===== */
+  .sheet-dim{
+    display:none; position:fixed; inset:0; background:rgba(8,14,26,.45); z-index:300;
+    align-items:flex-end; justify-content:center;
+  }
+  .sheet-dim.open{ display:flex; }
+  .sheet{
+    background:var(--surface); width:100%; max-width:100%; height:88vh;
+    border-radius:22px 22px 0 0; box-shadow:0 -12px 40px rgba(0,0,0,.28);
+    display:flex; flex-direction:column; overflow:hidden;
+  }
+  .sheet-header{
+    display:flex; justify-content:space-between; align-items:center;
+    padding:16px 20px; border-bottom:1px solid var(--line); flex-shrink:0;
+  }
+  .sheet-header h2{ font-family:'Amiri',serif; margin:0; font-size:19px; color:var(--ink); }
+  .sheet-close{ background:none; border:none; font-size:20px; cursor:pointer; color:var(--muted); line-height:1; }
+  .sheet-body{ padding:16px 20px 30px; overflow-y:auto; flex:1; }
+  .settings-section{ margin-bottom:22px; padding-bottom:18px; border-bottom:1px solid var(--line); }
+  .settings-section h3{ font-family:'Amiri',serif; font-size:16px; color:var(--ink); margin:0 0 12px; }
+  .settings-toggle-row{
+    display:flex; justify-content:space-between; align-items:center; padding:9px 0; font-size:13.5px; color:var(--ink);
+  }
+  .soon-chip{
+    background:var(--paper-2); color:var(--muted); font-size:11px; padding:3px 10px;
+    border-radius:999px; font-weight:700;
+  }
+  /* Toggle switch — from tokens.css: off=right (RTL), on=left */
+  .toggle{
+    width:42px; height:24px; border-radius:999px; background:var(--line);
+    position:relative; flex:none; cursor:pointer; transition:background .16s ease;
+  }
+  .toggle i{
+    position:absolute; top:2.5px; right:2.5px; width:19px; height:19px;
+    border-radius:50%; background:#fff; box-shadow:0 1px 3px rgba(0,0,0,.25); transition:right .16s ease, left .16s ease;
+  }
+  .toggle[aria-checked="true"]{ background:var(--blue); }
+  .toggle[aria-checked="true"] i{ right:auto; left:2.5px; }
+
+  @media (min-width:900px){
+    .sheet-dim{ align-items:center; }
+    .sheet{ max-width:900px; height:auto; max-height:85vh; border-radius:18px; }
+  }
 
   .calendar-header{ margin-bottom:16px; }
   .calendar-nav{ display:flex; justify-content:space-between; gap:10px; flex-wrap:wrap; margin-bottom:12px; }
@@ -557,6 +671,85 @@
 </head>
 <body>
 
+<div id="landingScreen" style="display:none;">
+  <div class="landing-wrap">
+
+    <div class="landing-hero">
+      <div class="brand-seal" style="margin:0 auto 16px; width:60px; height:60px;"><span class="mark"></span></div>
+      <h1>مرساة الميزان</h1>
+      <p class="landing-tagline">حيث ترسو قضاياك</p>
+      <p class="landing-sub">إدارة القضايا والجلسات والمواعيد والوكالات بمكان واحد، مبني خصيصًا للمحامي العربي.</p>
+      <button class="btn btn-primary" id="landingStartBtn" style="padding:13px 32px; font-size:15px;">ابدأ الآن</button>
+    </div>
+
+    <div class="landing-steps">
+      <div class="landing-step">
+        <span class="landing-step-num">١</span>
+        <h3>سجّل حسابك</h3>
+        <p>إنشاء حساب مجاني بالبريد الإلكتروني خلال دقيقة.</p>
+      </div>
+      <div class="landing-step">
+        <span class="landing-step-num">٢</span>
+        <h3>أضف قضاياك</h3>
+        <p>الصق إشعار ناجز أو أضف القضية يدويًا، ونتولى الباقي.</p>
+      </div>
+      <div class="landing-step">
+        <span class="landing-step-num">٣</span>
+        <h3>تابع كل شي</h3>
+        <p>جلساتك ومواعيدك ووكالاتك، منظّمة ومذكّرة دائمًا.</p>
+      </div>
+    </div>
+
+    <div class="landing-features">
+      <div class="landing-feature-card">
+        <h3>القضايا والجلسات</h3>
+        <p>ترقيم تلقائي للجلسات، وتحليل ذكي لإشعارات ناجز.</p>
+      </div>
+      <div class="landing-feature-card">
+        <h3>تقويم هجري دقيق</h3>
+        <p>تقويم أم القرى الرسمي جنبًا إلى جنب مع الميلادي.</p>
+      </div>
+      <div class="landing-feature-card">
+        <h3>المواعيد والتذكيرات</h3>
+        <p>مواعيد العملاء والمراجعات، مع اتصال وواتساب مباشر.</p>
+      </div>
+      <div class="landing-feature-card">
+        <h3>الوكالات</h3>
+        <p>تتبع مدة كل وكالة وتنبيه قبل انتهائها.</p>
+      </div>
+      <div class="landing-feature-card">
+        <h3>مشاركة آمنة</h3>
+        <p>شارك قضية مع زميل بصلاحية تعديل أو قراءة فقط، بموافقته.</p>
+      </div>
+      <div class="landing-feature-card">
+        <h3>تصدير وأرشفة</h3>
+        <p>تصدير Excel وطباعة، مع أرشيف كامل قابل للاسترجاع.</p>
+      </div>
+    </div>
+
+    <div class="landing-download">
+      <h2>حمّل التطبيق</h2>
+      <p class="hint">قريبًا على متاجر التطبيقات — استخدمه من المتصفح الآن.</p>
+      <div class="landing-download-btns">
+        <button class="btn btn-ghost" disabled>App Store <span class="soon-chip">قريبًا</span></button>
+        <button class="btn btn-ghost" disabled>Google Play <span class="soon-chip">قريبًا</span></button>
+      </div>
+      <button class="btn btn-primary" id="landingContinueBtn" style="margin-top:14px; padding:12px 28px;">أكمل في المتصفح</button>
+    </div>
+
+    <div class="landing-subscription">
+      <h2>الاشتراك</h2>
+      <p class="hint">تجربة مجانية كاملة حاليًا. خطط الاشتراك <span class="soon-chip">قريبًا</span></p>
+    </div>
+
+    <div class="landing-login-card">
+      <h2>عندك حساب؟</h2>
+      <button class="btn btn-primary" id="landingLoginBtn" style="padding:12px 32px;">تسجيل الدخول</button>
+    </div>
+
+  </div>
+</div>
+
 <div id="authScreen" style="display:none; min-height:100vh; align-items:center; justify-content:center; background:var(--paper); padding:20px;">
   <div class="panel" style="max-width:380px; width:100%;">
     <div style="text-align:center; margin-bottom:8px;">
@@ -627,27 +820,9 @@
       </div>
       <div class="topbar-actions" style="margin-inline-start:auto; text-align:left; display:flex; align-items:center; gap:10px; position:relative;">
         <div id="profileWrap" style="position:relative;">
-          <button id="profileBtn" class="notif-bell" title="الملف الشخصي">
+          <button id="profileBtn" class="notif-bell" title="الإعدادات">
             <svg class="icon" viewBox="0 0 24 24"><path d="M12 15.5a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7Z"/><path d="M19.4 13.5a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V19a2 2 0 1 1-4 0v-.09a1.65 1.65 0 0 0-1.08-1.51 1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09a1.65 1.65 0 0 0 1.51-1.08 1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1Z"/></svg>
           </button>
-          <div id="profilePanel" class="notif-panel" style="display:none; width:270px; padding:14px;">
-            <div class="notif-panel-header" style="padding:0 0 10px;">بيانات الحساب</div>
-            <div class="field" style="margin-bottom:10px;">
-              <label>الاسم</label>
-              <input id="profileName" placeholder="اسمك">
-            </div>
-            <div class="field" style="margin-bottom:10px;">
-              <label>رقم الجوال</label>
-              <div style="display:flex; gap:6px;">
-                <select id="profileCountryCode" style="width:110px; padding:9px 6px; border-radius:8px; border:1px solid var(--line); font-size:12.5px;"></select>
-                <input id="profilePhone" dir="ltr" placeholder="5xxxxxxxx" style="flex:1;">
-              </div>
-            </div>
-            <button class="btn btn-primary" id="profileSaveBtn" style="width:100%;">حفظ</button>
-            <p style="text-align:center; margin-top:10px;">
-              <a href="#" id="openPrivacyLinkInApp" style="font-size:11.5px; color:var(--ink-soft);">سياسة الخصوصية</a>
-            </p>
-          </div>
         </div>
         <div id="notifBellWrap" style="position:relative;">
           <button id="notifBellBtn" class="notif-bell" title="الإشعارات">
@@ -655,8 +830,16 @@
             <span id="notifBadge" class="notif-badge" style="display:none;">0</span>
           </button>
           <div id="notifPanel" class="notif-panel" style="display:none;">
-            <div class="notif-panel-header">الإشعارات</div>
+            <div class="notif-panel-header">
+              <span>الإشعارات</span>
+              <a href="#" id="markAllReadLink">تحديد الكل كمقروء</a>
+            </div>
+            <div class="notif-filters">
+              <button class="notif-filter-chip active" id="notifFilterAll" data-filter="all">الكل</button>
+              <button class="notif-filter-chip" id="notifFilterUnread" data-filter="unread">غير المقروء</button>
+            </div>
             <div id="notifList" class="notif-list"></div>
+            <div class="notif-footer">تُحفظ الإشعارات ٣٠ يومًا</div>
           </div>
         </div>
         <span id="currentUserLabel" style="color:#B9C3CE; font-size:12px; direction:ltr; unicode-bidi:isolate;"></span>
@@ -681,49 +864,34 @@
   <!-- ===== ADD VIEW ===== -->
   <!-- ===== HOME / DASHBOARD VIEW ===== -->
   <section class="view active" id="view-home">
-    <div class="dash-greeting">
-      <h2 id="dashGreeting">مرحبًا 👋</h2>
-      <p class="hint">هذا ملخص يومك وأسبوعك.</p>
-    </div>
-
-    <div id="dashObjectionAlert" style="display:none;"></div>
-
-    <div class="dash-stats-grid">
-      <div class="dash-stat-box">
-        <span class="dash-stat-num" id="statSessionsToday">0</span>
-        <span class="dash-stat-label">جلسات اليوم</span>
+    <div class="home-top-row">
+      <div class="dash-greeting">
+        <h2 id="dashGreeting">مرحبًا 👋</h2>
+        <p class="hint">هذا ملخص يومك وأسبوعك.</p>
       </div>
-      <div class="dash-stat-box">
-        <span class="dash-stat-num" id="statSessionsWeek">0</span>
-        <span class="dash-stat-label">جلسات الأسبوع</span>
-      </div>
-      <div class="dash-stat-box">
-        <span class="dash-stat-num" id="statApptsToday">0</span>
-        <span class="dash-stat-label">مواعيد اليوم</span>
-      </div>
-      <div class="dash-stat-box">
-        <span class="dash-stat-num" id="statApptsWeek">0</span>
-        <span class="dash-stat-label">مواعيد الأسبوع</span>
+      <div class="dash-stats-box">
+        <div class="dash-stat-cell"><span class="dash-stat-num" id="statSessionsToday">0</span><span class="dash-stat-label">جلسات اليوم</span></div>
+        <div class="dash-stat-cell"><span class="dash-stat-num" id="statSessionsWeek">0</span><span class="dash-stat-label">جلسات الأسبوع</span></div>
+        <div class="dash-stat-cell"><span class="dash-stat-num" id="statApptsToday">0</span><span class="dash-stat-label">مواعيد اليوم</span></div>
+        <div class="dash-stat-cell"><span class="dash-stat-num" id="statApptsWeek">0</span><span class="dash-stat-label">مواعيد الأسبوع</span></div>
       </div>
     </div>
 
-    <div class="dash-nearest-grid">
-      <div class="panel dash-nearest-box">
-        <h2>⚖ أقرب جلسة</h2>
-        <div id="dashNearestSession"><p class="hint">لا توجد جلسات قادمة.</p></div>
+    <div class="home-columns">
+      <div class="home-col-right">
+        <div class="panel">
+          <h2>اليوم</h2>
+          <div id="dashTodayList" class="dash-today-scroll"><p class="hint">ما فيه شي مجدول اليوم.</p></div>
+        </div>
       </div>
-      <div class="panel dash-nearest-box">
-        <h2>🤝 أقرب موعد</h2>
-        <div id="dashNearestAppt"><p class="hint">لا توجد مواعيد قادمة.</p></div>
-      </div>
-    </div>
 
-    <div class="panel">
-      <h2>أجندة اليوم</h2>
-      <div id="dashTodayAgenda"><p class="hint">ما فيه شي مجدول اليوم.</p></div>
-    </div>
+      <div class="home-col-left">
+        <div class="panel">
+          <h2>الأيام القادمة</h2>
+          <div id="dashUpcomingDays"></div>
+        </div>
 
-    <div class="intake-grid">
+        <div class="intake-grid">
       <div class="panel">
         <h2>لصق نص الرسالة</h2>
         <p class="hint">الصق نص إشعار ناجز كاملاً كما وصلك (سواء إشعار جلسة جديدة أو إشعار تغيير موعد)، ثم اضغط «تحليل الرسالة».</p>
@@ -756,6 +924,8 @@
         <div class="btn-row">
           <button class="btn btn-gold" id="saveBtn">حفظ في السجل</button>
           <button class="btn btn-ghost" id="discardBtn">إلغاء</button>
+        </div>
+      </div>
         </div>
       </div>
     </div>
@@ -945,6 +1115,145 @@
   </button>
 </nav>
 
+<div id="settingsOverlay" class="sheet-dim">
+  <div class="sheet" id="settingsSheet">
+    <div class="sheet-header">
+      <h2>الإعدادات</h2>
+      <button id="settingsCloseBtn" class="sheet-close">✕</button>
+    </div>
+    <div class="sheet-body">
+
+      <section class="settings-section">
+        <h3>بيانات الحساب</h3>
+        <div class="field-grid">
+          <div class="field"><label>الاسم الأول (عربي)</label><input id="st_firstNameAr" placeholder="محمد"></div>
+          <div class="field"><label>اسم العائلة (عربي)</label><input id="st_lastNameAr" placeholder="العتيبي"></div>
+          <div class="field"><label>First Name (English)</label><input id="st_firstNameLatin" dir="ltr" placeholder="Mohammed"></div>
+          <div class="field"><label>Last Name (English)</label><input id="st_lastNameLatin" dir="ltr" placeholder="Alotaibi"></div>
+          <div class="field full"><label>البريد الإلكتروني</label><input id="st_email" dir="ltr" disabled style="opacity:0.6;"></div>
+          <div class="field full">
+            <label>رقم الجوال</label>
+            <div style="display:flex; gap:6px;">
+              <select id="st_countryCode" style="width:110px; padding:9px 6px; border-radius:8px; border:1px solid var(--line); font-size:12.5px;"></select>
+              <input id="st_phone" dir="ltr" placeholder="5xxxxxxxx" style="flex:1;">
+            </div>
+          </div>
+          <div class="field"><label>تاريخ الميلاد</label><input id="st_birthDate" type="date"></div>
+          <div class="field"><label>سنوات الخبرة</label><input id="st_yearsExperience" type="number" min="0"></div>
+          <div class="field"><label>رقم الترخيص (اختياري)</label><input id="st_licenseNumber"></div>
+          <div class="field"><label>المدينة</label><input id="st_city"></div>
+        </div>
+      </section>
+
+      <section class="settings-section">
+        <h3>المظهر</h3>
+        <div class="field-grid">
+          <div class="field full">
+            <label>وضع العرض</label>
+            <select id="st_appearanceMode">
+              <option value="light">نهاري</option>
+              <option value="dark">ليلي</option>
+              <option value="auto">تلقائي (حسب النظام)</option>
+            </select>
+          </div>
+          <div class="field full">
+            <label>حجم الخط</label>
+            <select id="st_fontSize">
+              <option value="small">صغير</option>
+              <option value="medium">متوسط</option>
+              <option value="large">كبير</option>
+            </select>
+          </div>
+        </div>
+      </section>
+
+      <section class="settings-section">
+        <h3>الإشعارات</h3>
+        <div class="settings-toggle-row"><span>إشعارات المتصفح</span><span class="toggle" id="st_notifBrowserPush" role="switch" aria-checked="false" tabindex="0"><i></i></span></div>
+        <div class="settings-toggle-row"><span>إشعارات الجوال</span><span class="toggle" id="st_notifMobilePush" role="switch" aria-checked="false" tabindex="0"><i></i></span></div>
+        <div class="settings-toggle-row"><span>الملخص الصباحي</span><span class="toggle" id="st_notifMorningSummary" role="switch" aria-checked="false" tabindex="0"><i></i></span></div>
+        <div class="field" id="st_morningTimeBox" style="display:none;"><label>وقت الملخص الصباحي</label><input id="st_notifMorningSummaryTime" type="time" value="07:00"></div>
+        <div class="field">
+          <label>تذكير قبل الجلسة</label>
+          <select id="st_notifSessionReminder">
+            <option value="none">بدون</option>
+            <option value="15m">قبل ١٥ دقيقة</option>
+            <option value="30m">قبل ٣٠ دقيقة</option>
+            <option value="1h">قبل ساعة</option>
+            <option value="1d">قبل يوم</option>
+          </select>
+        </div>
+        <div class="settings-toggle-row"><span>تنبيه اقتراب مهلة الاعتراض</span><span class="toggle" id="st_notifObjectionAlert" role="switch" aria-checked="true" tabindex="0"><i></i></span></div>
+        <p class="hint" style="margin:6px 0 10px;">ساعات الهدوء (بدون إشعارات خلالها)</p>
+        <div class="field-grid">
+          <div class="field"><label>من</label><input id="st_quietStart" type="time"></div>
+          <div class="field"><label>إلى</label><input id="st_quietEnd" type="time"></div>
+        </div>
+      </section>
+
+      <section class="settings-section">
+        <h3>التقويم والوقت</h3>
+        <div class="field-grid">
+          <div class="field full">
+            <label>عرض التاريخ</label>
+            <select id="st_dateDisplayMode">
+              <option value="hijri">هجري فقط</option>
+              <option value="gregorian">ميلادي فقط</option>
+              <option value="both">الاثنين معًا</option>
+            </select>
+          </div>
+          <div class="field">
+            <label>بداية الأسبوع</label>
+            <select id="st_weekStart">
+              <option value="sunday">الأحد</option>
+              <option value="saturday">السبت</option>
+              <option value="monday">الاثنين</option>
+            </select>
+          </div>
+          <div class="field full">
+            <label>المنطقة الزمنية</label>
+            <select id="st_timezone"></select>
+          </div>
+        </div>
+        <div class="settings-toggle-row"><span>مزامنة تقويم الجهاز</span><span class="soon-chip">قريبًا</span></div>
+      </section>
+
+      <section class="settings-section">
+        <h3>الخصوصية والأمان</h3>
+        <div class="btn-row"><button class="btn btn-ghost" id="st_changePasswordBtn" style="width:100%;">تغيير كلمة المرور</button></div>
+        <div class="settings-toggle-row" style="margin-top:8px;"><span>مصادقة ثنائية</span><span class="soon-chip">قريبًا</span></div>
+        <p class="hint" style="margin-top:8px;">الأجهزة النشطة: هذا الجهاز فقط.</p>
+        <p class="hint">من يقدر يشاركني قضية:</p>
+        <select id="st_shareRestriction" style="width:100%; font-family:'IBM Plex Sans Arabic',sans-serif; font-size:13.5px; padding:10px 12px; border-radius:8px; border:1px solid var(--line); background:#fff;">
+          <option value="anyone">أي شخص يعرف بريدي الإلكتروني</option>
+          <option value="none">محد، أوقف استقبال دعوات المشاركة مؤقتًا</option>
+        </select>
+      </section>
+
+      <section class="settings-section">
+        <h3>الاشتراك</h3>
+        <div class="settings-toggle-row"><span>الخطة الحالية: مجانية</span><span class="soon-chip">قريبًا</span></div>
+      </section>
+
+      <div class="btn-row">
+        <button class="btn btn-primary" id="settingsSaveBtn" style="width:100%;">حفظ الإعدادات</button>
+      </div>
+
+      <section class="settings-section" style="border-bottom:none; margin-top:20px;">
+        <div class="btn-row" style="flex-direction:column; gap:10px;">
+          <button class="btn btn-ghost" id="st_exportDataBtn" style="width:100%;">تصدير بياناتي</button>
+          <button class="btn btn-ghost" id="st_logoutBtn2" style="width:100%;">تسجيل خروج</button>
+          <button class="btn" id="st_deleteAccountBtn" style="width:100%; background:var(--alert-bg); color:var(--alert); border:1px solid var(--alert);">حذف الحساب نهائيًا</button>
+        </div>
+      </section>
+
+      <p style="text-align:center; margin-top:6px;">
+        <a href="#" id="openPrivacyLinkInApp" style="font-size:11.5px; color:var(--ink-soft);">سياسة الخصوصية</a>
+      </p>
+    </div>
+  </div>
+</div>
+
 <div class="toast" id="toast"></div>
 
 <script type="module">
@@ -952,7 +1261,7 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-app.js";
 import {
   getAuth, onAuthStateChanged, signInWithEmailAndPassword,
-  createUserWithEmailAndPassword, signOut, sendPasswordResetEmail, sendEmailVerification
+  createUserWithEmailAndPassword, signOut, sendPasswordResetEmail, sendEmailVerification, deleteUser
 } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-auth.js";
 import {
   getFirestore, doc, getDoc, setDoc, updateDoc, deleteDoc, collection, query,
@@ -997,15 +1306,32 @@ if(firebaseConfigured()){
       document.getElementById('bottomNav').classList.add('logged-in');
       document.getElementById('currentUserLabel').textContent = user.email;
       document.getElementById('verifyEmailBanner').style.display = user.emailVerified ? 'none' : 'flex';
+      fetchMyProfile(user.email).then(profile => {
+        applyAppearance((profile && profile.appearanceMode) || 'light', (profile && profile.fontSize) || 'medium');
+      });
       startApp();
     } else {
       currentUserEmail = null;
       currentAuthUser = null;
-      document.getElementById('authScreen').style.display = 'flex';
+      document.getElementById('landingScreen').style.display = 'block';
+      document.getElementById('authScreen').style.display = 'none';
       document.querySelector('.topbar').style.display = 'none';
       document.querySelector('main').style.display = 'none';
       document.getElementById('bottomNav').classList.remove('logged-in');
     }
+  });
+
+  document.getElementById('landingStartBtn').addEventListener('click', () => {
+    document.getElementById('landingScreen').style.display = 'none';
+    document.getElementById('authScreen').style.display = 'flex';
+  });
+  document.getElementById('landingContinueBtn').addEventListener('click', () => {
+    document.getElementById('landingScreen').style.display = 'none';
+    document.getElementById('authScreen').style.display = 'flex';
+  });
+  document.getElementById('landingLoginBtn').addEventListener('click', () => {
+    document.getElementById('landingScreen').style.display = 'none';
+    document.getElementById('authScreen').style.display = 'flex';
   });
 
   document.getElementById('resendVerifyBtn').addEventListener('click', async () => {
@@ -1495,14 +1821,31 @@ document.getElementById('notifBellBtn').addEventListener('click', async () => {
   if(isOpen){ panel.style.display = 'none'; return; }
   panel.style.display = 'block';
   await renderNotifications();
-  await markMyNotificationsRead(currentUserEmail);
-  document.getElementById('notifBadge').style.display = 'none';
 });
 document.addEventListener('click', (e) => {
   const wrap = document.getElementById('notifBellWrap');
   if(wrap && !wrap.contains(e.target)){
     document.getElementById('notifPanel').style.display = 'none';
   }
+});
+let notifFilter = 'all';
+document.getElementById('notifFilterAll').addEventListener('click', () => {
+  notifFilter = 'all';
+  document.getElementById('notifFilterAll').classList.add('active');
+  document.getElementById('notifFilterUnread').classList.remove('active');
+  renderNotifications();
+});
+document.getElementById('notifFilterUnread').addEventListener('click', () => {
+  notifFilter = 'unread';
+  document.getElementById('notifFilterUnread').classList.add('active');
+  document.getElementById('notifFilterAll').classList.remove('active');
+  renderNotifications();
+});
+document.getElementById('markAllReadLink').addEventListener('click', async (e) => {
+  e.preventDefault();
+  await markMyNotificationsRead(currentUserEmail);
+  await renderNotifBadge();
+  renderNotifications();
 });
 
 // ---------- Profile (account name + phone with country code) ----------
@@ -1522,39 +1865,149 @@ function populateCountryCodeSelect(selectId){
   sel.innerHTML = COUNTRY_CODES.map(([name, code]) => `<option value="${code}">${name} ${code}</option>`).join('');
   sel.value = '+966'; // default: Saudi Arabia
 }
-populateCountryCodeSelect('profileCountryCode');
+populateCountryCodeSelect('st_countryCode');
 populateCountryCodeSelect('appt_countryCode');
+document.getElementById('st_timezone').innerHTML = TIMEZONE_OPTIONS.map(([label, tz]) => `<option value="${tz}">${label}</option>`).join('');
 
+// ---------- Appearance (dark mode + font size) — applied live and persisted ----------
+function applyAppearance(mode, fontSize){
+  const wantsDark = mode === 'dark' || (mode === 'auto' && window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches);
+  document.documentElement.setAttribute('data-theme', wantsDark ? 'dark' : 'light');
+  const sizeMap = { small: '14px', medium: '15px', large: '17px' };
+  document.documentElement.style.fontSize = sizeMap[fontSize] || sizeMap.medium;
+}
+
+// ---------- Toggle switches ----------
+function wireToggle(id){
+  const el = document.getElementById(id);
+  const flip = () => el.setAttribute('aria-checked', el.getAttribute('aria-checked') === 'true' ? 'false' : 'true');
+  el.addEventListener('click', flip);
+  el.addEventListener('keydown', (e) => { if(e.key === ' ' || e.key === 'Enter'){ e.preventDefault(); flip(); } });
+}
+['st_notifBrowserPush','st_notifMobilePush','st_notifMorningSummary','st_notifObjectionAlert'].forEach(wireToggle);
+document.getElementById('st_notifMorningSummary').addEventListener('click', () => {
+  document.getElementById('st_morningTimeBox').style.display =
+    document.getElementById('st_notifMorningSummary').getAttribute('aria-checked') === 'true' ? 'block' : 'none';
+});
+
+// ---------- Open / close the settings sheet ----------
 document.getElementById('profileBtn').addEventListener('click', async () => {
-  const panel = document.getElementById('profilePanel');
-  const isOpen = panel.style.display === 'block';
-  if(isOpen){ panel.style.display = 'none'; return; }
-  panel.style.display = 'block';
+  document.getElementById('settingsOverlay').classList.add('open');
   const profile = await fetchMyProfile(currentUserEmail);
-  if(profile){
-    document.getElementById('profileName').value = profile.name || '';
-    document.getElementById('profileCountryCode').value = profile.countryCode || '+966';
-    document.getElementById('profilePhone').value = profile.phone || '';
-  }
+  document.getElementById('st_email').value = currentUserEmail || '';
+  document.getElementById('st_firstNameAr').value = (profile && profile.firstNameAr) || '';
+  document.getElementById('st_lastNameAr').value = (profile && profile.lastNameAr) || '';
+  document.getElementById('st_firstNameLatin').value = (profile && profile.firstNameLatin) || '';
+  document.getElementById('st_lastNameLatin').value = (profile && profile.lastNameLatin) || '';
+  document.getElementById('st_countryCode').value = (profile && profile.countryCode) || '+966';
+  document.getElementById('st_phone').value = (profile && profile.phone) || '';
+  document.getElementById('st_birthDate').value = (profile && profile.birthDate) || '';
+  document.getElementById('st_yearsExperience').value = (profile && profile.yearsExperience) || '';
+  document.getElementById('st_licenseNumber').value = (profile && profile.licenseNumber) || '';
+  document.getElementById('st_city').value = (profile && profile.city) || '';
+  document.getElementById('st_appearanceMode').value = (profile && profile.appearanceMode) || 'light';
+  document.getElementById('st_fontSize').value = (profile && profile.fontSize) || 'medium';
+  document.getElementById('st_notifBrowserPush').setAttribute('aria-checked', String(!!(profile && profile.notifBrowserPush)));
+  document.getElementById('st_notifMobilePush').setAttribute('aria-checked', String(!!(profile && profile.notifMobilePush)));
+  document.getElementById('st_notifMorningSummary').setAttribute('aria-checked', String(!!(profile && profile.notifMorningSummary)));
+  document.getElementById('st_morningTimeBox').style.display = (profile && profile.notifMorningSummary) ? 'block' : 'none';
+  document.getElementById('st_notifMorningSummaryTime').value = (profile && profile.notifMorningSummaryTime) || '07:00';
+  document.getElementById('st_notifSessionReminder').value = (profile && profile.notifSessionReminder) || 'none';
+  document.getElementById('st_notifObjectionAlert').setAttribute('aria-checked', String(profile ? !!profile.notifObjectionAlert : true));
+  document.getElementById('st_quietStart').value = (profile && profile.quietStart) || '';
+  document.getElementById('st_quietEnd').value = (profile && profile.quietEnd) || '';
+  document.getElementById('st_dateDisplayMode').value = (profile && profile.dateDisplayMode) || 'both';
+  document.getElementById('st_weekStart').value = (profile && profile.weekStart) || 'sunday';
+  document.getElementById('st_timezone').value = (profile && profile.timezone) || 'Asia/Riyadh';
+  document.getElementById('st_shareRestriction').value = (profile && profile.shareRestriction) || 'anyone';
 });
-document.addEventListener('click', (e) => {
-  const wrap = document.getElementById('profileWrap');
-  if(wrap && !wrap.contains(e.target)){
-    document.getElementById('profilePanel').style.display = 'none';
-  }
+document.getElementById('settingsCloseBtn').addEventListener('click', () => {
+  document.getElementById('settingsOverlay').classList.remove('open');
 });
-document.getElementById('profileSaveBtn').addEventListener('click', async () => {
-  const name = document.getElementById('profileName').value.trim();
-  const countryCode = document.getElementById('profileCountryCode').value;
-  const phone = document.getElementById('profilePhone').value.trim();
+document.getElementById('settingsOverlay').addEventListener('click', (e) => {
+  if(e.target.id === 'settingsOverlay') document.getElementById('settingsOverlay').classList.remove('open');
+});
+
+// ---------- Save all settings ----------
+document.getElementById('settingsSaveBtn').addEventListener('click', async () => {
+  const appearanceMode = document.getElementById('st_appearanceMode').value;
+  const fontSize = document.getElementById('st_fontSize').value;
+  const data = {
+    firstNameAr: document.getElementById('st_firstNameAr').value.trim(),
+    lastNameAr: document.getElementById('st_lastNameAr').value.trim(),
+    firstNameLatin: document.getElementById('st_firstNameLatin').value.trim(),
+    lastNameLatin: document.getElementById('st_lastNameLatin').value.trim(),
+    countryCode: document.getElementById('st_countryCode').value,
+    phone: document.getElementById('st_phone').value.trim(),
+    birthDate: document.getElementById('st_birthDate').value,
+    yearsExperience: document.getElementById('st_yearsExperience').value ? parseInt(document.getElementById('st_yearsExperience').value, 10) : null,
+    licenseNumber: document.getElementById('st_licenseNumber').value.trim(),
+    city: document.getElementById('st_city').value.trim(),
+    appearanceMode, fontSize,
+    notifBrowserPush: document.getElementById('st_notifBrowserPush').getAttribute('aria-checked') === 'true',
+    notifMobilePush: document.getElementById('st_notifMobilePush').getAttribute('aria-checked') === 'true',
+    notifMorningSummary: document.getElementById('st_notifMorningSummary').getAttribute('aria-checked') === 'true',
+    notifMorningSummaryTime: document.getElementById('st_notifMorningSummaryTime').value,
+    notifSessionReminder: document.getElementById('st_notifSessionReminder').value,
+    notifObjectionAlert: document.getElementById('st_notifObjectionAlert').getAttribute('aria-checked') === 'true',
+    quietStart: document.getElementById('st_quietStart').value,
+    quietEnd: document.getElementById('st_quietEnd').value,
+    dateDisplayMode: document.getElementById('st_dateDisplayMode').value,
+    weekStart: document.getElementById('st_weekStart').value,
+    timezone: document.getElementById('st_timezone').value,
+    shareRestriction: document.getElementById('st_shareRestriction').value,
+    // keep legacy "name" field (used elsewhere as a fallback greeting) in sync
+    name: [document.getElementById('st_firstNameAr').value.trim(), document.getElementById('st_lastNameAr').value.trim()].filter(Boolean).join(' '),
+    updatedAt: Date.now()
+  };
   try{
-    await saveMyProfile(currentUserEmail, { name, countryCode, phone, updatedAt: Date.now() });
-    showToast('تم حفظ بيانات الحساب.');
-    document.getElementById('profilePanel').style.display = 'none';
+    await saveMyProfile(currentUserEmail, data);
+    applyAppearance(appearanceMode, fontSize);
+    showToast('تم حفظ الإعدادات.');
+    document.getElementById('settingsOverlay').classList.remove('open');
     if(document.getElementById('view-home').classList.contains('active')) renderDashboard();
   }catch(e){
     showToast('تعذّر الحفظ. حاول مجددًا.');
     console.error(e);
+  }
+});
+
+// ---------- Account actions ----------
+document.getElementById('st_changePasswordBtn').addEventListener('click', async () => {
+  if(!currentUserEmail) return;
+  try{
+    await sendPasswordResetEmail(auth, currentUserEmail);
+    showToast('تم إرسال رابط تغيير كلمة المرور إلى بريدك.');
+  }catch(e){
+    showToast('تعذّر الإرسال. حاول لاحقًا.');
+  }
+});
+document.getElementById('st_exportDataBtn').addEventListener('click', () => {
+  document.getElementById('exportExcelBtn').click();
+});
+document.getElementById('st_logoutBtn2').addEventListener('click', () => {
+  document.getElementById('settingsOverlay').classList.remove('open');
+  signOut(auth);
+});
+document.getElementById('st_deleteAccountBtn').addEventListener('click', async () => {
+  const typed = prompt('هذا الإجراء نهائي ولا يمكن التراجع عنه — سيُحذف حسابك وكل قضاياك ومواعيدك ووكالاتك نهائيًا.\n\nاكتب "حذف" للتأكيد:');
+  if(typed !== 'حذف') return;
+  try{
+    showToast('جارٍ حذف الحساب...');
+    const myCases = await fetchMyCases(currentUserEmail);
+    for(const c of myCases){
+      if(c.ownerEmail === currentUserEmail) await deleteDoc(doc(db, 'cases', c.caseNumber));
+    }
+    const myAppts = await fetchMyAppointments(currentUserEmail);
+    for(const a of myAppts) await deleteDoc(doc(db, 'appointments', a._id));
+    const myWakalas = await fetchMyWakalas(currentUserEmail);
+    for(const w of myWakalas) await deleteDoc(doc(db, 'wakalas', w._id));
+    try{ await deleteDoc(doc(db, 'profiles', currentUserEmail)); }catch(e){}
+    await deleteUser(currentAuthUser);
+    showToast('تم حذف الحساب.');
+  }catch(e){
+    console.error(e);
+    showToast('تعذّر حذف الحساب بالكامل — قد تحتاج تسجّل الدخول من جديد ثم تكرر المحاولة.');
   }
 });
 
@@ -2259,25 +2712,50 @@ async function renderNotifBadge(){
   if(unread > 0){ badge.style.display = 'inline-block'; badge.textContent = unread > 9 ? '9+' : unread; }
   else badge.style.display = 'none';
 }
+function relativeTimeAr(ts){
+  const diff = Date.now() - ts;
+  const mins = Math.floor(diff / 60000);
+  if(mins < 1) return 'الآن';
+  if(mins < 60) return `قبل ${mins} دقيقة`;
+  const hours = Math.floor(mins / 60);
+  if(hours < 24) return `قبل ${hours} ساعة`;
+  const days = Math.floor(hours / 24);
+  if(days < 30) return `قبل ${days} يوم`;
+  return new Date(ts).toLocaleDateString('ar-SA');
+}
+function notifIconSvg(type){
+  if(type === 'share_invite') return '<svg class="icon" viewBox="0 0 24 24" style="width:18px;height:18px;"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><path d="M8.6 10.6l6.8-3.8M8.6 13.4l6.8 3.8"/></svg>';
+  if(type === 'objection_deadline') return '<svg class="icon" viewBox="0 0 24 24" style="width:18px;height:18px;"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 3"/></svg>';
+  return '<svg class="icon" viewBox="0 0 24 24" style="width:18px;height:18px;"><path d="M18 8a6 6 0 1 0-12 0c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>';
+}
+
 async function renderNotifications(){
-  const notifs = await fetchMyNotifications(currentUserEmail);
+  const allNotifs = await fetchMyNotifications(currentUserEmail);
+  const notifs = notifFilter === 'unread' ? allNotifs.filter(n => !n.read) : allNotifs;
   const list = document.getElementById('notifList');
   if(notifs.length === 0){
-    list.innerHTML = '<div class="notif-empty">ما فيه إشعارات حاليًا.</div>';
+    list.innerHTML = `<div class="notif-empty">${notifFilter === 'unread' ? 'ما فيه إشعارات غير مقروءة.' : 'ما فيه إشعارات حاليًا.'}</div>`;
     return;
   }
-  list.innerHTML = notifs.map(n => `
+  list.innerHTML = notifs.map(n => {
+    const h = gregorianDateToHijri(new Date(n.createdAt));
+    return `
     <div class="notif-item ${n.read ? '' : 'unread'}">
-      ${escapeHtml(n.message)}
-      <span class="notif-time">${new Date(n.createdAt).toLocaleString('ar-SA')}</span>
-      ${n.type === 'share_invite' && !n.actioned ? `
-        <div class="btn-row" style="margin-top:8px;">
-          <button class="btn btn-primary share-accept-btn" style="padding:6px 14px; font-size:12px;" data-notif="${n._id}" data-case="${escapeHtml(n.caseNumber || '')}" data-permission="${n.permission || 'readonly'}">قبول</button>
-          <button class="btn btn-ghost share-reject-btn" style="padding:6px 14px; font-size:12px;" data-notif="${n._id}" data-case="${escapeHtml(n.caseNumber || '')}" data-permission="${n.permission || 'readonly'}">رفض</button>
-        </div>
-      ` : ''}
+      <span class="notif-icon">${notifIconSvg(n.type)}</span>
+      <div class="notif-body">
+        ${escapeHtml(n.message)}
+        <span class="notif-time">${relativeTimeAr(n.createdAt)} — ${h.day} ${HIJRI_MONTHS[h.month-1]} ${h.year}هـ</span>
+        ${n.type === 'share_invite' && !n.actioned ? `
+          <div class="btn-row" style="margin-top:8px;">
+            <button class="btn btn-primary share-accept-btn" style="padding:6px 14px; font-size:12px;" data-notif="${n._id}" data-case="${escapeHtml(n.caseNumber || '')}" data-permission="${n.permission || 'readonly'}">قبول</button>
+            <button class="btn btn-ghost share-reject-btn" style="padding:6px 14px; font-size:12px;" data-notif="${n._id}" data-case="${escapeHtml(n.caseNumber || '')}" data-permission="${n.permission || 'readonly'}">رفض</button>
+          </div>
+        ` : ''}
+      </div>
+      ${!n.read ? '<span class="notif-unread-dot"></span>' : ''}
     </div>
-  `).join('');
+  `;
+  }).join('');
 
   list.querySelectorAll('.share-accept-btn').forEach(btn => {
     btn.addEventListener('click', () => acceptShareInvite(btn.dataset.notif, btn.dataset.case, btn.dataset.permission));
@@ -2360,7 +2838,7 @@ async function renderDashboard(){
       dt.setHours(0,0,0,0);
       const t = parseArabicTime(s.time);
       if(t) dt.setHours(t.hour, t.minute, 0, 0);
-      sessionItems.push({ caseNumber: c.caseNumber, label: c.plaintiff || c.caseType || c.caseNumber, time: s.time, dt });
+      sessionItems.push({ caseNumber: c.caseNumber, label: c.plaintiff || c.caseType || c.caseNumber, time: s.time, dt, kind: 'session' });
     });
   });
 
@@ -2375,7 +2853,7 @@ async function renderDashboard(){
       const [h,mi] = a.time.split(':').map(n => parseInt(n,10));
       dt.setHours(h||0, mi||0, 0, 0);
     }
-    apptItems.push({ clientName: a.clientName, time: a.time, notes: a.notes, type: a.type, countryCode: a.countryCode, phone: a.phone, dt, id: a._id });
+    apptItems.push({ clientName: a.clientName, time: a.time, notes: a.notes, type: a.type, countryCode: a.countryCode, phone: a.phone, dt, id: a._id, kind: 'appt' });
   });
 
   const sessionsToday = sessionItems.filter(x => x.dt >= todayStart && x.dt < todayEnd);
@@ -2388,58 +2866,48 @@ async function renderDashboard(){
   document.getElementById('statApptsToday').textContent = apptsToday.length;
   document.getElementById('statApptsWeek').textContent = apptsWeek.length;
 
-  // Nearest session
-  const upcomingSessions = sessionItems.filter(x => x.dt >= now).sort((a,b) => a.dt - b.dt);
-  const nearestSessionEl = document.getElementById('dashNearestSession');
-  if(upcomingSessions.length){
-    const n = upcomingSessions[0];
-    nearestSessionEl.innerHTML = `<div class="dash-item"><span class="di-time">${escapeHtml(n.time || '')}</span><div class="di-title">قضية رقم ${escapeHtml(n.caseNumber)}</div><div class="di-sub">${escapeHtml(n.label)} — ${n.dt.toLocaleDateString('ar-SA')}</div></div>`;
-  } else {
-    nearestSessionEl.innerHTML = '<p class="hint">لا توجد جلسات قادمة.</p>';
+  // Dot color: session = navy, client appointment = gold, other appointment types = bright blue
+  function dotColor(x){
+    if(x.kind === 'session') return '#0B3C9E';
+    if(x.type === 'client') return '#C2A05A';
+    return '#4FA3FF';
+  }
+  function rowHtml(x){
+    if(x.kind === 'session'){
+      return `<div class="today-row"><span class="today-dot" style="background:${dotColor(x)}"></span><div class="today-row-body"><div class="today-row-top"><span class="today-time">${escapeHtml(x.time || '')}</span>قضية رقم ${escapeHtml(x.caseNumber)}</div><div class="today-row-sub">${escapeHtml(x.label)}</div></div></div>`;
+    }
+    return `<div class="today-row"><span class="today-dot" style="background:${dotColor(x)}"></span><div class="today-row-body"><div class="today-row-top"><span class="today-time">${escapeHtml(x.time || '')}</span>${apptIcon(x.type)} ${escapeHtml(x.clientName)}</div><div class="today-row-sub">${x.notes ? escapeHtml(x.notes) : ''}</div>${contactButtonsHtml(x.countryCode, x.phone)}</div></div>`;
   }
 
-  // Nearest appointment
-  const upcomingAppts = apptItems.filter(x => x.dt >= now).sort((a,b) => a.dt - b.dt);
-  const nearestApptEl = document.getElementById('dashNearestAppt');
-  if(upcomingAppts.length){
-    const n = upcomingAppts[0];
-    nearestApptEl.innerHTML = `<div class="dash-item"><span class="di-time">${escapeHtml(n.time || '')}</span><div class="di-title">${apptIcon(n.type)} ${escapeHtml(n.clientName)}</div><div class="di-sub">${n.dt.toLocaleDateString('ar-SA')}${n.notes ? ' — ' + escapeHtml(n.notes) : ''}</div><div>${contactButtonsHtml(n.countryCode, n.phone)}</div></div>`;
-  } else {
-    nearestApptEl.innerHTML = '<p class="hint">لا توجد مواعيد قادمة.</p>';
-  }
+  // Objection-deadline rows — always pinned first, regardless of what time other items fall at
+  const objectionRows = cases
+    .filter(c => c.caseStatus === 'non_final' && typeof c.objectionDaysRemaining === 'number' && c.objectionDaysRemaining >= 0 && c.objectionDaysRemaining <= 30)
+    .sort((a,b) => a.objectionDaysRemaining - b.objectionDaysRemaining)
+    .map(c => `<div class="today-row today-row-alert"><div class="today-row-body"><div class="today-row-top">تنتهي مهلة الاعتراض بعد ${c.objectionDaysRemaining} يوم/أيام</div><div class="today-row-sub">قضية رقم ${escapeHtml(c.caseNumber)}</div></div></div>`);
 
-  // Today's agenda (sessions + appointments combined, chronological)
-  const agenda = [
-    ...sessionsToday.map(x => ({ ...x, kind: 'session' })),
-    ...apptsToday.map(x => ({ ...x, kind: 'appt' }))
-  ].sort((a,b) => a.dt - b.dt);
-  const agendaEl = document.getElementById('dashTodayAgenda');
-  if(agenda.length === 0){
-    agendaEl.innerHTML = '<p class="hint">ما فيه شي مجدول اليوم.</p>';
-  } else {
-    agendaEl.innerHTML = agenda.map(x => {
-      if(x.kind === 'session'){
-        return `<div class="dash-item"><span class="di-time">${escapeHtml(x.time || '')}</span><div class="di-title">⚖ قضية رقم ${escapeHtml(x.caseNumber)}</div><div class="di-sub">${escapeHtml(x.label)}</div></div>`;
-      }
-      return `<div class="dash-item"><span class="di-time">${escapeHtml(x.time || '')}</span><div class="di-title">${apptIcon(x.type)} ${escapeHtml(x.clientName)}</div><div class="di-sub">${x.notes ? escapeHtml(x.notes) : ''}</div><div>${contactButtonsHtml(x.countryCode, x.phone)}</div></div>`;
-    }).join('');
-  }
+  const todayItems = [...sessionsToday, ...apptsToday].sort((a,b) => a.dt - b.dt);
+  const todayListEl = document.getElementById('dashTodayList');
+  const combinedTodayHtml = objectionRows.join('') + todayItems.map(rowHtml).join('');
+  todayListEl.innerHTML = combinedTodayHtml || '<p class="hint">ما فيه شي مجدول اليوم.</p>';
 
-  // Objection-deadline status (always visible — green/orange/red)
-  const tracked = cases.filter(c => c.caseStatus === 'non_final' && typeof c.objectionDaysRemaining === 'number');
-  const alertEl = document.getElementById('dashObjectionAlert');
-  if(tracked.length === 0){
-    alertEl.innerHTML = `<div class="dash-obj-alert obj-green"><b>✅ لا يوجد لديك اعتراضات قادمة</b></div>`;
-  } else {
-    const minDays = Math.min(...tracked.map(c => c.objectionDaysRemaining));
-    const isRed = minDays <= 10;
-    const urgentCases = tracked.filter(c => isRed ? c.objectionDaysRemaining <= 10 : true).sort((a,b) => a.objectionDaysRemaining - b.objectionDaysRemaining);
-    alertEl.innerHTML = `<div class="dash-obj-alert ${isRed ? 'obj-red' : 'obj-orange'}">
-      <b>${isRed ? '🔴 تنبيه عاجل: اقتربت مدة الاعتراض على حكم' : '🟠 لديك اعتراضات قادمة يجب متابعتها'}</b>
-      ${urgentCases.map(c => `قضية رقم ${escapeHtml(c.caseNumber)} — متبقٍ ${c.objectionDaysRemaining} يوم/أيام`).join('<br>')}
-    </div>`;
+  // Upcoming days — single-open accordion for the next 6 days
+  const dayNames = ['الأحد','الاثنين','الثلاثاء','الأربعاء','الخميس','الجمعة','السبت'];
+  const upcomingEl = document.getElementById('dashUpcomingDays');
+  let upcomingHtml = '';
+  for(let i = 1; i <= 6; i++){
+    const dStart = new Date(todayStart); dStart.setDate(dStart.getDate() + i);
+    const dEnd = new Date(dStart); dEnd.setDate(dEnd.getDate() + 1);
+    const dayItems = [...sessionItems, ...apptItems].filter(x => x.dt >= dStart && x.dt < dEnd).sort((a,b) => a.dt - b.dt);
+    const label = (i === 1 ? 'غدًا · ' : '') + dayNames[dStart.getDay()] + ' ' + dStart.getDate();
+    const bodyHtml = dayItems.length ? dayItems.map(rowHtml).join('') : '<p class="hint" style="margin:6px 0;">ما فيه شي هذا اليوم.</p>';
+    upcomingHtml += `<details class="upcoming-day"><summary>${label}<span class="upcoming-badge">${dayItems.length}</span></summary><div class="upcoming-day-body">${bodyHtml}</div></details>`;
   }
-  alertEl.style.display = 'block';
+  upcomingEl.innerHTML = upcomingHtml;
+  upcomingEl.querySelectorAll('.upcoming-day').forEach(det => {
+    det.addEventListener('toggle', () => {
+      if(det.open) upcomingEl.querySelectorAll('.upcoming-day').forEach(other => { if(other !== det) other.open = false; });
+    });
+  });
 }
 
 async function renderCalendar(){
@@ -3149,11 +3617,29 @@ function showToast(msg){
 
 // ---------- Init ----------
 let appStarted = false;
+async function checkObjectionDeadlineNotifications(){
+  try{
+    const cases = (await loadAllCases()).map(normalizeCase).filter(c => !c.archived && isOwnerOf(c));
+    const tracked = cases.filter(c => c.caseStatus === 'non_final' && typeof c.objectionDaysRemaining === 'number' && c.objectionDaysRemaining >= 0 && c.objectionDaysRemaining <= 7);
+    if(tracked.length === 0) return;
+    const existing = await fetchMyNotifications(currentUserEmail);
+    const todayKey = new Date().toDateString();
+    for(const c of tracked){
+      const already = existing.some(n => n.type === 'objection_deadline' && n.caseNumber === c.caseNumber && new Date(n.createdAt).toDateString() === todayKey);
+      if(!already){
+        await addNotificationDoc(currentUserEmail, `تنتهي مهلة الاعتراض على قضية رقم ${c.caseNumber} بعد ${c.objectionDaysRemaining} يوم/أيام.`, 'objection_deadline', { caseNumber: c.caseNumber });
+      }
+    }
+    renderNotifBadge();
+  }catch(e){ /* best-effort — never block app startup */ }
+}
+
 function startApp(){
   if(appStarted) return;
   appStarted = true;
   renderDashboard();
   renderNotifBadge();
+  checkObjectionDeadlineNotifications();
   setInterval(() => {
     if(document.getElementById('view-home').classList.contains('active')) renderDashboard();
     if(document.getElementById('view-sessioncases').classList.contains('active') && scSubView === 'sessions') renderList();
