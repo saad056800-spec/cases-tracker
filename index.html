@@ -798,6 +798,9 @@
       بالتسجيل أو تسجيل الدخول أنت توافق على
       <a href="#" id="openPrivacyLink" style="color:var(--green-deep);">سياسة الخصوصية</a>
     </p>
+    <p style="text-align:center; margin-top:8px;">
+      <a href="#" id="backToLandingLink" style="font-size:11.5px; color:var(--ink-soft);">‹ رجوع</a>
+    </p>
   </div>
 </div>
 
@@ -1332,6 +1335,11 @@ if(firebaseConfigured()){
   document.getElementById('landingLoginBtn').addEventListener('click', () => {
     document.getElementById('landingScreen').style.display = 'none';
     document.getElementById('authScreen').style.display = 'flex';
+  });
+  document.getElementById('backToLandingLink').addEventListener('click', (e) => {
+    e.preventDefault();
+    document.getElementById('authScreen').style.display = 'none';
+    document.getElementById('landingScreen').style.display = 'block';
   });
 
   document.getElementById('resendVerifyBtn').addEventListener('click', async () => {
@@ -3651,6 +3659,7 @@ function startApp(){
 // keeps working exactly as before (no breakage while setup is in progress).
 // (Not applicable anymore — Firebase is already configured above — kept as a safety net.)
 if(!firebaseConfigured()){
+  document.getElementById('landingScreen').style.display = 'none';
   document.getElementById('authScreen').style.display = 'none';
   document.querySelector('.topbar').style.display = '';
   document.querySelector('main').style.display = '';
