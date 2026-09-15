@@ -332,6 +332,8 @@
     border-radius:999px; padding:2px 9px; margin-inline-start:8px;
   }
   .upcoming-day[open] summary .upcoming-badge{ background:var(--blue); color:#fff; }
+  .upcoming-day-past{ opacity:0.5; }
+  .upcoming-day-past summary{ color:var(--muted); }
   .upcoming-day-body{ padding:4px 4px 10px; }
 
   @media (min-width:900px){
@@ -590,12 +592,13 @@
   .attachment-item button{
     background:none; border:none; color:#B0463A; font-weight:800; cursor:pointer; font-size:14px; flex-shrink:0;
   }
-  .mini-archive-btn, .archive-case-btn, .restore-case-btn, .restore-session-btn{
+  .mini-archive-btn, .archive-case-btn, .restore-case-btn, .restore-session-btn, .wk-edit-btn, .wk-copy-btn{
     background:none; border:1px solid var(--line); color:var(--ink-soft); font-size:11px; font-weight:700;
     padding:3px 9px; border-radius:999px; cursor:pointer;
   }
   .mini-archive-btn:hover{ background:#FBEBE6; border-color:#E9C6BA; color:#8C3A2B; }
   .archive-case-btn:hover{ background:#FBEBE6; border-color:#E9C6BA; color:#8C3A2B; }
+  .wk-edit-btn:hover, .wk-copy-btn:hover{ background:var(--paper-2); }
   .restore-case-btn, .restore-session-btn{ color:var(--green-deep); border-color:var(--green-mist); }
   .restore-case-btn:hover, .restore-session-btn:hover{ background:var(--green-mist); }
 
@@ -903,7 +906,7 @@
 
       <div class="home-col-left">
         <div class="panel">
-          <h2>الأيام القادمة</h2>
+          <h2>أيام هذا الأسبوع</h2>
           <div id="dashUpcomingDays"></div>
         </div>
 
@@ -964,6 +967,15 @@
 
     <div id="scPanelSessions">
       <div class="export-toolbar">
+        <select id="exportPeriod" style="padding:9px 10px; border-radius:8px; border:1px solid var(--line); font-size:12.5px; background:var(--surface); color:var(--ink); font-family:'IBM Plex Sans Arabic',sans-serif;">
+          <option value="all">كل الفترات</option>
+          <option value="week">آخر أسبوع</option>
+          <option value="month">آخر شهر</option>
+          <option value="3months">آخر ٣ أشهر</option>
+          <option value="custom">فترة مخصّصة</option>
+        </select>
+        <input type="date" id="exportFromDate" style="display:none; padding:8px 10px; border-radius:8px; border:1px solid var(--line); font-size:12.5px;">
+        <input type="date" id="exportToDate" style="display:none; padding:8px 10px; border-radius:8px; border:1px solid var(--line); font-size:12.5px;">
         <button class="btn btn-gold" id="exportExcelBtn">📊 تصدير Excel</button>
         <button class="btn btn-ghost" id="exportPrintBtn">🖨️ طباعة / حفظ PDF</button>
       </div>
@@ -1794,13 +1806,47 @@ function convertSessionTimeToTZ(hijriDateStr, timeStr, targetTz){
 
 
 // ---------- Export (Excel + Print/PDF) ----------
+function getExportDateRange(){
+  const period = document.getElementById('exportPeriod').value;
+  if(period === 'all') return null; // no filtering — export everything
+  const now = new Date();
+  const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  const todayEnd = new Date(todayStart); todayEnd.setDate(todayEnd.getDate() + 1);
+  if(period === 'custom'){
+    const fromVal = document.getElementById('exportFromDate').value;
+    const toVal = document.getElementById('exportToDate').value;
+    if(!fromVal || !toVal) return 'invalid';
+    const from = new Date(fromVal); from.setHours(0,0,0,0);
+    const to = new Date(toVal); to.setHours(0,0,0,0); to.setDate(to.getDate() + 1); // inclusive end-of-day
+    return { from, to };
+  }
+  const from = new Date(todayStart);
+  if(period === 'week') from.setDate(from.getDate() - 7);
+  else if(period === 'month') from.setMonth(from.getMonth() - 1);
+  else if(period === '3months') from.setMonth(from.getMonth() - 3);
+  return { from, to: todayEnd };
+}
+
 async function buildExportRows(){
+  const range = getExportDateRange();
+  if(range === 'invalid'){
+    showToast('حدّد تاريخ البداية والنهاية للفترة المخصّصة.');
+    return null;
+  }
   const cases = (await loadAllCases()).map(normalizeCase).filter(c => !c.archived);
   const rows = [];
   cases.forEach(c => {
     const statusInfo = caseStatusInfo(c.caseStatus);
     const sessions = [...c.sessions].sort((a,b) => a.addedAt - b.addedAt);
     sessions.forEach(s => {
+      if(range){
+        const parts = (s.date || '').split('/');
+        if(parts.length !== 3) return;
+        const day = parseInt(parts[0],10), mon = parseInt(parts[1],10), yr = parseInt(parts[2],10);
+        if(!day || !mon || !yr) return;
+        const gDate = hijriToGregorianExact(day, mon, yr);
+        if(gDate < range.from || gDate >= range.to) return; // outside the selected period
+      }
       rows.push({
         'رقم القضية': c.caseNumber,
         'رقم الجلسة': s.number,
@@ -1819,9 +1865,16 @@ async function buildExportRows(){
   return rows;
 }
 
+document.getElementById('exportPeriod').addEventListener('change', () => {
+  const isCustom = document.getElementById('exportPeriod').value === 'custom';
+  document.getElementById('exportFromDate').style.display = isCustom ? '' : 'none';
+  document.getElementById('exportToDate').style.display = isCustom ? '' : 'none';
+});
+
 document.getElementById('exportExcelBtn').addEventListener('click', async () => {
   const rows = await buildExportRows();
-  if(rows.length === 0){ showToast('ما فيه بيانات للتصدير.'); return; }
+  if(rows === null) return; // invalid custom range — message already shown
+  if(rows.length === 0){ showToast('ما فيه بيانات للتصدير بهذي الفترة.'); return; }
   const ws = XLSX.utils.json_to_sheet(rows);
   ws['!cols'] = Object.keys(rows[0]).map(() => ({ wch: 18 }));
   const wb = XLSX.utils.book_new();
@@ -1833,7 +1886,8 @@ document.getElementById('exportExcelBtn').addEventListener('click', async () => 
 
 document.getElementById('exportPrintBtn').addEventListener('click', async () => {
   const rows = await buildExportRows();
-  if(rows.length === 0){ showToast('ما فيه بيانات للتصدير.'); return; }
+  if(rows === null) return;
+  if(rows.length === 0){ showToast('ما فيه بيانات للتصدير بهذي الفترة.'); return; }
   const cols = Object.keys(rows[0]);
   const printArea = document.getElementById('printArea');
   printArea.innerHTML = `
@@ -3181,17 +3235,22 @@ async function renderDashboard(){
   const combinedTodayHtml = objectionRows.join('') + todayItems.map(rowHtml).join('');
   todayListEl.innerHTML = combinedTodayHtml || '<p class="hint">ما فيه شي مجدول اليوم.</p>';
 
-  // Upcoming days — single-open accordion for the next 6 days
+  // This week (Saturday through Friday) — single-open accordion. Past days show dimmed.
   const dayNames = ['الأحد','الاثنين','الثلاثاء','الأربعاء','الخميس','الجمعة','السبت'];
   const upcomingEl = document.getElementById('dashUpcomingDays');
   let upcomingHtml = '';
-  for(let i = 1; i <= 6; i++){
-    const dStart = new Date(todayStart); dStart.setDate(dStart.getDate() + i);
+  const todayDow = todayStart.getDay(); // 0=Sun ... 6=Sat
+  const daysBackToSaturday = (todayDow + 1) % 7;
+  const weekSaturday = new Date(todayStart); weekSaturday.setDate(weekSaturday.getDate() - daysBackToSaturday);
+  for(let i = 0; i <= 6; i++){
+    const dStart = new Date(weekSaturday); dStart.setDate(dStart.getDate() + i);
     const dEnd = new Date(dStart); dEnd.setDate(dEnd.getDate() + 1);
+    const isPast = dStart < todayStart;
+    const isToday = dStart.getTime() === todayStart.getTime();
     const dayItems = [...sessionItems, ...apptItems].filter(x => x.dt >= dStart && x.dt < dEnd).sort((a,b) => a.dt - b.dt);
-    const label = (i === 1 ? 'غدًا · ' : '') + dayNames[dStart.getDay()] + ' ' + dStart.getDate();
+    const label = (isToday ? 'اليوم · ' : '') + dayNames[dStart.getDay()] + ' ' + dStart.getDate() + (isPast ? ' (انتهى)' : '');
     const bodyHtml = dayItems.length ? dayItems.map(rowHtml).join('') : '<p class="hint" style="margin:6px 0;">ما فيه شي هذا اليوم.</p>';
-    upcomingHtml += `<details class="upcoming-day"><summary>${label}<span class="upcoming-badge">${dayItems.length}</span></summary><div class="upcoming-day-body">${bodyHtml}</div></details>`;
+    upcomingHtml += `<details class="upcoming-day${isPast ? ' upcoming-day-past' : ''}"><summary>${label}<span class="upcoming-badge">${dayItems.length}</span></summary><div class="upcoming-day-body">${bodyHtml}</div></details>`;
   }
   upcomingEl.innerHTML = upcomingHtml;
   upcomingEl.querySelectorAll('.upcoming-day').forEach(det => {
@@ -3585,6 +3644,7 @@ async function renderWakalas(){
       <div class="card-footer">
         <span class="id-holder"></span>
         <div style="display:flex; gap:6px; align-items:center;">
+          <button class="wk-copy-btn" data-wakala="${w._id}">نسخ المعلومات</button>
           <button class="wk-edit-btn" data-wakala="${w._id}">تعديل</button>
           <button class="delete-btn" data-wakala="${w._id}">حذف</button>
         </div>
@@ -3596,6 +3656,26 @@ async function renderWakalas(){
     btn.addEventListener('click', () => {
       const w = wakalas.find(x => x._id === btn.dataset.wakala);
       if(w) startEditWakala(w);
+    });
+  });
+
+  grid.querySelectorAll('.wk-copy-btn').forEach(btn => {
+    btn.addEventListener('click', async () => {
+      const w = wakalas.find(x => x._id === btn.dataset.wakala);
+      if(!w) return;
+      const lines = [];
+      lines.push(`رقم الوكالة: ${w.number || ''}`);
+      if(w.principal) lines.push(`اسم الموكل: ${w.principal}`);
+      if(w.createdDate) lines.push(`تاريخ إصدار الوكالة: ${w.createdDate}`);
+      if(w.expiryDate) lines.push(`تاريخ انتهاء الوكالة: ${w.expiryDate}`);
+      if(w.source) lines.push(`مصدر الوكالة: ${w.source}`);
+      const text = lines.join('\n');
+      try{
+        await navigator.clipboard.writeText(text);
+        showToast('تم نسخ معلومات الوكالة.');
+      }catch(e){
+        showToast('تعذّر النسخ. حاول مجددًا.');
+      }
     });
   });
 
