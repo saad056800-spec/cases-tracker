@@ -522,6 +522,15 @@
     padding:2px 8px; border-radius:999px; margin-inline-start:6px; vertical-align:middle;
   }
   .notes-box{ padding:0 18px 14px; }
+  .expand-toggle-row{ padding:0 18px 10px; }
+  .expand-details-btn{
+    width:100%; background:var(--paper-2); border:1px solid var(--line); border-radius:8px;
+    padding:9px 12px; font-size:12.5px; font-weight:700; color:var(--ink-2); cursor:pointer;
+    font-family:'IBM Plex Sans Arabic',sans-serif;
+  }
+  .expand-details-btn:hover{ background:var(--line); }
+  .expanded-details{ padding:4px 0 0; border-top:1px solid var(--line); margin:0 18px 8px; }
+  .expanded-details .status-box, .expanded-details .sessions-list, .expanded-details .attachments-box{ padding-inline:0; }
   .status-box{ padding:0 18px 14px; }
   .status-box label{ display:block; font-size:11.5px; color:var(--ink-soft); margin-bottom:5px; font-weight:600; }
   .status-select{
@@ -944,13 +953,16 @@
 
     <div id="scMainContent">
     <div class="tabs" style="background:transparent; padding:0; margin-bottom:18px; border-bottom:1px solid var(--line); gap:0;">
-      <button class="tab-btn sc-subtab active" data-sub="sessions" id="scSubSessions" style="color:var(--ink-soft);">الجلسات</button>
-      <button class="tab-btn sc-subtab" data-sub="cases" id="scSubCases" style="color:var(--ink-soft);">القضايا</button>
-      <button class="tab-btn sc-subtab" data-sub="wakalas" id="scSubWakalas" style="color:var(--ink-soft);">الوكالات</button>
       <button class="tab-btn sc-subtab" data-sub="sulh" id="scSubSulh" style="color:var(--ink-soft);">جلسات الصلح</button>
+      <button class="tab-btn sc-subtab active" data-sub="sessions" id="scSubSessions" style="color:var(--ink-soft);">القضايا والجلسات</button>
+      <button class="tab-btn sc-subtab" data-sub="wakalas" id="scSubWakalas" style="color:var(--ink-soft);">الوكالات</button>
     </div>
 
     <div id="scPanelSessions">
+      <div class="export-toolbar">
+        <button class="btn btn-gold" id="exportExcelBtn">📊 تصدير Excel</button>
+        <button class="btn btn-ghost" id="exportPrintBtn">🖨️ طباعة / حفظ PDF</button>
+      </div>
       <div class="list-toolbar">
         <div class="search-box">
           <input type="text" id="searchInput" placeholder="ابحث برقم القضية أو اسم أحد الأطراف...">
@@ -967,24 +979,6 @@
         <h3>لا توجد قضايا في السجل بعد</h3>
         <p>ابدأ بلصق أول إشعار جلسة لإضافته إلى السجل.</p>
         <button class="btn btn-primary" id="emptyAddBtn">إضافة أول قضية</button>
-      </div>
-    </div>
-
-    <div id="scPanelCases" style="display:none;">
-      <div class="export-toolbar">
-        <button class="btn btn-gold" id="exportExcelBtn">📊 تصدير Excel</button>
-        <button class="btn btn-ghost" id="exportPrintBtn">🖨️ طباعة / حفظ PDF</button>
-      </div>
-      <div class="list-toolbar">
-        <div class="search-box">
-          <input type="text" id="casesSearchInput" placeholder="ابحث برقم القضية أو اسم أحد الأطراف...">
-        </div>
-      </div>
-      <div class="cases-grid" id="casesGroupGrid"></div>
-      <div class="empty" id="casesGroupEmpty" style="display:none;">
-        <div class="glyph"><span class="mark"></span></div>
-        <h3>لا توجد قضايا بعد</h3>
-        <p>القضايا اللي تضيفها بتظهر هنا مجمّعة مع كل جلساتها.</p>
       </div>
     </div>
 
@@ -1607,7 +1601,6 @@ function switchView(view){
     document.getElementById('scArchiveContent').style.display = 'none';
     document.getElementById('scArchiveToggleBtn').textContent = 'الأرشيف';
     if(scSubView === 'sessions') renderList();
-    else if(scSubView === 'cases') renderCasesGrouped();
     else if(scSubView === 'sulh') renderSulh();
     else renderWakalas();
   }
@@ -1631,19 +1624,17 @@ document.getElementById('scArchiveToggleBtn').addEventListener('click', () => {
 
 function setScSubView(view){
   scSubView = view;
-  const tabs = { sessions: 'scSubSessions', cases: 'scSubCases', wakalas: 'scSubWakalas', sulh: 'scSubSulh' };
-  const panels = { sessions: 'scPanelSessions', cases: 'scPanelCases', wakalas: 'scPanelWakalas', sulh: 'scPanelSulh' };
+  const tabs = { sessions: 'scSubSessions', wakalas: 'scSubWakalas', sulh: 'scSubSulh' };
+  const panels = { sessions: 'scPanelSessions', wakalas: 'scPanelWakalas', sulh: 'scPanelSulh' };
   Object.keys(tabs).forEach(v => {
     document.getElementById(tabs[v]).classList.toggle('active', v === view);
     document.getElementById(panels[v]).style.display = v === view ? '' : 'none';
   });
   if(view === 'sessions') renderList();
-  else if(view === 'cases') renderCasesGrouped();
   else if(view === 'wakalas') renderWakalas();
   else if(view === 'sulh') renderSulh();
 }
 document.getElementById('scSubSessions').addEventListener('click', () => setScSubView('sessions'));
-document.getElementById('scSubCases').addEventListener('click', () => setScSubView('cases'));
 document.getElementById('scSubWakalas').addEventListener('click', () => setScSubView('wakalas'));
 document.getElementById('scSubSulh').addEventListener('click', () => setScSubView('sulh'));
 
@@ -1773,7 +1764,6 @@ function convertSessionTimeToTZ(hijriDateStr, timeStr, targetTz){
   }catch(e){ return null; }
 }
 
-document.getElementById('casesSearchInput').addEventListener('input', renderCasesGrouped);
 
 // ---------- Export (Excel + Print/PDF) ----------
 async function buildExportRows(){
@@ -2561,6 +2551,7 @@ function buildSessionCardHtml(c, session){
   const chipClass = meta.state === 'past' ? 'past' : (meta.state === 'today' ? 'today' : 'upcoming');
   const sessionNumber = session.number;
   const statusInfo = caseStatusInfo(c.caseStatus);
+  const allSessions = [...c.sessions].sort((a,b) => a.addedAt - b.addedAt);
   return `
     <div class="card">
       <div class="card-top">
@@ -2607,6 +2598,59 @@ function buildSessionCardHtml(c, session){
         <input class="link-input" dir="ltr" data-case="${escapeHtml(c.caseNumber)}" value="${escapeHtml(c.sessionLink || '')}" placeholder="https://..." ${canEdit(c) ? '' : 'disabled'}>
         ${c.sessionLink ? `<a href="${escapeHtml(c.sessionLink)}" target="_blank" rel="noopener" class="link-open">فتح الرابط ↗</a>` : ''}
       </div>
+
+      <div class="expand-toggle-row">
+        <button class="expand-details-btn" data-case="${escapeHtml(c.caseNumber)}">🔽 عرض كل التفاصيل (${allSessions.length} جلسة/جلسات)</button>
+      </div>
+      <div class="expanded-details" data-case-details="${escapeHtml(c.caseNumber)}" style="display:none;">
+        <div class="status-box">
+          <label>حالة القضية</label>
+          <select class="status-select" data-case="${escapeHtml(c.caseNumber)}" ${canEdit(c) ? '' : 'disabled'}>
+            <option value="pending" ${c.caseStatus === 'pending' ? 'selected' : ''}>منظورة</option>
+            <option value="non_final" ${c.caseStatus === 'non_final' ? 'selected' : ''}>محكوم بها بحكم غير نهائي</option>
+            <option value="final" ${c.caseStatus === 'final' ? 'selected' : ''}>محكوم بها بحكم نهائي</option>
+          </select>
+          <div class="objection-box" style="${c.caseStatus === 'non_final' ? '' : 'display:none;'}">
+            <label>المدة المتبقية للاعتراض على الحكم (باليوم)</label>
+            <input type="number" min="0" class="objection-input" data-case="${escapeHtml(c.caseNumber)}" value="${c.objectionDaysRemaining !== undefined && c.objectionDaysRemaining !== null ? c.objectionDaysRemaining : ''}" placeholder="مثال: 15" ${canEdit(c) ? '' : 'disabled'}>
+          </div>
+        </div>
+        <div class="sessions-list">
+          ${allSessions.map(s => `
+            <div class="session-row ${s.archived ? 'is-archived' : ''} ${!s.archived && s.id === session.id ? 'is-current' : ''}">
+              <span class="session-row-date">${escapeHtml(s.date)} — ${escapeHtml(s.time || '—')}</span>
+              <span class="session-row-tag">جلسة ${escapeHtml(String(s.number))} ${s.archived ? '· مؤرشفة' : (s.id === session.id ? '· الحالية' : '')}</span>
+              ${canEdit(c) && !s.archived ? `<button class="mini-archive-btn" data-case="${escapeHtml(c.caseNumber)}" data-session="${escapeHtml(s.id)}">أرشفة</button>` : ''}
+            </div>
+          `).join('')}
+        </div>
+        ${(c.activityLog||[]).length ? `
+          <details class="activity-log">
+            <summary>سجل النشاط (${c.activityLog.length})</summary>
+            ${[...c.activityLog].sort((a,b) => b.at - a.at).slice(0,10).map(l => `
+              <div class="activity-item">
+                <span class="ai-action">${escapeHtml(l.action)}</span>
+                <span class="ai-meta">${escapeHtml(l.byEmail)} — ${new Date(l.at).toLocaleString('ar-SA')}</span>
+              </div>
+            `).join('')}
+          </details>
+        ` : ''}
+        <div class="attachments-box">
+          <label>المستندات المرفقة</label>
+          ${(c.attachments||[]).length ? (c.attachments||[]).map(a => `
+            <div class="attachment-item">
+              <a href="${escapeHtml(a.url)}" target="_blank" rel="noopener">📄 ${escapeHtml(a.name)}</a>
+              ${canEdit(c) ? `<button class="delete-attachment-btn" data-case="${escapeHtml(c.caseNumber)}" data-path="${escapeHtml(a.path)}" data-name="${escapeHtml(a.name)}">×</button>` : ''}
+            </div>
+          `).join('') : '<p class="hint" style="margin:4px 0;">ما فيه مستندات مرفقة بعد.</p>'}
+          ${canEdit(c) ? `
+            <input type="file" class="attachment-input" data-case="${escapeHtml(c.caseNumber)}" style="display:none;">
+            <button class="btn btn-ghost upload-attachment-btn" data-case="${escapeHtml(c.caseNumber)}" style="margin-top:6px; font-size:12px; padding:6px 12px;">📎 إرفاق ملف</button>
+          ` : ''}
+        </div>
+        ${canEdit(c) ? `<div class="btn-row" style="margin-top:10px;"><button class="btn btn-ghost archive-case-btn" data-case="${escapeHtml(c.caseNumber)}" style="width:100%;">أرشفة القضية بالكامل</button></div>` : ''}
+      </div>
+
       <div class="card-footer">
         <span class="id-holder">هوية: ${escapeHtml(c.idHolder || '—')}</span>
         <div style="display:flex; gap:6px; align-items:center;">
@@ -2627,6 +2671,16 @@ function buildSessionCardHtml(c, session){
 }
 
 function wireSessionCardEvents(grid, refresh){
+  grid.querySelectorAll('.expand-details-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const details = grid.querySelector(`.expanded-details[data-case-details="${btn.dataset.case}"]`);
+      if(!details) return;
+      const isOpen = details.style.display !== 'none';
+      details.style.display = isOpen ? 'none' : 'block';
+      btn.textContent = btn.textContent.replace(isOpen ? '🔼' : '🔽', isOpen ? '🔽' : '🔼');
+    });
+  });
+
   grid.querySelectorAll('.tz-select').forEach(sel => {
     sel.addEventListener('change', () => {
       const resultEl = sel.nextElementSibling;
@@ -2714,6 +2768,108 @@ function wireSessionCardEvents(grid, refresh){
         refresh();
       }catch(e){
         showToast('حدث خطأ. حاول مجددًا.');
+      }
+    });
+  });
+
+  grid.querySelectorAll('.status-select').forEach(sel => {
+    sel.addEventListener('change', async () => {
+      const box = sel.closest('.status-box').querySelector('.objection-box');
+      box.style.display = sel.value === 'non_final' ? '' : 'none';
+      try{
+        await patchCaseDoc(sel.dataset.case, { caseStatus: sel.value });
+        logActivity(sel.dataset.case, `غيّر حالة القضية إلى: ${caseStatusInfo(sel.value).label}`);
+        showToast('تم تحديث حالة القضية.');
+      }catch(e){ showToast('تعذّر تحديث الحالة.'); }
+    });
+  });
+
+  grid.querySelectorAll('.objection-input').forEach(inp => {
+    inp.addEventListener('blur', async () => {
+      const val = inp.value.trim() === '' ? null : parseInt(inp.value, 10);
+      try{
+        await patchCaseDoc(inp.dataset.case, { objectionDaysRemaining: val });
+        showToast('تم حفظ المدة.');
+      }catch(e){ showToast('تعذّر الحفظ.'); }
+    });
+  });
+
+  grid.querySelectorAll('.mini-archive-btn').forEach(btn => {
+    btn.addEventListener('click', async () => {
+      try{
+        const data = await fetchCase(btn.dataset.case);
+        const rec = normalizeCase(data);
+        const s = rec.sessions.find(s => s.id === btn.dataset.session);
+        if(s) s.archived = true;
+        await patchCaseDoc(btn.dataset.case, { sessions: rec.sessions });
+        showToast('تمت أرشفة الجلسة.');
+        refresh();
+      }catch(e){ showToast('حدث خطأ. حاول مجددًا.'); }
+    });
+  });
+
+  grid.querySelectorAll('.archive-case-btn').forEach(btn => {
+    btn.addEventListener('click', async () => {
+      if(!confirm('أرشفة هذي القضية بالكامل؟ تقدر تسترجعها لاحقًا من الأرشيف.')) return;
+      try{
+        await patchCaseDoc(btn.dataset.case, { archived: true, updatedAt: Date.now() });
+        logActivity(btn.dataset.case, 'أرشف القضية بالكامل');
+        showToast('تمت أرشفة القضية.');
+        refresh();
+      }catch(e){ showToast('حدث خطأ. حاول مجددًا.'); }
+    });
+  });
+
+  grid.querySelectorAll('.upload-attachment-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const input = grid.querySelector(`.attachment-input[data-case="${btn.dataset.case}"]`);
+      if(input) input.click();
+    });
+  });
+
+  grid.querySelectorAll('.attachment-input').forEach(input => {
+    input.addEventListener('change', async () => {
+      const file = input.files[0];
+      if(!file) return;
+      if(file.size > 5 * 1024 * 1024){
+        showToast('حجم الملف كبير جدًا (الحد الأقصى ٥ ميقابايت).');
+        input.value = '';
+        return;
+      }
+      showToast('جاري رفع الملف...');
+      try{
+        const path = `attachments/${input.dataset.case}/${Date.now()}_${file.name}`;
+        const fileRef = ref(storageInstance, path);
+        await uploadBytes(fileRef, file);
+        const url = await getDownloadURL(fileRef);
+        await patchCaseDoc(input.dataset.case, {
+          attachments: arrayUnion({ name: file.name, url, path, uploadedAt: Date.now(), uploadedBy: currentUserEmail })
+        });
+        logActivity(input.dataset.case, `أرفق ملف: ${file.name}`);
+        showToast('تم رفع الملف.');
+        refresh();
+      }catch(e){
+        showToast('تعذّر رفع الملف. تأكد إن Firebase Storage مفعّل.');
+        console.error(e);
+      }
+    });
+  });
+
+  grid.querySelectorAll('.delete-attachment-btn').forEach(btn => {
+    btn.addEventListener('click', async () => {
+      if(!confirm('حذف هذا المرفق؟')) return;
+      try{
+        try{ await deleteObject(ref(storageInstance, btn.dataset.path)); }catch(e){ /* file may already be gone */ }
+        const data = await fetchCase(btn.dataset.case);
+        const rec = normalizeCase(data);
+        const match = (rec.attachments || []).find(a => a.path === btn.dataset.path);
+        if(match) await patchCaseDoc(btn.dataset.case, { attachments: arrayRemove(match) });
+        logActivity(btn.dataset.case, `حذف ملف: ${btn.dataset.name}`);
+        showToast('تم حذف المرفق.');
+        refresh();
+      }catch(e){
+        showToast('حدث خطأ أثناء الحذف.');
+        console.error(e);
       }
     });
   });
@@ -3310,209 +3466,6 @@ function isOwnerOf(c){
 }
 
 // ---------- القضايا (grouped) view: one card per case, listing every session ----------
-async function renderCasesGrouped(){
-  const grid = document.getElementById('casesGroupGrid');
-  const empty = document.getElementById('casesGroupEmpty');
-
-  let cases = (await loadAllCases()).map(normalizeCase).filter(c => !c.archived);
-  // (loadAllCases/fetchMyCases already scopes to owner + full + read-only shares)
-
-  const query = document.getElementById('casesSearchInput').value.trim().toLowerCase();
-  if(query){
-    cases = cases.filter(c =>
-      (c.caseNumber||'').toLowerCase().includes(query) ||
-      (c.plaintiff||'').toLowerCase().includes(query) ||
-      (c.defendant||'').toLowerCase().includes(query) ||
-      (c.caseType||'').toLowerCase().includes(query)
-    );
-  }
-  cases.sort((a,b) => b.updatedAt - a.updatedAt);
-
-  // (case count badge removed — tabs merged into one "مرساتك" tab)
-
-  if(cases.length === 0){ grid.innerHTML = ''; empty.style.display = 'block'; return; }
-  empty.style.display = 'none';
-
-  grid.innerHTML = cases.map(c => {
-    const sessions = [...c.sessions].sort((a,b) => a.addedAt - b.addedAt);
-    const latest = getLatestSession(c);
-    const statusInfo = caseStatusInfo(c.caseStatus);
-    return `
-    <div class="card">
-      <div class="card-top">
-        <div class="seal"><span class="mark"></span></div>
-        <span class="case-number-label">رقم القضية</span>
-        <span class="case-number">${escapeHtml(c.caseNumber)}</span>
-        <div>
-          <span class="status-badge scheduled">${sessions.length} جلسة/جلسات</span>
-          <span class="status-badge ${statusInfo.cls}">${statusInfo.label}</span>
-        </div>
-      </div>
-      <div class="parties">
-        ${ (c.plaintiff || c.defendant) ? `
-          <div class="party-row"><span class="party-role">المدعي</span><span class="party-name">${escapeHtml(c.plaintiff || '—')}</span></div>
-          <div class="vs-divider">ضد</div>
-          <div class="party-row"><span class="party-role">المدعى عليه</span><span class="party-name">${escapeHtml(c.defendant || '—')}</span></div>
-        ` : `
-          <div class="party-row"><span class="party-role">نوع القضية</span><span class="party-name">${escapeHtml(c.caseType || '—')}</span></div>
-        ` }
-      </div>
-      ${c.notes ? `<div class="case-notes">📝 ${escapeHtml(c.notes)}</div>` : ''}
-      <div class="status-box">
-        <label>حالة القضية</label>
-        <select class="status-select" data-case="${escapeHtml(c.caseNumber)}" ${canEdit(c) ? '' : 'disabled'}>
-          <option value="pending" ${c.caseStatus === 'pending' ? 'selected' : ''}>منظورة</option>
-          <option value="non_final" ${c.caseStatus === 'non_final' ? 'selected' : ''}>محكوم بها بحكم غير نهائي</option>
-          <option value="final" ${c.caseStatus === 'final' ? 'selected' : ''}>محكوم بها بحكم نهائي</option>
-        </select>
-        <div class="objection-box" style="${c.caseStatus === 'non_final' ? '' : 'display:none;'}">
-          <label>المدة المتبقية للاعتراض على الحكم (باليوم)</label>
-          <input type="number" min="0" class="objection-input" data-case="${escapeHtml(c.caseNumber)}" value="${c.objectionDaysRemaining !== undefined && c.objectionDaysRemaining !== null ? c.objectionDaysRemaining : ''}" placeholder="مثال: 15" ${canEdit(c) ? '' : 'disabled'}>
-        </div>
-      </div>
-      <div class="sessions-list">
-        ${sessions.map(s => `
-          <div class="session-row ${s.archived ? 'is-archived' : ''} ${!s.archived && latest && s.id === latest.id ? 'is-current' : ''}">
-            <span class="session-row-date">${escapeHtml(s.date)} — ${escapeHtml(s.time || '—')}</span>
-            <span class="session-row-tag">جلسة ${escapeHtml(String(s.number))} ${s.archived ? '· مؤرشفة' : (latest && s.id === latest.id ? '· الحالية' : '')}</span>
-            ${canEdit(c) && !s.archived ? `<button class="mini-archive-btn" data-case="${escapeHtml(c.caseNumber)}" data-session="${escapeHtml(s.id)}">أرشفة</button>` : ''}
-          </div>
-        `).join('')}
-      </div>
-      ${(c.activityLog||[]).length ? `
-        <details class="activity-log">
-          <summary>سجل النشاط (${c.activityLog.length})</summary>
-          ${[...c.activityLog].sort((a,b) => b.at - a.at).slice(0,10).map(l => `
-            <div class="activity-item">
-              <span class="ai-action">${escapeHtml(l.action)}</span>
-              <span class="ai-meta">${escapeHtml(l.byEmail)} — ${new Date(l.at).toLocaleString('ar-SA')}</span>
-            </div>
-          `).join('')}
-        </details>
-      ` : ''}
-      <div class="attachments-box">
-        <label>المستندات المرفقة</label>
-        ${(c.attachments||[]).length ? (c.attachments||[]).map(a => `
-          <div class="attachment-item">
-            <a href="${escapeHtml(a.url)}" target="_blank" rel="noopener">📄 ${escapeHtml(a.name)}</a>
-            ${canEdit(c) ? `<button class="delete-attachment-btn" data-case="${escapeHtml(c.caseNumber)}" data-path="${escapeHtml(a.path)}" data-name="${escapeHtml(a.name)}">×</button>` : ''}
-          </div>
-        `).join('') : '<p class="hint" style="margin:4px 0;">ما فيه مستندات مرفقة بعد.</p>'}
-        ${canEdit(c) ? `
-          <input type="file" class="attachment-input" data-case="${escapeHtml(c.caseNumber)}" style="display:none;">
-          <button class="btn btn-ghost upload-attachment-btn" data-case="${escapeHtml(c.caseNumber)}" style="margin-top:6px; font-size:12px; padding:6px 12px;">📎 إرفاق ملف</button>
-        ` : ''}
-      </div>
-      <div class="card-footer">
-        <span class="id-holder">هوية: ${escapeHtml(c.idHolder || '—')}</span>
-        ${canEdit(c) ? `<button class="archive-case-btn" data-case="${escapeHtml(c.caseNumber)}">أرشفة القضية بالكامل</button>` : ''}
-      </div>
-    </div>`;
-  }).join('');
-
-  grid.querySelectorAll('.status-select').forEach(sel => {
-    sel.addEventListener('change', async () => {
-      const box = sel.closest('.status-box').querySelector('.objection-box');
-      box.style.display = sel.value === 'non_final' ? '' : 'none';
-      try{
-        await patchCaseDoc(sel.dataset.case, { caseStatus: sel.value });
-        logActivity(sel.dataset.case, `غيّر حالة القضية إلى: ${caseStatusInfo(sel.value).label}`);
-        showToast('تم تحديث حالة القضية.');
-      }catch(e){ showToast('تعذّر تحديث الحالة.'); }
-    });
-  });
-
-  grid.querySelectorAll('.objection-input').forEach(inp => {
-    inp.addEventListener('blur', async () => {
-      const val = inp.value.trim() === '' ? null : parseInt(inp.value, 10);
-      try{
-        await patchCaseDoc(inp.dataset.case, { objectionDaysRemaining: val });
-        showToast('تم حفظ المدة.');
-      }catch(e){ showToast('تعذّر الحفظ.'); }
-    });
-  });
-
-  grid.querySelectorAll('.mini-archive-btn').forEach(btn => {
-    btn.addEventListener('click', async () => {
-      try{
-        const data = await fetchCase(btn.dataset.case);
-        const rec = normalizeCase(data);
-        const s = rec.sessions.find(s => s.id === btn.dataset.session);
-        if(s) s.archived = true;
-        await patchCaseDoc(btn.dataset.case, { sessions: rec.sessions });
-        showToast('تمت أرشفة الجلسة.');
-        renderCasesGrouped();
-      }catch(e){ showToast('حدث خطأ. حاول مجددًا.'); }
-    });
-  });
-
-  grid.querySelectorAll('.archive-case-btn').forEach(btn => {
-    btn.addEventListener('click', async () => {
-      if(!confirm('أرشفة هذي القضية بالكامل؟ تقدر تسترجعها لاحقًا من الأرشيف.')) return;
-      try{
-        await patchCaseDoc(btn.dataset.case, { archived: true, updatedAt: Date.now() });
-        logActivity(btn.dataset.case, 'أرشف القضية بالكامل');
-        showToast('تمت أرشفة القضية.');
-        renderCasesGrouped();
-      }catch(e){ showToast('حدث خطأ. حاول مجددًا.'); }
-    });
-  });
-
-  grid.querySelectorAll('.upload-attachment-btn').forEach(btn => {
-    btn.addEventListener('click', () => {
-      const input = grid.querySelector(`.attachment-input[data-case="${btn.dataset.case}"]`);
-      if(input) input.click();
-    });
-  });
-
-  grid.querySelectorAll('.attachment-input').forEach(input => {
-    input.addEventListener('change', async () => {
-      const file = input.files[0];
-      if(!file) return;
-      if(file.size > 5 * 1024 * 1024){
-        showToast('حجم الملف كبير جدًا (الحد الأقصى ٥ ميقابايت).');
-        input.value = '';
-        return;
-      }
-      showToast('جاري رفع الملف...');
-      try{
-        const path = `attachments/${input.dataset.case}/${Date.now()}_${file.name}`;
-        const fileRef = ref(storageInstance, path);
-        await uploadBytes(fileRef, file);
-        const url = await getDownloadURL(fileRef);
-        await patchCaseDoc(input.dataset.case, {
-          attachments: arrayUnion({ name: file.name, url, path, uploadedAt: Date.now(), uploadedBy: currentUserEmail })
-        });
-        logActivity(input.dataset.case, `أرفق ملف: ${file.name}`);
-        showToast('تم رفع الملف.');
-        renderCasesGrouped();
-      }catch(e){
-        showToast('تعذّر رفع الملف. تأكد إن Firebase Storage مفعّل.');
-        console.error(e);
-      }
-    });
-  });
-
-  grid.querySelectorAll('.delete-attachment-btn').forEach(btn => {
-    btn.addEventListener('click', async () => {
-      if(!confirm('حذف هذا المرفق؟')) return;
-      try{
-        try{ await deleteObject(ref(storageInstance, btn.dataset.path)); }catch(e){ /* file may already be gone */ }
-        const data = await fetchCase(btn.dataset.case);
-        const rec = normalizeCase(data);
-        const match = (rec.attachments || []).find(a => a.path === btn.dataset.path);
-        if(match) await patchCaseDoc(btn.dataset.case, { attachments: arrayRemove(match) });
-        logActivity(btn.dataset.case, `حذف ملف: ${btn.dataset.name}`);
-        showToast('تم حذف المرفق.');
-        renderCasesGrouped();
-      }catch(e){
-        showToast('حدث خطأ أثناء الحذف.');
-        console.error(e);
-      }
-    });
-  });
-}
-
 // ---------- الأرشيف view: archived cases, or archived individual sessions ----------
 async function renderArchive(){
   const grid = document.getElementById('archiveGrid');
