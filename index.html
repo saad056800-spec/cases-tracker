@@ -441,12 +441,13 @@
   }
   .calendar-grid{ display:grid; grid-template-columns:repeat(7, minmax(0,1fr)); gap:3px; }
   .cal-day{
-    aspect-ratio:0.8; border-radius:8px; border:1px solid var(--paper-dim); background:var(--surface);
+    aspect-ratio:0.8; border-radius:8px; border:1px solid var(--line); background:var(--surface);
     padding:3px; font-size:11px; cursor:pointer; display:flex; flex-direction:column; gap:1px;
     transition: background .12s, border-color .12s; position:relative; min-width:0;
   }
   .cal-day:hover{ border-color:var(--gold); }
-  .cal-day.outside{ opacity:0.35; }
+  .cal-day-blank{ background:transparent; border-color:transparent; cursor:default; }
+  .cal-day-blank:hover{ border-color:transparent; }
   .cal-day.today{ border-color:var(--green-deep); border-width:2px; }
   .cal-day.has-selected{ background:var(--green-mist); }
   .cal-day .cal-num{ font-weight:700; color:var(--ink); line-height:1.2; }
@@ -454,14 +455,16 @@
   .cal-day .cal-dots{ display:flex; gap:2px; flex-wrap:wrap; margin-top:auto; min-height:6px; }
   .cal-dot{ width:5px; height:5px; border-radius:50%; flex-shrink:0; }
   .cal-dot.session{ background:var(--gold); }
-  .cal-dot.appt{ background:#2A5A8C; }
+  .cal-dot.appt{ background:var(--blue-bright); }
   .day-item{
     padding:9px 12px; border-radius:8px; background:var(--paper-dim); margin-bottom:8px; font-size:13px;
   }
   .day-item .di-title{ font-weight:700; color:var(--ink); }
   .day-item .di-sub{ color:var(--ink-soft); font-size:11.5px; margin-top:2px; }
+  .calendar-col-cal, .calendar-col-appt{ display:flex; flex-direction:column; gap:20px; }
   @media (min-width:900px){
-    .calendar-panel{ max-width:480px; margin:0 auto; }
+    .calendar-panel{ max-width:none; margin:0; }
+    .calendar-layout{ display:grid; grid-template-columns:1fr 1fr; gap:20px; align-items:start; }
     .cal-day{ font-size:12px; }
     .cal-day .cal-hijri-num{ font-size:10px; }
   }
@@ -1097,62 +1100,68 @@
 
   <!-- ===== CALENDAR VIEW ===== -->
   <section class="view" id="view-calendar">
-    <div class="panel calendar-panel">
-      <div class="calendar-header">
-        <div class="calendar-nav">
-          <button class="btn btn-ghost" id="calPrevBtn">‹ الشهر السابق</button>
-          <button class="btn btn-ghost" id="calNextBtn">الشهر التالي ›</button>
-        </div>
-        <h2 id="calMonthLabel"></h2>
-      </div>
-      <div class="calendar-weekdays">
-        <span>أحد</span><span>اثنين</span><span>ثلاثاء</span><span>أربعاء</span><span>خميس</span><span>جمعة</span><span>سبت</span>
-      </div>
-      <div class="calendar-grid" id="calendarGrid"></div>
-    </div>
-
-    <div class="panel" id="dayDetailPanel" style="display:none;">
-      <h2 id="dayDetailTitle"></h2>
-      <div id="dayDetailContent"></div>
-    </div>
-
-    <div class="panel">
-      <h2>إضافة موعد</h2>
-      <p class="hint">مواعيد عامة (استشارة، اجتماع، مراجعة...) منفصلة عن جلسات المحكمة.</p>
-      <div class="field-grid">
-        <div class="field full">
-          <label>نوع الموعد</label>
-          <select id="appt_type" style="width:100%; font-family:'IBM Plex Sans Arabic',sans-serif; font-size:13.5px; padding:10px 12px; border-radius:8px; border:1px solid var(--line); background:var(--surface);">
-            <option value="client">عميل</option>
-            <option value="review">مراجعة</option>
-            <option value="private">خاص</option>
-            <option value="other">أخرى</option>
-          </select>
-        </div>
-        <div class="field full"><label id="apptNameLabel">اسم العميل</label><input id="appt_client" placeholder="اسم العميل"></div>
-        <div class="field"><label>التاريخ</label><input id="appt_date" type="date"></div>
-        <div class="field">
-          <label>الوقت</label>
-          <div style="display:flex; gap:6px;">
-            <select id="appt_hour" style="flex:1; padding:9px 6px; border-radius:8px; border:1px solid var(--line); font-size:13px; background:var(--surface);"></select>
-            <select id="appt_minute" style="flex:1; padding:9px 6px; border-radius:8px; border:1px solid var(--line); font-size:13px; background:var(--surface);"></select>
-            <select id="appt_ampm" style="flex:1; padding:9px 6px; border-radius:8px; border:1px solid var(--line); font-size:13px; background:var(--surface);">
-              <option value="صباحاً">صباحًا</option>
-              <option value="مساءً">مساءً</option>
-            </select>
+    <div class="calendar-layout">
+      <div class="calendar-col-appt">
+        <div class="panel">
+          <h2>إضافة موعد</h2>
+          <p class="hint">مواعيد عامة (استشارة، اجتماع، مراجعة...) منفصلة عن جلسات المحكمة.</p>
+          <div class="field-grid">
+            <div class="field full">
+              <label>نوع الموعد</label>
+              <select id="appt_type" style="width:100%; font-family:'IBM Plex Sans Arabic',sans-serif; font-size:13.5px; padding:10px 12px; border-radius:8px; border:1px solid var(--line); background:var(--surface);">
+                <option value="client">عميل</option>
+                <option value="review">مراجعة</option>
+                <option value="private">خاص</option>
+                <option value="other">أخرى</option>
+              </select>
+            </div>
+            <div class="field full"><label id="apptNameLabel">اسم العميل</label><input id="appt_client" placeholder="اسم العميل"></div>
+            <div class="field"><label>التاريخ</label><input id="appt_date" type="date"></div>
+            <div class="field">
+              <label>الوقت</label>
+              <div style="display:flex; gap:6px;">
+                <select id="appt_hour" style="flex:1; padding:9px 6px; border-radius:8px; border:1px solid var(--line); font-size:13px; background:var(--surface);"></select>
+                <select id="appt_minute" style="flex:1; padding:9px 6px; border-radius:8px; border:1px solid var(--line); font-size:13px; background:var(--surface);"></select>
+                <select id="appt_ampm" style="flex:1; padding:9px 6px; border-radius:8px; border:1px solid var(--line); font-size:13px; background:var(--surface);">
+                  <option value="صباحاً">صباحًا</option>
+                  <option value="مساءً">مساءً</option>
+                </select>
+              </div>
+            </div>
+            <div class="field full">
+              <label>رقم الجوال (اختياري — لتفعيل الاتصال والواتساب)</label>
+              <div style="display:flex; gap:6px;">
+                <select id="appt_countryCode" style="width:110px; padding:9px 6px; border-radius:8px; border:1px solid var(--line); font-size:12.5px;"></select>
+                <input id="appt_phone" dir="ltr" placeholder="5xxxxxxxx" style="flex:1;">
+              </div>
+            </div>
+            <div class="field full"><label>ملاحظات</label><textarea id="appt_notes" style="min-height:60px; font-size:13.5px; padding:9px 12px; border-radius:8px; border:1px solid var(--line); background:var(--surface);" placeholder="تفاصيل الموعد..."></textarea></div>
+          </div>
+          <div class="btn-row">
+            <button class="btn btn-primary" id="apptSaveBtn">حفظ الموعد</button>
           </div>
         </div>
-        <div class="field full">
-          <label>رقم الجوال (اختياري — لتفعيل الاتصال والواتساب)</label>
-          <div style="display:flex; gap:6px;">
-            <select id="appt_countryCode" style="width:110px; padding:9px 6px; border-radius:8px; border:1px solid var(--line); font-size:12.5px;"></select>
-            <input id="appt_phone" dir="ltr" placeholder="5xxxxxxxx" style="flex:1;">
-          </div>
-        </div>
-        <div class="field full"><label>ملاحظات</label><textarea id="appt_notes" style="min-height:60px; font-size:13.5px; padding:9px 12px; border-radius:8px; border:1px solid var(--line); background:var(--surface);" placeholder="تفاصيل الموعد..."></textarea></div>
       </div>
-      <div class="btn-row">
-        <button class="btn btn-primary" id="apptSaveBtn">حفظ الموعد</button>
+
+      <div class="calendar-col-cal">
+        <div class="panel calendar-panel">
+          <div class="calendar-header">
+            <div class="calendar-nav">
+              <button class="btn btn-ghost" id="calPrevBtn">‹ الشهر السابق</button>
+              <button class="btn btn-ghost" id="calNextBtn">الشهر التالي ›</button>
+            </div>
+            <h2 id="calMonthLabel"></h2>
+          </div>
+          <div class="calendar-weekdays">
+            <span>أحد</span><span>اثنين</span><span>ثلاثاء</span><span>أربعاء</span><span>خميس</span><span>جمعة</span><span>سبت</span>
+          </div>
+          <div class="calendar-grid" id="calendarGrid"></div>
+        </div>
+
+        <div class="panel" id="dayDetailPanel" style="display:none;">
+          <h2 id="dayDetailTitle"></h2>
+          <div id="dayDetailContent"></div>
+        </div>
       </div>
     </div>
   </section>
@@ -3304,30 +3313,29 @@ async function renderCalendar(){
     addToDay(a.date, 'appts', a);
   });
 
-  // Build the 6x7 grid (Sunday-first, matching the "أحد" header)
+  // Build the grid (Sunday-first, matching the "أحد" header) — only as many rows as the
+  // month actually needs, with blank placeholder cells (no adjacent-month dates shown).
   const firstOfMonth = new Date(year, month, 1);
   const startOffset = firstOfMonth.getDay(); // 0 = Sunday
   const daysInMonth = new Date(year, month + 1, 0).getDate();
-  const daysInPrevMonth = new Date(year, month, 0).getDate();
   const todayKey = dateKey(new Date().getFullYear(), new Date().getMonth(), new Date().getDate());
+  const totalCellsNeeded = Math.ceil((startOffset + daysInMonth) / 7) * 7;
 
   const cells = [];
   for(let i = 0; i < startOffset; i++){
-    const d = daysInPrevMonth - startOffset + 1 + i;
-    cells.push({ day: d, outside: true, key: dateKey(month === 0 ? year - 1 : year, month === 0 ? 11 : month - 1, d) });
+    cells.push({ blank: true });
   }
   for(let d = 1; d <= daysInMonth; d++){
-    cells.push({ day: d, outside: false, key: dateKey(year, month, d) });
+    cells.push({ blank: false, day: d, key: dateKey(year, month, d) });
   }
-  while(cells.length < 42){
-    const d = cells.length - (startOffset + daysInMonth) + 1;
-    cells.push({ day: d, outside: true, key: dateKey(month === 11 ? year + 1 : year, month === 11 ? 0 : month + 1, d) });
+  while(cells.length < totalCellsNeeded){
+    cells.push({ blank: true });
   }
 
   grid.innerHTML = cells.map(c => {
+    if(c.blank) return `<div class="cal-day cal-day-blank"></div>`;
     const info = dayMap.get(c.key);
     const classes = ['cal-day'];
-    if(c.outside) classes.push('outside');
     if(c.key === todayKey) classes.push('today');
     if(c.key === selectedDayKey) classes.push('has-selected');
     const [cy, cm, cd] = c.key.split('-').map(n => parseInt(n,10));
@@ -3340,7 +3348,7 @@ async function renderCalendar(){
     return `<div class="${classes.join(' ')}" data-key="${c.key}"><span class="cal-num">${c.day}</span><span class="cal-hijri-num">${cellHijri.day}هـ</span>${dots}</div>`;
   }).join('');
 
-  grid.querySelectorAll('.cal-day').forEach(cell => {
+  grid.querySelectorAll('.cal-day[data-key]').forEach(cell => {
     cell.addEventListener('click', () => {
       selectedDayKey = cell.dataset.key;
       showDayDetail(selectedDayKey, dayMap.get(selectedDayKey));
