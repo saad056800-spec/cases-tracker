@@ -863,7 +863,7 @@
       </div>
     </div>
     <div class="tabs">
-      <button class="tab-btn active" data-view="home" id="tabHome">🏠 الرئيسية</button>
+      <button class="tab-btn active" data-view="home" id="tabHome">الرئيسية</button>
       <button class="tab-btn" data-view="sessioncases" id="tabSessionCases">مرساتك</button>
       <button class="tab-btn" data-view="calendar" id="tabCalendar">التقويم</button>
     </div>
@@ -987,6 +987,11 @@
     </div>
 
     <div id="scPanelWakalas" style="display:none;">
+      <div class="list-toolbar">
+        <div class="search-box">
+          <input type="text" id="wkSearchInput" placeholder="ابحث برقم الوكالة أو اسم الموكّل أو الوكيل...">
+        </div>
+      </div>
       <div class="cases-grid" id="wkGrid"></div>
       <div class="empty" id="wkEmpty" style="display:none;">
         <div class="glyph"><span class="mark"></span></div>
@@ -994,10 +999,13 @@
         <p>الوكالات اللي تضيفها بتظهر هنا مع عدّاد المدة المتبقية.</p>
       </div>
       <div class="panel">
-        <h2>إضافة وكالة</h2>
+        <h2 id="wkFormTitle">إضافة وكالة</h2>
         <div class="field-grid">
           <div class="field"><label>رقم الوكالة</label><input id="wk_number" dir="ltr" placeholder="رقم الوكالة"></div>
-          <div class="field"><label>الموكّل</label><input id="wk_principal" placeholder="اسم الموكّل"></div>
+          <div class="field"><label>الموكّل (اختياري)</label><input id="wk_principal" placeholder="اسم الموكّل"></div>
+          <div class="field"><label>الوكيل (اختياري)</label><input id="wk_agent" placeholder="اسم الوكيل"></div>
+          <div class="field"><label>هوية الموكّل (اختياري)</label><input id="wk_principalId" dir="ltr" placeholder="رقم الهوية"></div>
+          <div class="field"><label>مصدر الوكالة (اختياري)</label><input id="wk_source" placeholder="مثال: كتابة العدل، ناجز..."></div>
           <div class="field full">
             <label>تاريخ إنشاء الوكالة (اختياري — الافتراضي اليوم)</label>
             <input id="wk_createdDate" type="date">
@@ -1028,6 +1036,7 @@
         </div>
         <div class="btn-row">
           <button class="btn btn-primary" id="wkSaveBtn">حفظ الوكالة</button>
+          <button class="btn btn-ghost" id="wkCancelEditBtn" style="display:none;">إلغاء التعديل</button>
         </div>
       </div>
     </div>
@@ -1105,7 +1114,17 @@
         </div>
         <div class="field full"><label id="apptNameLabel">اسم العميل</label><input id="appt_client" placeholder="اسم العميل"></div>
         <div class="field"><label>التاريخ</label><input id="appt_date" type="date"></div>
-        <div class="field"><label>الوقت</label><input id="appt_time" type="time"></div>
+        <div class="field">
+          <label>الوقت</label>
+          <div style="display:flex; gap:6px;">
+            <select id="appt_hour" style="flex:1; padding:9px 6px; border-radius:8px; border:1px solid var(--line); font-size:13px; background:var(--surface);"></select>
+            <select id="appt_minute" style="flex:1; padding:9px 6px; border-radius:8px; border:1px solid var(--line); font-size:13px; background:var(--surface);"></select>
+            <select id="appt_ampm" style="flex:1; padding:9px 6px; border-radius:8px; border:1px solid var(--line); font-size:13px; background:var(--surface);">
+              <option value="صباحاً">صباحًا</option>
+              <option value="مساءً">مساءً</option>
+            </select>
+          </div>
+        </div>
         <div class="field full">
           <label>رقم الجوال (اختياري — لتفعيل الاتصال والواتساب)</label>
           <div style="display:flex; gap:6px;">
@@ -1234,7 +1253,7 @@
           </div>
           <div class="field full">
             <label>المنطقة الزمنية</label>
-            <select id="st_timezone"></select>
+            <input id="st_timezone" list="tzDatalist" placeholder="اكتب اسم الدولة...">
           </div>
         </div>
         <div class="settings-toggle-row"><span>مزامنة تقويم الجهاز</span><span class="soon-chip">قريبًا</span></div>
@@ -1275,6 +1294,8 @@
     </div>
   </div>
 </div>
+
+<datalist id="tzDatalist"></datalist>
 
 <div class="toast" id="toast"></div>
 
@@ -1563,6 +1584,9 @@ async function fetchMyWakalas(email){
 }
 async function saveWakalaDoc(data){
   await setDoc(doc(collection(db, 'wakalas')), data);
+}
+async function updateWakalaDoc(id, data){
+  await updateDoc(doc(db, 'wakalas', id), data);
 }
 async function deleteWakalaDoc(id){
   await deleteDoc(doc(db, 'wakalas', id));
@@ -1878,7 +1902,23 @@ function populateCountryCodeSelect(selectId){
 }
 populateCountryCodeSelect('st_countryCode');
 populateCountryCodeSelect('appt_countryCode');
-document.getElementById('st_timezone').innerHTML = TIMEZONE_OPTIONS.map(([label, tz]) => `<option value="${tz}">${label}</option>`).join('');
+document.getElementById('tzDatalist').innerHTML = TIMEZONE_OPTIONS.map(([label]) => `<option value="${label}"></option>`).join('');
+function tzLabelToZone(label){
+  const found = TIMEZONE_OPTIONS.find(([l]) => l === label);
+  return found ? found[1] : null;
+}
+function tzZoneToLabel(zone){
+  const found = TIMEZONE_OPTIONS.find(([, z]) => z === zone);
+  return found ? found[0] : '';
+}
+
+// Fixed 12-hour time pickers (hour 1-12, minutes in 5-minute steps) — avoids inconsistent native time-picker behavior.
+document.getElementById('appt_hour').innerHTML = Array.from({length: 12}, (_, i) => i + 1)
+  .map(h => `<option value="${h}">${String(h).padStart(2,'0')}</option>`).join('');
+document.getElementById('appt_minute').innerHTML = Array.from({length: 12}, (_, i) => i * 5)
+  .map(m => `<option value="${m}">${String(m).padStart(2,'0')}</option>`).join('');
+document.getElementById('appt_hour').value = '9';
+document.getElementById('appt_minute').value = '0';
 
 // ---------- Appearance (dark mode + font size) — applied live and persisted ----------
 function applyAppearance(mode, fontSize){
@@ -1941,7 +1981,7 @@ document.getElementById('profileBtn').addEventListener('click', async () => {
   document.getElementById('st_quietEnd').value = (profile && profile.quietEnd) || '';
   document.getElementById('st_dateDisplayMode').value = (profile && profile.dateDisplayMode) || 'both';
   document.getElementById('st_weekStart').value = (profile && profile.weekStart) || 'sunday';
-  document.getElementById('st_timezone').value = (profile && profile.timezone) || 'Asia/Riyadh';
+  document.getElementById('st_timezone').value = tzZoneToLabel((profile && profile.timezone) || 'Asia/Riyadh');
   document.getElementById('st_shareRestriction').value = (profile && profile.shareRestriction) || 'anyone';
 });
 document.getElementById('settingsCloseBtn').addEventListener('click', () => {
@@ -1955,6 +1995,11 @@ document.getElementById('settingsOverlay').addEventListener('click', (e) => {
 document.getElementById('settingsSaveBtn').addEventListener('click', async () => {
   const appearanceMode = document.getElementById('st_appearanceMode').value;
   const fontSize = document.getElementById('st_fontSize').value;
+  let resolvedTimezone = tzLabelToZone(document.getElementById('st_timezone').value);
+  if(!resolvedTimezone){
+    const existingProfile = await fetchMyProfile(currentUserEmail);
+    resolvedTimezone = (existingProfile && existingProfile.timezone) || 'Asia/Riyadh';
+  }
   const data = {
     firstNameAr: document.getElementById('st_firstNameAr').value.trim(),
     lastNameAr: document.getElementById('st_lastNameAr').value.trim(),
@@ -1977,7 +2022,7 @@ document.getElementById('settingsSaveBtn').addEventListener('click', async () =>
     quietEnd: document.getElementById('st_quietEnd').value,
     dateDisplayMode: document.getElementById('st_dateDisplayMode').value,
     weekStart: document.getElementById('st_weekStart').value,
-    timezone: document.getElementById('st_timezone').value,
+    timezone: resolvedTimezone,
     shareRestriction: document.getElementById('st_shareRestriction').value,
     // keep legacy "name" field (used elsewhere as a fallback greeting) in sync
     name: [document.getElementById('st_firstNameAr').value.trim(), document.getElementById('st_lastNameAr').value.trim()].filter(Boolean).join(' '),
@@ -2598,10 +2643,7 @@ function buildSessionCardHtml(c, session){
         <div class="session-block">
           <span class="lbl">الوقت (بتوقيت السعودية)</span>
           <span class="val">${escapeHtml(session.time || '—')}</span>
-          <select class="tz-select" data-date="${escapeHtml(session.date)}" data-time="${escapeHtml(session.time)}">
-            <option value="">🌍 عرض بتوقيت دولة أخرى</option>
-            ${TIMEZONE_OPTIONS.map(([label, tz]) => `<option value="${tz}">${label}</option>`).join('')}
-          </select>
+          <input class="tz-select" list="tzDatalist" placeholder="🌍 اكتب اسم دولة لعرض توقيتها" data-date="${escapeHtml(session.date)}" data-time="${escapeHtml(session.time)}">
           <span class="tz-result"></span>
         </div>
       </div>
@@ -2698,10 +2740,12 @@ function wireSessionCardEvents(grid, refresh){
   });
 
   grid.querySelectorAll('.tz-select').forEach(sel => {
-    sel.addEventListener('change', () => {
+    sel.addEventListener('input', () => {
       const resultEl = sel.nextElementSibling;
       if(!sel.value){ resultEl.textContent = ''; return; }
-      const converted = convertSessionTimeToTZ(sel.dataset.date, sel.dataset.time, sel.value);
+      const zone = tzLabelToZone(sel.value);
+      if(!zone){ resultEl.textContent = ''; return; } // still typing — no exact country match yet
+      const converted = convertSessionTimeToTZ(sel.dataset.date, sel.dataset.time, zone);
       resultEl.textContent = converted ? '🌍 ' + converted : 'تعذّر الحساب';
     });
   });
@@ -3097,8 +3141,8 @@ async function renderDashboard(){
     if(!y || !m || !d) return;
     const dt = new Date(y, m-1, d);
     if(a.time){
-      const [h,mi] = a.time.split(':').map(n => parseInt(n,10));
-      dt.setHours(h||0, mi||0, 0, 0);
+      const t = parseArabicTime(a.time);
+      if(t) dt.setHours(t.hour, t.minute, 0, 0);
     }
     apptItems.push({ clientName: a.clientName, time: a.time, notes: a.notes, type: a.type, countryCode: a.countryCode, phone: a.phone, dt, id: a._id, kind: 'appt' });
   });
@@ -3309,7 +3353,10 @@ document.getElementById('apptSaveBtn').addEventListener('click', async () => {
   const type = document.getElementById('appt_type').value;
   const clientName = document.getElementById('appt_client').value.trim();
   const date = document.getElementById('appt_date').value;
-  const time = document.getElementById('appt_time').value;
+  const hour = document.getElementById('appt_hour').value;
+  const minute = document.getElementById('appt_minute').value;
+  const ampm = document.getElementById('appt_ampm').value;
+  const time = `${String(hour).padStart(2,'0')}:${String(minute).padStart(2,'0')} ${ampm}`;
   const countryCode = document.getElementById('appt_countryCode').value;
   const phone = document.getElementById('appt_phone').value.trim();
   const notes = document.getElementById('appt_notes').value.trim();
@@ -3322,7 +3369,9 @@ document.getElementById('apptSaveBtn').addEventListener('click', async () => {
     showToast('تم حفظ الموعد.');
     document.getElementById('appt_client').value = '';
     document.getElementById('appt_date').value = '';
-    document.getElementById('appt_time').value = '';
+    document.getElementById('appt_hour').value = '9';
+    document.getElementById('appt_minute').value = '0';
+    document.getElementById('appt_ampm').value = 'صباحاً';
     document.getElementById('appt_phone').value = '';
     document.getElementById('appt_notes').value = '';
     renderCalendar();
@@ -3373,14 +3422,19 @@ function computeWakalaExpiry(){
   return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
 }
 
+let editingWakalaId = null;
+
 document.getElementById('wkSaveBtn').addEventListener('click', async () => {
   const number = document.getElementById('wk_number').value.trim();
   const principal = document.getElementById('wk_principal').value.trim();
+  const agent = document.getElementById('wk_agent').value.trim();
+  const principalId = document.getElementById('wk_principalId').value.trim();
+  const source = document.getElementById('wk_source').value.trim();
   const durationType = document.getElementById('wk_durationType').value;
   const notes = document.getElementById('wk_notes').value.trim();
   const expiryDate = computeWakalaExpiry();
-  if(!number || !principal){
-    showToast('رقم الوكالة والموكّل حقلان مطلوبان.');
+  if(!number){
+    showToast('رقم الوكالة حقل مطلوب.');
     return;
   }
   if(!expiryDate){
@@ -3390,19 +3444,20 @@ document.getElementById('wkSaveBtn').addEventListener('click', async () => {
   const base = getWakalaBaseDate();
   const createdDate = `${base.getFullYear()}-${String(base.getMonth()+1).padStart(2,'0')}-${String(base.getDate()).padStart(2,'0')}`;
   try{
-    await saveWakalaDoc({
-      number, principal, durationType, createdDate, expiryDate, notes,
-      ownerEmail: currentUserEmail, createdAt: Date.now()
-    });
-    showToast('تم حفظ الوكالة.');
-    document.getElementById('wk_number').value = '';
-    document.getElementById('wk_principal').value = '';
-    document.getElementById('wk_createdDate').value = '';
-    document.getElementById('wk_customDays').value = '';
-    document.getElementById('wk_customMonths').value = '';
-    document.getElementById('wk_customYears').value = '';
-    document.getElementById('wk_exactDate').value = '';
-    document.getElementById('wk_notes').value = '';
+    if(editingWakalaId){
+      await updateWakalaDoc(editingWakalaId, {
+        number, principal, agent, principalId, source, durationType, createdDate, expiryDate, notes,
+        updatedAt: Date.now()
+      });
+      showToast('تم تحديث الوكالة.');
+    } else {
+      await saveWakalaDoc({
+        number, principal, agent, principalId, source, durationType, createdDate, expiryDate, notes,
+        ownerEmail: currentUserEmail, createdAt: Date.now()
+      });
+      showToast('تم حفظ الوكالة.');
+    }
+    resetWakalaForm();
     renderWakalas();
   }catch(e){
     showToast('حدث خطأ أثناء الحفظ.');
@@ -3410,13 +3465,68 @@ document.getElementById('wkSaveBtn').addEventListener('click', async () => {
   }
 });
 
+function resetWakalaForm(){
+  editingWakalaId = null;
+  document.getElementById('wkFormTitle').textContent = 'إضافة وكالة';
+  document.getElementById('wkSaveBtn').textContent = 'حفظ الوكالة';
+  document.getElementById('wkCancelEditBtn').style.display = 'none';
+  document.getElementById('wk_number').value = '';
+  document.getElementById('wk_principal').value = '';
+  document.getElementById('wk_agent').value = '';
+  document.getElementById('wk_principalId').value = '';
+  document.getElementById('wk_source').value = '';
+  document.getElementById('wk_createdDate').value = '';
+  document.getElementById('wk_durationType').value = '3m';
+  document.getElementById('wk_customBox').style.display = 'none';
+  document.getElementById('wk_exactBox').style.display = 'none';
+  document.getElementById('wk_customDays').value = '';
+  document.getElementById('wk_customMonths').value = '';
+  document.getElementById('wk_customYears').value = '';
+  document.getElementById('wk_exactDate').value = '';
+  document.getElementById('wk_notes').value = '';
+}
+document.getElementById('wkCancelEditBtn').addEventListener('click', resetWakalaForm);
+
+function startEditWakala(w){
+  editingWakalaId = w._id;
+  document.getElementById('wkFormTitle').textContent = `تعديل الوكالة رقم ${w.number}`;
+  document.getElementById('wkSaveBtn').textContent = 'تحديث الوكالة';
+  document.getElementById('wkCancelEditBtn').style.display = '';
+  document.getElementById('wk_number').value = w.number || '';
+  document.getElementById('wk_principal').value = w.principal || '';
+  document.getElementById('wk_agent').value = w.agent || '';
+  document.getElementById('wk_principalId').value = w.principalId || '';
+  document.getElementById('wk_source').value = w.source || '';
+  document.getElementById('wk_createdDate').value = w.createdDate || '';
+  document.getElementById('wk_durationType').value = 'exact'; // editing always targets the exact stored expiry date
+  document.getElementById('wk_customBox').style.display = 'none';
+  document.getElementById('wk_exactBox').style.display = '';
+  document.getElementById('wk_exactDate').value = w.expiryDate || '';
+  document.getElementById('wk_notes').value = w.notes || '';
+  document.getElementById('scPanelWakalas').scrollIntoView({ behavior: 'smooth', block: 'end' });
+}
+
 async function renderWakalas(){
   const grid = document.getElementById('wkGrid');
   const empty = document.getElementById('wkEmpty');
-  const wakalas = await fetchMyWakalas(currentUserEmail);
+  let wakalas = await fetchMyWakalas(currentUserEmail);
+
+  const query = document.getElementById('wkSearchInput').value.trim().toLowerCase();
+  if(query){
+    wakalas = wakalas.filter(w =>
+      (w.number||'').toLowerCase().includes(query) ||
+      (w.principal||'').toLowerCase().includes(query) ||
+      (w.agent||'').toLowerCase().includes(query) ||
+      (w.principalId||'').toLowerCase().includes(query) ||
+      (w.source||'').toLowerCase().includes(query) ||
+      (w.notes||'').toLowerCase().includes(query)
+    );
+  }
 
   if(wakalas.length === 0){
     grid.innerHTML = '';
+    empty.querySelector('h3').textContent = query ? 'ما فيه نتائج' : 'لا توجد وكالات مسجّلة بعد';
+    empty.querySelector('p').textContent = query ? 'جرّب كلمة بحث أخرى.' : 'الوكالات اللي تضيفها بتظهر هنا مع عدّاد المدة المتبقية.';
     empty.style.display = 'block';
     return;
   }
@@ -3450,28 +3560,106 @@ async function renderWakalas(){
         <div><span class="status-badge ${badgeCls}">${badgeText}</span></div>
       </div>
       <div class="parties">
-        <div class="party-row"><span class="party-role">الموكّل</span><span class="party-name">${escapeHtml(w.principal)}</span></div>
+        ${w.principal ? `<div class="party-row"><span class="party-role">الموكّل</span><span class="party-name">${escapeHtml(w.principal)}</span></div>` : ''}
+        ${w.principalId ? `<div class="party-row"><span class="party-role">هوية الموكّل</span><span class="party-name" dir="ltr" style="unicode-bidi:isolate;">${escapeHtml(w.principalId)}</span></div>` : ''}
+        ${w.agent ? `<div class="party-row"><span class="party-role">الوكيل</span><span class="party-name">${escapeHtml(w.agent)}</span></div>` : ''}
+        ${w.source ? `<div class="party-row"><span class="party-role">المصدر</span><span class="party-name">${escapeHtml(w.source)}</span></div>` : ''}
+        ${!w.principal && !w.agent && !w.source ? `<div class="party-row"><span class="party-role">—</span><span class="party-name">لا توجد بيانات أطراف مسجّلة</span></div>` : ''}
       </div>
       <div class="session-info">
         <div class="session-block"><span class="lbl">تاريخ الإنشاء</span><span class="val">${escapeHtml(w.createdDate || '—')}</span></div>
         <div class="session-block"><span class="lbl">تاريخ الانتهاء</span><span class="val">${escapeHtml(w.expiryDate || 'غير محدّد')}</span></div>
       </div>
       ${w.notes ? `<div class="case-notes">📝 ${escapeHtml(w.notes)}</div>` : ''}
+      <div class="attachments-box">
+        <label>أصل الوكالة</label>
+        ${(w.attachments||[]).length ? (w.attachments||[]).map(a => `
+          <div class="attachment-item">
+            <a href="${escapeHtml(a.url)}" target="_blank" rel="noopener">📄 ${escapeHtml(a.name)}</a>
+            <button class="wk-delete-attachment-btn" data-wakala="${w._id}" data-path="${escapeHtml(a.path)}" data-name="${escapeHtml(a.name)}">×</button>
+          </div>
+        `).join('') : '<p class="hint" style="margin:4px 0;">ما فيه مستند مرفوع بعد.</p>'}
+        <input type="file" class="wk-attachment-input" data-wakala="${w._id}" style="display:none;">
+        <button class="btn btn-ghost wk-upload-attachment-btn" data-wakala="${w._id}" style="margin-top:6px; font-size:12px; padding:6px 12px;">📎 رفع أصل الوكالة</button>
+      </div>
       <div class="card-footer">
         <span class="id-holder"></span>
-        <button class="delete-btn" data-wakala="${w._id}">حذف</button>
+        <div style="display:flex; gap:6px; align-items:center;">
+          <button class="wk-edit-btn" data-wakala="${w._id}">تعديل</button>
+          <button class="delete-btn" data-wakala="${w._id}">حذف</button>
+        </div>
       </div>
     </div>`;
   }).join('');
 
-  grid.querySelectorAll('[data-wakala]').forEach(btn => {
+  grid.querySelectorAll('.wk-edit-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const w = wakalas.find(x => x._id === btn.dataset.wakala);
+      if(w) startEditWakala(w);
+    });
+  });
+
+  grid.querySelectorAll('.delete-btn[data-wakala]').forEach(btn => {
     btn.addEventListener('click', async () => {
       if(!confirm('حذف هذي الوكالة؟')) return;
       try{
         await deleteWakalaDoc(btn.dataset.wakala);
         showToast('تم حذف الوكالة.');
+        if(editingWakalaId === btn.dataset.wakala) resetWakalaForm();
         renderWakalas();
       }catch(e){ showToast('حدث خطأ. حاول مجددًا.'); }
+    });
+  });
+
+  grid.querySelectorAll('.wk-upload-attachment-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const input = grid.querySelector(`.wk-attachment-input[data-wakala="${btn.dataset.wakala}"]`);
+      if(input) input.click();
+    });
+  });
+
+  grid.querySelectorAll('.wk-attachment-input').forEach(input => {
+    input.addEventListener('change', async () => {
+      const file = input.files[0];
+      if(!file) return;
+      if(file.size > 5 * 1024 * 1024){
+        showToast('حجم الملف كبير جدًا (الحد الأقصى ٥ ميقابايت).');
+        input.value = '';
+        return;
+      }
+      showToast('جاري رفع الملف...');
+      try{
+        const path = `wakala-attachments/${input.dataset.wakala}/${Date.now()}_${file.name}`;
+        const fileRef = ref(storageInstance, path);
+        await uploadBytes(fileRef, file);
+        const url = await getDownloadURL(fileRef);
+        await updateWakalaDoc(input.dataset.wakala, {
+          attachments: arrayUnion({ name: file.name, url, path, uploadedAt: Date.now(), uploadedBy: currentUserEmail })
+        });
+        showToast('تم رفع المستند.');
+        renderWakalas();
+      }catch(e){
+        showToast('تعذّر رفع الملف. تأكد إن Firebase Storage مفعّل.');
+        console.error(e);
+      }
+    });
+  });
+
+  grid.querySelectorAll('.wk-delete-attachment-btn').forEach(btn => {
+    btn.addEventListener('click', async () => {
+      if(!confirm('حذف هذا المستند؟')) return;
+      try{
+        try{ await deleteObject(ref(storageInstance, btn.dataset.path)); }catch(e){ /* file may already be gone */ }
+        const wakalasNow = await fetchMyWakalas(currentUserEmail);
+        const w = wakalasNow.find(x => x._id === btn.dataset.wakala);
+        const match = (w && w.attachments || []).find(a => a.path === btn.dataset.path);
+        if(match) await updateWakalaDoc(btn.dataset.wakala, { attachments: arrayRemove(match) });
+        showToast('تم حذف المستند.');
+        renderWakalas();
+      }catch(e){
+        showToast('حدث خطأ أثناء الحذف.');
+        console.error(e);
+      }
     });
   });
 }
@@ -3647,6 +3835,7 @@ function contactButtonsHtml(countryCode, phone){
 }
 
 document.getElementById('searchInput').addEventListener('input', renderList);
+document.getElementById('wkSearchInput').addEventListener('input', renderWakalas);
 document.getElementById('sortSelect').addEventListener('change', renderList);
 
 // ---------- Toast ----------
