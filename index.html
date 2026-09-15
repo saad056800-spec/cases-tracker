@@ -1019,8 +1019,8 @@
           <div class="field"><label>هوية الموكّل (اختياري)</label><input id="wk_principalId" dir="ltr" placeholder="رقم الهوية"></div>
           <div class="field"><label>مصدر الوكالة (اختياري)</label><input id="wk_source" placeholder="مثال: كتابة العدل، ناجز..."></div>
           <div class="field full">
-            <label>تاريخ إنشاء الوكالة (اختياري — الافتراضي اليوم)</label>
-            <input id="wk_createdDate" type="date">
+            <label>تاريخ إنشاء الوكالة (هـ) (اختياري — الافتراضي اليوم)</label>
+            <input id="wk_createdDate" dir="ltr" placeholder="DD/MM/YYYY">
           </div>
           <div class="field full">
             <label>المدة المتبقية</label>
@@ -1041,8 +1041,8 @@
             </div>
           </div>
           <div class="field full" id="wk_exactBox" style="display:none;">
-            <label>تاريخ الانتهاء</label>
-            <input id="wk_exactDate" type="date">
+            <label>تاريخ الانتهاء (هـ)</label>
+            <input id="wk_exactDate" dir="ltr" placeholder="DD/MM/YYYY">
           </div>
           <div class="field full"><label>ملاحظات</label><textarea id="wk_notes" style="min-height:60px; font-size:13.5px; padding:9px 12px; border-radius:8px; border:1px solid var(--line); background:var(--surface);" placeholder="أي تفاصيل إضافية..."></textarea></div>
         </div>
@@ -3168,11 +3168,15 @@ async function renderDashboard(){
   const now = new Date();
   const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
   const todayEnd = new Date(todayStart); todayEnd.setDate(todayEnd.getDate() + 1);
-  const weekEnd = new Date(todayStart); weekEnd.setDate(weekEnd.getDate() + 7);
+  const todayDow = todayStart.getDay(); // 0=Sun ... 6=Sat
+  const weekStart = new Date(todayStart); weekStart.setDate(weekStart.getDate() - ((todayDow + 1) % 7));
+  const weekEnd = new Date(weekStart); weekEnd.setDate(weekEnd.getDate() + 7);
 
   // Build session items with real datetimes (Umm al-Qura Hijri → Gregorian + parsed time)
+  // Conciliation-session cases are excluded here — they live in their own "جلسات الصلح" tab,
+  // and shouldn't be double-counted as regular court sessions on the dashboard.
   const sessionItems = [];
-  cases.forEach(c => {
+  cases.filter(c => c.caseCategory !== 'conciliation').forEach(c => {
     getActiveSessions(c).forEach(s => {
       const parts = (s.date || '').split('/');
       if(parts.length !== 3) return;
@@ -3202,9 +3206,9 @@ async function renderDashboard(){
   });
 
   const sessionsToday = sessionItems.filter(x => x.dt >= todayStart && x.dt < todayEnd);
-  const sessionsWeek = sessionItems.filter(x => x.dt >= todayStart && x.dt < weekEnd);
+  const sessionsWeek = sessionItems.filter(x => x.dt >= weekStart && x.dt < weekEnd);
   const apptsToday = apptItems.filter(x => x.dt >= todayStart && x.dt < todayEnd);
-  const apptsWeek = apptItems.filter(x => x.dt >= todayStart && x.dt < weekEnd);
+  const apptsWeek = apptItems.filter(x => x.dt >= weekStart && x.dt < weekEnd);
 
   document.getElementById('statSessionsToday').textContent = sessionsToday.length;
   document.getElementById('statSessionsWeek').textContent = sessionsWeek.length;
@@ -3239,11 +3243,8 @@ async function renderDashboard(){
   const dayNames = ['الأحد','الاثنين','الثلاثاء','الأربعاء','الخميس','الجمعة','السبت'];
   const upcomingEl = document.getElementById('dashUpcomingDays');
   let upcomingHtml = '';
-  const todayDow = todayStart.getDay(); // 0=Sun ... 6=Sat
-  const daysBackToSaturday = (todayDow + 1) % 7;
-  const weekSaturday = new Date(todayStart); weekSaturday.setDate(weekSaturday.getDate() - daysBackToSaturday);
   for(let i = 0; i <= 6; i++){
-    const dStart = new Date(weekSaturday); dStart.setDate(dStart.getDate() + i);
+    const dStart = new Date(weekStart); dStart.setDate(dStart.getDate() + i);
     const dEnd = new Date(dStart); dEnd.setDate(dEnd.getDate() + 1);
     const isPast = dStart < todayStart;
     const isToday = dStart.getTime() === todayStart.getTime();
@@ -3448,23 +3449,52 @@ document.getElementById('wk_durationType').addEventListener('change', () => {
 });
 
 function getWakalaBaseDate(){
-  const val = document.getElementById('wk_createdDate').value;
+  const val = document.getElementById('wk_createdDate').value.trim();
   if(val){
-    const [y,m,d] = val.split('-').map(n => parseInt(n,10));
-    const dt = new Date(y, m-1, d);
-    dt.setHours(0,0,0,0);
-    return dt;
+    const parts = val.split('/');
+    if(parts.length === 3){
+      const day = parseInt(parts[0],10), mon = parseInt(parts[1],10), yr = parseInt(parts[2],10);
+      if(day && mon && yr) return hijriToGregorianExact(day, mon, yr);
+    }
   }
   const today = new Date();
   today.setHours(0,0,0,0);
   return today;
 }
 
+function formatHijriDMY(h){
+  return `${String(h.day).padStart(2,'0')}/${String(h.month).padStart(2,'0')}/${h.year}`;
+}
+
+// Wakala dates are stored in Hijri "DD/MM/YYYY" going forward. Wakalas saved before this
+// change still have Gregorian "YYYY-MM-DD" stored — detect by separator so both keep working.
+function wakalaDateToGregorian(dateStr){
+  if(!dateStr) return null;
+  if(dateStr.includes('-')) return new Date(dateStr); // legacy Gregorian
+  const parts = dateStr.split('/');
+  if(parts.length !== 3) return null;
+  const day = parseInt(parts[0],10), mon = parseInt(parts[1],10), yr = parseInt(parts[2],10);
+  if(!day || !mon || !yr) return null;
+  return hijriToGregorianExact(day, mon, yr);
+}
+// For populating the edit form: always show Hijri, converting on the fly if the record still has a legacy Gregorian date.
+function wakalaDateToHijriDisplay(dateStr){
+  if(!dateStr) return '';
+  if(dateStr.includes('/')) return dateStr;
+  const g = wakalaDateToGregorian(dateStr);
+  return g ? formatHijriDMY(gregorianDateToHijri(g)) : '';
+}
+
 function computeWakalaExpiry(){
   const type = document.getElementById('wk_durationType').value;
   if(type === 'exact'){
-    const val = document.getElementById('wk_exactDate').value;
-    return val || null;
+    const val = document.getElementById('wk_exactDate').value.trim();
+    if(!val) return null;
+    const parts = val.split('/');
+    if(parts.length !== 3) return null;
+    const day = parseInt(parts[0],10), mon = parseInt(parts[1],10), yr = parseInt(parts[2],10);
+    if(!day || !mon || !yr) return null;
+    return `${String(day).padStart(2,'0')}/${String(mon).padStart(2,'0')}/${yr}`;
   }
   const d = getWakalaBaseDate();
   if(type === '3m') d.setMonth(d.getMonth() + 3);
@@ -3478,7 +3508,7 @@ function computeWakalaExpiry(){
     d.setMonth(d.getMonth() + months);
     d.setDate(d.getDate() + days);
   }
-  return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+  return formatHijriDMY(gregorianDateToHijri(d));
 }
 
 let editingWakalaId = null;
@@ -3501,7 +3531,7 @@ document.getElementById('wkSaveBtn').addEventListener('click', async () => {
     return;
   }
   const base = getWakalaBaseDate();
-  const createdDate = `${base.getFullYear()}-${String(base.getMonth()+1).padStart(2,'0')}-${String(base.getDate()).padStart(2,'0')}`;
+  const createdDate = formatHijriDMY(gregorianDateToHijri(base));
   try{
     if(editingWakalaId){
       await updateWakalaDoc(editingWakalaId, {
@@ -3556,11 +3586,11 @@ function startEditWakala(w){
   document.getElementById('wk_agent').value = w.agent || '';
   document.getElementById('wk_principalId').value = w.principalId || '';
   document.getElementById('wk_source').value = w.source || '';
-  document.getElementById('wk_createdDate').value = w.createdDate || '';
+  document.getElementById('wk_createdDate').value = wakalaDateToHijriDisplay(w.createdDate);
   document.getElementById('wk_durationType').value = 'exact'; // editing always targets the exact stored expiry date
   document.getElementById('wk_customBox').style.display = 'none';
   document.getElementById('wk_exactBox').style.display = '';
-  document.getElementById('wk_exactDate').value = w.expiryDate || '';
+  document.getElementById('wk_exactDate').value = wakalaDateToHijriDisplay(w.expiryDate);
   document.getElementById('wk_notes').value = w.notes || '';
   document.getElementById('scPanelWakalas').scrollIntoView({ behavior: 'smooth', block: 'end' });
 }
@@ -3598,13 +3628,13 @@ async function renderWakalas(){
     if(!a.expiryDate && !b.expiryDate) return 0;
     if(!a.expiryDate) return 1;
     if(!b.expiryDate) return -1;
-    return new Date(a.expiryDate) - new Date(b.expiryDate);
+    return wakalaDateToGregorian(a.expiryDate) - wakalaDateToGregorian(b.expiryDate);
   });
 
   grid.innerHTML = wakalas.map(w => {
     let badgeCls = 'scheduled', badgeText = 'بدون تاريخ انتهاء';
     if(w.expiryDate){
-      const expiry = new Date(w.expiryDate);
+      const expiry = wakalaDateToGregorian(w.expiryDate);
       const daysLeft = Math.round((expiry - now) / 86400000);
       badgeText = `متبقٍ ${daysLeft} يوم`;
       if(daysLeft < 0){ badgeCls = 'final'; badgeText = 'منتهية'; }
