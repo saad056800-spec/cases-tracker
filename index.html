@@ -84,7 +84,7 @@
       repeating-linear-gradient(-45deg, rgba(20,36,59,0.035) 0 3px, transparent 3px 26px);
   }
 
-  ::selection{ background: var(--gold-light); color:var(--green-deeper); }
+  ::selection{ background: var(--gold-light); color:var(--ink); }
 
   a{color:var(--green-deep);}
 
@@ -181,7 +181,7 @@
     position:relative; transition: background .15s, color .15s;
   }
   .tab-btn:hover{ background: rgba(255,255,255,0.06); }
-  .tab-btn.active{ background: var(--paper); color: var(--green-deeper); }
+  .tab-btn.active{ background: var(--paper); color: var(--ink); }
   .topbar .tab-btn.active{ background: rgba(255,255,255,.12); color: var(--bar-ink); }
   .tab-btn .count{
     display:inline-block; margin-inline-start:6px;
@@ -236,7 +236,7 @@
   }
   .panel h2{
     font-family:'Amiri',serif; font-size:20px; margin:0 0 4px;
-    color:var(--green-deeper);
+    color:var(--ink);
   }
   .panel .hint{ color:var(--ink-soft); font-size:13.5px; margin:0 0 16px; line-height:1.7;}
 
@@ -248,7 +248,7 @@
     background: var(--green-mist);
     color: var(--ink);
   }
-  textarea:focus{ outline:2px solid var(--green-deep); outline-offset:2px; background:#fff; }
+  textarea:focus{ outline:2px solid var(--green-deep); outline-offset:2px; background:var(--surface); }
   textarea::placeholder{ color:#7C8B81; }
 
   .btn-row{ display:flex; gap:10px; margin-top:14px; flex-wrap:wrap; }
@@ -269,7 +269,7 @@
   .parse-note{ font-size:13px; margin-top:10px; padding:10px 12px; border-radius:8px; display:none; }
   .parse-note.show{ display:block; }
   .parse-note.err{ background:#FBEBE6; color:#8C3A2B; border:1px solid #E9C6BA; }
-  .parse-note.ok{ background:var(--green-mist); color:var(--green-deeper); border:1px solid #C8DBCF; }
+  .parse-note.ok{ background:var(--green-mist); color:var(--ink); border:1px solid #C8DBCF; }
 
   .field-grid{ display:grid; grid-template-columns: 1fr 1fr; gap:14px; margin-top:6px;}
   .field-grid .full{ grid-column: 1 / -1; }
@@ -278,7 +278,7 @@
   .field input{
     width:100%; padding:10px 12px; border-radius:8px;
     border:1px solid var(--line); font-family:'IBM Plex Sans Arabic',sans-serif; font-size:14px;
-    background:#fff; color:var(--ink);
+    background:var(--surface); color:var(--ink);
   }
   .field input:focus{ outline:2px solid var(--green-deep); outline-offset:1px; border-color:var(--green-deep); }
 
@@ -431,7 +431,7 @@
 
   .calendar-header{ margin-bottom:16px; }
   .calendar-nav{ display:flex; justify-content:space-between; gap:10px; flex-wrap:wrap; margin-bottom:12px; }
-  .calendar-header h2{ font-family:'Amiri',serif; font-size:18px; color:var(--green-deeper); margin:0; text-align:center; width:100%; }
+  .calendar-header h2{ font-family:'Amiri',serif; font-size:18px; color:var(--ink); margin:0; text-align:center; width:100%; }
   .cal-hijri-sub{ display:block; font-family:'IBM Plex Sans Arabic',sans-serif; font-size:12px; font-weight:600; color:var(--gold); margin-top:3px; }
   .calendar-weekdays{
     display:grid; grid-template-columns:repeat(7, minmax(0,1fr)); text-align:center; font-size:11px; font-weight:700;
@@ -439,7 +439,7 @@
   }
   .calendar-grid{ display:grid; grid-template-columns:repeat(7, minmax(0,1fr)); gap:3px; }
   .cal-day{
-    aspect-ratio:0.8; border-radius:8px; border:1px solid var(--paper-dim); background:#fff;
+    aspect-ratio:0.8; border-radius:8px; border:1px solid var(--paper-dim); background:var(--surface);
     padding:3px; font-size:11px; cursor:pointer; display:flex; flex-direction:column; gap:1px;
     transition: background .12s, border-color .12s; position:relative; min-width:0;
   }
@@ -467,11 +467,11 @@
   }
   .search-box input{
     width:100%; padding:10px 14px; border-radius:9px; border:1px solid var(--line);
-    font-family:'IBM Plex Sans Arabic',sans-serif; font-size:14px; background:#fff;
+    font-family:'IBM Plex Sans Arabic',sans-serif; font-size:14px; background:var(--surface);
   }
   select.sort-select{
     padding:10px 12px; border-radius:9px; border:1px solid var(--line);
-    font-family:'IBM Plex Sans Arabic',sans-serif; font-size:13.5px; background:#fff; color:var(--ink);
+    font-family:'IBM Plex Sans Arabic',sans-serif; font-size:13.5px; background:var(--surface); color:var(--ink);
   }
 
   .cases-grid{ display:grid; grid-template-columns: repeat(auto-fill, minmax(310px,1fr)); gap:18px; }
@@ -489,7 +489,7 @@
     display:flex; align-items:center; justify-content:center;
   }
   .case-number{
-    font-family:'Amiri',serif; font-weight:700; font-size:22px; color:var(--green-deeper);
+    font-family:'Amiri',serif; font-weight:700; font-size:22px; color:var(--ink);
     letter-spacing:0.5px; direction:ltr; display:inline-block; unicode-bidi:isolate;
   }
   .case-number-label{ font-size:11.5px; color:var(--ink-soft); display:block; margin-bottom:2px;}
@@ -497,7 +497,7 @@
     display:inline-block; margin-top:10px; font-size:12px; font-weight:700;
     padding:4px 11px; border-radius:999px;
   }
-  .status-badge.scheduled{ background: var(--green-mist); color: var(--green-deeper); }
+  .status-badge.scheduled{ background: var(--green-mist); color: var(--ink); }
   .status-badge.rescheduled{ background: var(--amber-bg); color: var(--amber); }
   .status-badge.final{ background: var(--green-deep); color: #fff; }
   .countdown-chip{
@@ -535,29 +535,29 @@
   .status-box label{ display:block; font-size:11.5px; color:var(--ink-soft); margin-bottom:5px; font-weight:600; }
   .status-select{
     width:100%; font-family:'IBM Plex Sans Arabic',sans-serif; font-size:13px; padding:9px 12px; border-radius:8px;
-    border:1px solid var(--line); background:#fff; color:var(--ink);
+    border:1px solid var(--line); background:var(--surface); color:var(--ink);
   }
   .objection-box{ margin-top:10px; }
   .objection-input{
     width:100%; font-family:'IBM Plex Sans Arabic',sans-serif; font-size:13px; padding:9px 12px; border-radius:8px;
-    border:1px solid var(--line); background:#fff; color:var(--ink);
+    border:1px solid var(--line); background:var(--surface); color:var(--ink);
   }
   .notes-box label{ display:block; font-size:11.5px; color:var(--ink-soft); margin-bottom:5px; font-weight:600; }
   .notes-textarea{
     width:100%; min-height:56px; resize:vertical; font-family:'IBM Plex Sans Arabic',sans-serif; font-size:13px;
-    padding:9px 12px; border-radius:8px; border:1px solid var(--line); background:#fff; color:var(--ink);
+    padding:9px 12px; border-radius:8px; border:1px solid var(--line); background:var(--surface); color:var(--ink);
   }
   .notes-textarea:focus{ outline:2px solid var(--green-deep); outline-offset:1px; }
   .link-input{
     width:100%; font-family:'IBM Plex Sans Arabic',sans-serif; font-size:13px; padding:9px 12px; border-radius:8px;
-    border:1px solid var(--line); background:#fff; color:var(--ink);
+    border:1px solid var(--line); background:var(--surface); color:var(--ink);
   }
   .link-input:focus{ outline:2px solid var(--green-deep); outline-offset:1px; }
   .link-open{ display:inline-block; margin-top:6px; font-size:11.5px; color:var(--green-deep); font-weight:700; text-decoration:none; }
   .link-open:hover{ text-decoration:underline; }
   .tz-select{
     display:block; margin-top:6px; font-family:'IBM Plex Sans Arabic',sans-serif; font-size:11.5px; color:var(--ink-soft);
-    border:1px solid var(--line); border-radius:6px; padding:3px 6px; background:#fff; max-width:100%;
+    border:1px solid var(--line); border-radius:6px; padding:3px 6px; background:var(--surface); max-width:100%;
   }
   .tz-result{ display:block; margin-top:4px; font-size:12px; font-weight:700; color:var(--green-deep); direction:ltr; unicode-bidi:isolate; text-align:right; }
   .sessions-list{ padding:0 18px 14px; display:flex; flex-direction:column; gap:6px; }
@@ -565,7 +565,7 @@
     display:flex; align-items:center; gap:8px; font-size:12.5px; padding:7px 10px;
     background:var(--paper-dim); border-radius:8px; color:var(--ink-soft);
   }
-  .session-row.is-current{ background:var(--green-mist); color:var(--green-deeper); font-weight:700; }
+  .session-row.is-current{ background:var(--green-mist); color:var(--ink); font-weight:700; }
   .session-row.is-archived{ opacity:0.55; text-decoration:line-through; }
   .session-row-date{ flex:1; direction:ltr; unicode-bidi:isolate; text-align:right; }
   .session-row-tag{ font-size:10.5px; opacity:0.8; }
@@ -652,7 +652,7 @@
   }
   .empty .glyph{ margin-bottom:14px; display:flex; justify-content:center; }
   .empty .glyph .mark{ width:52px; height:52px; }
-  .empty h3{ font-family:'Amiri',serif; color:var(--green-deeper); font-size:20px; margin:0 0 8px; }
+  .empty h3{ font-family:'Amiri',serif; color:var(--ink); font-size:20px; margin:0 0 8px; }
   .empty p{ font-size:14px; margin:0 0 18px; }
 
   .toast{
@@ -814,8 +814,8 @@
 </div>
 
 <div id="privacyOverlay" style="display:none; position:fixed; inset:0; background:rgba(11,22,38,0.6); z-index:200; align-items:center; justify-content:center; padding:20px;">
-  <div style="background:#fff; border-radius:14px; max-width:640px; width:100%; max-height:85vh; overflow-y:auto; padding:26px;">
-    <h2 style="font-family:'Amiri',serif; color:var(--green-deeper); margin-top:0;">سياسة الخصوصية — مرساة الميزان</h2>
+  <div style="background:var(--surface); border-radius:14px; max-width:640px; width:100%; max-height:85vh; overflow-y:auto; padding:26px;">
+    <h2 style="font-family:'Amiri',serif; color:var(--ink); margin-top:0;">سياسة الخصوصية — مرساة الميزان</h2>
     <div id="privacyPolicyText" style="font-size:13.5px; line-height:2; color:var(--ink);"></div>
     <div class="btn-row" style="margin-top:18px;">
       <button class="btn btn-primary" id="closePrivacyBtn" style="width:100%;">إغلاق</button>
@@ -836,6 +836,10 @@
             <svg class="icon" viewBox="0 0 24 24"><path d="M12 15.5a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7Z"/><path d="M19.4 13.5a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V19a2 2 0 1 1-4 0v-.09a1.65 1.65 0 0 0-1.08-1.51 1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09a1.65 1.65 0 0 0 1.51-1.08 1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1Z"/></svg>
           </button>
         </div>
+        <button id="themeToggleBtn" class="notif-bell" title="تبديل الوضع الليلي/النهاري">
+          <svg class="icon" id="themeIconMoon" viewBox="0 0 24 24" style="display:none;"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79Z"/></svg>
+          <svg class="icon" id="themeIconSun" viewBox="0 0 24 24"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41"/></svg>
+        </button>
         <div id="notifBellWrap" style="position:relative;">
           <button id="notifBellBtn" class="notif-bell" title="الإشعارات">
             <svg class="icon" viewBox="0 0 24 24"><path d="M18 8a6 6 0 1 0-12 0c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
@@ -930,7 +934,7 @@
           <div class="field full"><label>المدعى عليه</label><input id="f_defendant"></div>
           <div class="field"><label>تاريخ الجلسة (هـ)</label><input id="f_date" dir="ltr" placeholder="DD/MM/YYYY"><span class="field-note" id="dateGregorianHint"></span></div>
           <div class="field"><label>وقت الجلسة</label><input id="f_time" dir="ltr"></div>
-          <div class="field full"><label>ملاحظات</label><textarea id="f_notes" style="min-height:70px; font-size:13.5px; padding:9px 12px; border-radius:8px; border:1px solid var(--line); background:#fff;" placeholder="أي ملاحظات خاصة بهذي القضية..."></textarea></div>
+          <div class="field full"><label>ملاحظات</label><textarea id="f_notes" style="min-height:70px; font-size:13.5px; padding:9px 12px; border-radius:8px; border:1px solid var(--line); background:var(--surface);" placeholder="أي ملاحظات خاصة بهذي القضية..."></textarea></div>
           <div class="field full"><label>رابط الجلسة</label><input id="f_sessionLink" dir="ltr" placeholder="https://..." style="font-size:13.5px;"></div>
         </div>
         <div class="btn-row">
@@ -1000,7 +1004,7 @@
           </div>
           <div class="field full">
             <label>المدة المتبقية</label>
-            <select id="wk_durationType" style="width:100%; font-family:'IBM Plex Sans Arabic',sans-serif; font-size:13.5px; padding:10px 12px; border-radius:8px; border:1px solid var(--line); background:#fff;">
+            <select id="wk_durationType" style="width:100%; font-family:'IBM Plex Sans Arabic',sans-serif; font-size:13.5px; padding:10px 12px; border-radius:8px; border:1px solid var(--line); background:var(--surface);">
               <option value="3m">٣ أشهر</option>
               <option value="6m">٦ أشهر</option>
               <option value="12m">سنة</option>
@@ -1020,7 +1024,7 @@
             <label>تاريخ الانتهاء</label>
             <input id="wk_exactDate" type="date">
           </div>
-          <div class="field full"><label>ملاحظات</label><textarea id="wk_notes" style="min-height:60px; font-size:13.5px; padding:9px 12px; border-radius:8px; border:1px solid var(--line); background:#fff;" placeholder="أي تفاصيل إضافية..."></textarea></div>
+          <div class="field full"><label>ملاحظات</label><textarea id="wk_notes" style="min-height:60px; font-size:13.5px; padding:9px 12px; border-radius:8px; border:1px solid var(--line); background:var(--surface);" placeholder="أي تفاصيل إضافية..."></textarea></div>
         </div>
         <div class="btn-row">
           <button class="btn btn-primary" id="wkSaveBtn">حفظ الوكالة</button>
@@ -1092,7 +1096,7 @@
       <div class="field-grid">
         <div class="field full">
           <label>نوع الموعد</label>
-          <select id="appt_type" style="width:100%; font-family:'IBM Plex Sans Arabic',sans-serif; font-size:13.5px; padding:10px 12px; border-radius:8px; border:1px solid var(--line); background:#fff;">
+          <select id="appt_type" style="width:100%; font-family:'IBM Plex Sans Arabic',sans-serif; font-size:13.5px; padding:10px 12px; border-radius:8px; border:1px solid var(--line); background:var(--surface);">
             <option value="client">عميل</option>
             <option value="review">مراجعة</option>
             <option value="private">خاص</option>
@@ -1109,7 +1113,7 @@
             <input id="appt_phone" dir="ltr" placeholder="5xxxxxxxx" style="flex:1;">
           </div>
         </div>
-        <div class="field full"><label>ملاحظات</label><textarea id="appt_notes" style="min-height:60px; font-size:13.5px; padding:9px 12px; border-radius:8px; border:1px solid var(--line); background:#fff;" placeholder="تفاصيل الموعد..."></textarea></div>
+        <div class="field full"><label>ملاحظات</label><textarea id="appt_notes" style="min-height:60px; font-size:13.5px; padding:9px 12px; border-radius:8px; border:1px solid var(--line); background:var(--surface);" placeholder="تفاصيل الموعد..."></textarea></div>
       </div>
       <div class="btn-row">
         <button class="btn btn-primary" id="apptSaveBtn">حفظ الموعد</button>
@@ -1242,7 +1246,7 @@
         <div class="settings-toggle-row" style="margin-top:8px;"><span>مصادقة ثنائية</span><span class="soon-chip">قريبًا</span></div>
         <p class="hint" style="margin-top:8px;">الأجهزة النشطة: هذا الجهاز فقط.</p>
         <p class="hint">من يقدر يشاركني قضية:</p>
-        <select id="st_shareRestriction" style="width:100%; font-family:'IBM Plex Sans Arabic',sans-serif; font-size:13.5px; padding:10px 12px; border-radius:8px; border:1px solid var(--line); background:#fff;">
+        <select id="st_shareRestriction" style="width:100%; font-family:'IBM Plex Sans Arabic',sans-serif; font-size:13.5px; padding:10px 12px; border-radius:8px; border:1px solid var(--line); background:var(--surface);">
           <option value="anyone">أي شخص يعرف بريدي الإلكتروني</option>
           <option value="none">محد، أوقف استقبال دعوات المشاركة مؤقتًا</option>
         </select>
@@ -1573,7 +1577,7 @@ async function fetchMyProfile(email){
   }catch(e){ console.error('fetchMyProfile failed', e); return null; }
 }
 async function saveMyProfile(email, data){
-  await setDoc(doc(db, 'profiles', email), data);
+  await setDoc(doc(db, 'profiles', email), data, { merge: true });
 }
 
 let currentParsed = null;
@@ -1882,7 +1886,19 @@ function applyAppearance(mode, fontSize){
   document.documentElement.setAttribute('data-theme', wantsDark ? 'dark' : 'light');
   const sizeMap = { small: '14px', medium: '15px', large: '17px' };
   document.documentElement.style.fontSize = sizeMap[fontSize] || sizeMap.medium;
+  document.getElementById('themeIconSun').style.display = wantsDark ? 'none' : '';
+  document.getElementById('themeIconMoon').style.display = wantsDark ? '' : 'none';
 }
+
+document.getElementById('themeToggleBtn').addEventListener('click', async () => {
+  const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
+  const newMode = isDark ? 'light' : 'dark';
+  const profile = await fetchMyProfile(currentUserEmail);
+  applyAppearance(newMode, (profile && profile.fontSize) || 'medium');
+  try{
+    await saveMyProfile(currentUserEmail, { appearanceMode: newMode, updatedAt: Date.now() });
+  }catch(e){ /* visual switch already applied even if the save fails */ }
+});
 
 // ---------- Toggle switches ----------
 function wireToggle(id){
@@ -3577,32 +3593,32 @@ const PRIVACY_POLICY_HTML = `
   <p>آخر تحديث: ${new Date().toLocaleDateString('ar-SA')}</p>
   <p>توضّح هذي السياسة كيف يتعامل تطبيق "مرساة الميزان" مع بياناتك وبيانات القضايا والعملاء اللي تدخلها، بما يتوافق مع نظام حماية البيانات الشخصية السعودي (PDPL).</p>
 
-  <h3 style="color:var(--green-deeper); margin-top:18px;">١. البيانات اللي نجمعها</h3>
+  <h3 style="color:var(--ink); margin-top:18px;">١. البيانات اللي نجمعها</h3>
   <p>بيانات الحساب: بريدك الإلكتروني، كلمة المرور (مشفّرة ولا نراها أبدًا كنص واضح)، الاسم، ورقم الجوال إن أدخلته.</p>
   <p>بيانات القضايا: رقم القضية، أسماء الأطراف، تواريخ الجلسات، الملاحظات، الوكالات، والمستندات اللي ترفعها، وأي بيانات أخرى تدخلها بنفسك أثناء الاستخدام.</p>
 
-  <h3 style="color:var(--green-deeper); margin-top:18px;">٢. كيف نستخدم بياناتك</h3>
+  <h3 style="color:var(--ink); margin-top:18px;">٢. كيف نستخدم بياناتك</h3>
   <p>نستخدم بياناتك فقط لتشغيل التطبيق وتقديم خدماته لك: عرض قضاياك، حساب المواعيد والتذكيرات، وتمكينك من مشاركة قضية مع شخص تختاره أنت بنفسك.</p>
 
-  <h3 style="color:var(--green-deeper); margin-top:18px;">٣. أين تُخزَّن بياناتك</h3>
+  <h3 style="color:var(--ink); margin-top:18px;">٣. أين تُخزَّن بياناتك</h3>
   <p>تُخزَّن بياناتك على خوادم Google Firebase، مع تشفير كامل أثناء النقل والتخزين (معيار صناعي معتمد عالميًا).</p>
 
-  <h3 style="color:var(--green-deeper); margin-top:18px;">٤. من يقدر يوصل لبياناتك</h3>
+  <h3 style="color:var(--ink); margin-top:18px;">٤. من يقدر يوصل لبياناتك</h3>
   <p>أنت فقط تقدر تشوف قضاياك، إلا لو شاركت قضية معينة صراحة مع شخص ثاني (بصلاحية تعديل أو قراءة فقط تختارها أنت)، وهو يقدر يوصلها بس بعد موافقته الصريحة.</p>
 
-  <h3 style="color:var(--green-deeper); margin-top:18px;">٥. مشاركة البيانات مع أطراف ثالثة</h3>
+  <h3 style="color:var(--ink); margin-top:18px;">٥. مشاركة البيانات مع أطراف ثالثة</h3>
   <p>ما نبيع ولا نشارك بياناتك مع أي جهة تسويقية أو تجارية. البيانات تُخزَّن فقط عبر مزوّد الخدمة التقني (Google Firebase) الضروري لتشغيل التطبيق.</p>
 
-  <h3 style="color:var(--green-deeper); margin-top:18px;">٦. حقوقك</h3>
+  <h3 style="color:var(--ink); margin-top:18px;">٦. حقوقك</h3>
   <p>يحق لك في أي وقت: الاطلاع على بياناتك، تصحيحها، تصديرها (عبر ميزة التصدير داخل التطبيق)، أو طلب حذف حسابك وكل بياناته بشكل نهائي.</p>
 
-  <h3 style="color:var(--green-deeper); margin-top:18px;">٧. الاحتفاظ بالبيانات</h3>
+  <h3 style="color:var(--ink); margin-top:18px;">٧. الاحتفاظ بالبيانات</h3>
   <p>تبقى بياناتك محفوظة طالما حسابك فعّال. عند طلب حذف الحساب، تُحذف كل بياناتك المرتبطة به نهائيًا.</p>
 
-  <h3 style="color:var(--green-deeper); margin-top:18px;">٨. التعديلات على هذي السياسة</h3>
+  <h3 style="color:var(--ink); margin-top:18px;">٨. التعديلات على هذي السياسة</h3>
   <p>ممكن نحدّث هذي السياسة من وقت لآخر. أي تغيير جوهري بنوضحه لك داخل التطبيق.</p>
 
-  <h3 style="color:var(--green-deeper); margin-top:18px;">٩. التواصل</h3>
+  <h3 style="color:var(--ink); margin-top:18px;">٩. التواصل</h3>
   <p>لأي استفسار يخص خصوصيتك أو بياناتك، تواصل معنا عبر البريد الإلكتروني المسجّل بحسابك.</p>
 `;
 
