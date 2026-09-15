@@ -851,7 +851,7 @@
     </div>
     <div class="tabs">
       <button class="tab-btn active" data-view="home" id="tabHome">🏠 الرئيسية</button>
-      <button class="tab-btn" data-view="sessioncases" id="tabSessionCases">الجلسات والقضايا</button>
+      <button class="tab-btn" data-view="sessioncases" id="tabSessionCases">مرساتك</button>
       <button class="tab-btn" data-view="calendar" id="tabCalendar">التقويم</button>
     </div>
   </div>
@@ -938,7 +938,7 @@
   <!-- ===== SESSIONS + CASES (MERGED) VIEW ===== -->
   <section class="view" id="view-sessioncases">
     <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:14px; flex-wrap:wrap; gap:10px;">
-      <h2 style="font-family:'Amiri',serif; color:var(--ink); margin:0;">الجلسات والقضايا</h2>
+      <h2 style="font-family:'Amiri',serif; color:var(--ink); margin:0;">مرساتك</h2>
       <button class="btn btn-ghost" id="scArchiveToggleBtn">الأرشيف</button>
     </div>
 
@@ -947,6 +947,7 @@
       <button class="tab-btn sc-subtab active" data-sub="sessions" id="scSubSessions" style="color:var(--ink-soft);">الجلسات</button>
       <button class="tab-btn sc-subtab" data-sub="cases" id="scSubCases" style="color:var(--ink-soft);">القضايا</button>
       <button class="tab-btn sc-subtab" data-sub="wakalas" id="scSubWakalas" style="color:var(--ink-soft);">الوكالات</button>
+      <button class="tab-btn sc-subtab" data-sub="sulh" id="scSubSulh" style="color:var(--ink-soft);">جلسات الصلح</button>
     </div>
 
     <div id="scPanelSessions">
@@ -1032,6 +1033,26 @@
         <p>الوكالات اللي تضيفها بتظهر هنا مع عدّاد المدة المتبقية.</p>
       </div>
     </div>
+
+    <div id="scPanelSulh" style="display:none;">
+      <p class="hint" style="margin-bottom:14px;">جلسات الصلح تُكتشف تلقائيًا من نص إشعار ناجز (تبويب "الرئيسية")، وتظهر هنا بدل تبويب "الجلسات" العادي.</p>
+      <div class="list-toolbar">
+        <div class="search-box">
+          <input type="text" id="sulhSearchInput" placeholder="ابحث برقم الطلب...">
+        </div>
+        <select class="sort-select" id="sulhSortSelect">
+          <option value="added">الأحدث إضافة</option>
+          <option value="date">ترتيب حسب تاريخ الجلسة</option>
+          <option value="case">رقم الطلب</option>
+        </select>
+      </div>
+      <div class="cases-grid" id="sulhGrid"></div>
+      <div class="empty" id="sulhEmpty" style="display:none;">
+        <div class="glyph"><span class="mark"></span></div>
+        <h3>لا توجد جلسات صلح مسجّلة بعد</h3>
+        <p>جلسات الصلح المكتشفة تلقائيًا من الإشعارات بتظهر هنا.</p>
+      </div>
+    </div>
     </div>
 
     <div id="scArchiveContent" style="display:none;">
@@ -1107,7 +1128,7 @@
 <nav class="bottom-nav" id="bottomNav">
   <button class="bn-item" id="bnSessionCases">
     <svg class="icon" viewBox="0 0 24 24"><rect x="3" y="7" width="18" height="13" rx="2"/><path d="M8 7V5a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><path d="M3 13h18"/></svg>
-    <span>الجلسات والقضايا</span>
+    <span>مرساتك</span>
   </button>
   <button class="bn-home" id="bnHome" title="الرئيسية">
     <span class="mark"></span>
@@ -1587,6 +1608,7 @@ function switchView(view){
     document.getElementById('scArchiveToggleBtn').textContent = 'الأرشيف';
     if(scSubView === 'sessions') renderList();
     else if(scSubView === 'cases') renderCasesGrouped();
+    else if(scSubView === 'sulh') renderSulh();
     else renderWakalas();
   }
   if(view === 'calendar') renderCalendar();
@@ -1607,36 +1629,23 @@ document.getElementById('scArchiveToggleBtn').addEventListener('click', () => {
   if(scShowingArchive) renderArchive();
 });
 
-document.getElementById('scSubSessions').addEventListener('click', () => {
-  scSubView = 'sessions';
-  document.getElementById('scSubSessions').classList.add('active');
-  document.getElementById('scSubCases').classList.remove('active');
-  document.getElementById('scSubWakalas').classList.remove('active');
-  document.getElementById('scPanelSessions').style.display = '';
-  document.getElementById('scPanelCases').style.display = 'none';
-  document.getElementById('scPanelWakalas').style.display = 'none';
-  renderList();
-});
-document.getElementById('scSubCases').addEventListener('click', () => {
-  scSubView = 'cases';
-  document.getElementById('scSubCases').classList.add('active');
-  document.getElementById('scSubSessions').classList.remove('active');
-  document.getElementById('scSubWakalas').classList.remove('active');
-  document.getElementById('scPanelCases').style.display = '';
-  document.getElementById('scPanelSessions').style.display = 'none';
-  document.getElementById('scPanelWakalas').style.display = 'none';
-  renderCasesGrouped();
-});
-document.getElementById('scSubWakalas').addEventListener('click', () => {
-  scSubView = 'wakalas';
-  document.getElementById('scSubWakalas').classList.add('active');
-  document.getElementById('scSubSessions').classList.remove('active');
-  document.getElementById('scSubCases').classList.remove('active');
-  document.getElementById('scPanelWakalas').style.display = '';
-  document.getElementById('scPanelSessions').style.display = 'none';
-  document.getElementById('scPanelCases').style.display = 'none';
-  renderWakalas();
-});
+function setScSubView(view){
+  scSubView = view;
+  const tabs = { sessions: 'scSubSessions', cases: 'scSubCases', wakalas: 'scSubWakalas', sulh: 'scSubSulh' };
+  const panels = { sessions: 'scPanelSessions', cases: 'scPanelCases', wakalas: 'scPanelWakalas', sulh: 'scPanelSulh' };
+  Object.keys(tabs).forEach(v => {
+    document.getElementById(tabs[v]).classList.toggle('active', v === view);
+    document.getElementById(panels[v]).style.display = v === view ? '' : 'none';
+  });
+  if(view === 'sessions') renderList();
+  else if(view === 'cases') renderCasesGrouped();
+  else if(view === 'wakalas') renderWakalas();
+  else if(view === 'sulh') renderSulh();
+}
+document.getElementById('scSubSessions').addEventListener('click', () => setScSubView('sessions'));
+document.getElementById('scSubCases').addEventListener('click', () => setScSubView('cases'));
+document.getElementById('scSubWakalas').addEventListener('click', () => setScSubView('wakalas'));
+document.getElementById('scSubSulh').addEventListener('click', () => setScSubView('sulh'));
 
 let archiveSubView = 'cases';
 document.getElementById('archiveSubCases').addEventListener('click', () => {
@@ -2037,15 +2046,20 @@ function parseMessage(text){
   text = text.trim();
   const idMatch = text.match(/صاحب الهوية:\s*([\d\*]+)/);
 
-  // Case number: try the "للقضية رقم:" adjacent form first, then a generic "رقم:" fallback
+  // Case number: try "للطلب رقم:" (conciliation-session requests — IDs may contain a hyphen,
+  // e.g. 01-4803129672), then the "للقضية رقم:" adjacent form, then a generic "رقم:" fallback
   // (used when a case-type label sits between "للقضية" and "رقم:")
-  const caseMatch = text.match(/للقضية رقم:\s*[\r\n]*\s*(\d+)/)
-    || text.match(/القضية رقم:\s*[\r\n]*\s*(\d+)/)
-    || text.match(/رقم:\s*[\r\n]*\s*(\d+)/);
+  const sulhCaseMatch = text.match(/للطلب رقم:\s*[\r\n]*\s*([\d-]+)/);
+  const caseMatch = sulhCaseMatch
+    || text.match(/للقضية رقم:\s*[\r\n]*\s*([\d-]+)/)
+    || text.match(/القضية رقم:\s*[\r\n]*\s*([\d-]+)/)
+    || text.match(/رقم:\s*[\r\n]*\s*([\d-]+)/);
 
   // Case type: text sitting on its own line between "للقضية" and the "رقم:" line
   // (only present when there is no المقامة من / ضد pair, e.g. guardianship cases)
-  const caseTypeMatch = text.match(/للقضية\s*[\r\n]+\s*([^\n]+?)\s*[\r\n]+\s*رقم:/);
+  // — or, for conciliation-session notices, the phrase right after "نبلغكم بموعد" and before "للطلب رقم:"
+  const caseTypeMatch = text.match(/للقضية\s*[\r\n]+\s*([^\n]+?)\s*[\r\n]+\s*رقم:/)
+    || text.match(/نبلغكم بموعد\s+([^\n]+?)\s*للطلب رقم:/);
 
   const plaintiffMatch = text.match(/المقامة من:\s*([^\n]+)/);
   const defendantMatch = text.match(/ضد:\s*([^\n]+)/);
@@ -2073,7 +2087,8 @@ function parseMessage(text){
     date: newDate || '',
     previousDate: oldDate,
     time: timeMatch ? timeMatch[1].trim() : '',
-    type: isReschedule ? 'rescheduled' : 'scheduled'
+    type: isReschedule ? 'rescheduled' : 'scheduled',
+    isConciliation: !!sulhCaseMatch
   };
 }
 
@@ -2121,7 +2136,14 @@ async function parseAndPreview(){
         isUpdate = true;
         const old = normalizeCase(data);
         const latest = getLatestSession(old);
-        updateFlag.textContent = `يوجد بالفعل سجل لهذه القضية بتاريخ ${latest.date} — ${latest.time} (${old.sessions.length} جلسة/جلسات مسجّلة). الحفظ بيضيف جلسة جديدة للقضية نفسها ويحتفظ بكل السجل السابق.`;
+        const matchedForReschedule = (parsed.type === 'rescheduled' && parsed.previousDate)
+          ? old.sessions.filter(s => !s.archived && s.date === parsed.previousDate).sort((a,b) => b.addedAt - a.addedAt)[0]
+          : null;
+        if(matchedForReschedule){
+          updateFlag.textContent = `يوجد بالفعل سجل لهذه القضية. الحفظ بيعدّل موعد الجلسة رقم ${matchedForReschedule.number} (كانت بتاريخ ${matchedForReschedule.date} — ${matchedForReschedule.time || '—'}) مباشرة، بدل إضافة جلسة جديدة — والتعديل يُسجَّل بسجل النشاط.`;
+        } else {
+          updateFlag.textContent = `يوجد بالفعل سجل لهذه القضية بتاريخ ${latest.date} — ${latest.time} (${old.sessions.length} جلسة/جلسات مسجّلة). الحفظ بيضيف جلسة جديدة للقضية نفسها ويحتفظ بكل السجل السابق.`;
+        }
         updateFlag.classList.add('show');
         if(old.notes) document.getElementById('f_notes').value = old.notes;
         if(old.sessionLink) document.getElementById('f_sessionLink').value = old.sessionLink;
@@ -2237,6 +2259,12 @@ document.getElementById('saveBtn').addEventListener('click', async () => {
     notes: document.getElementById('f_notes').value.trim(),
     sessionLink: document.getElementById('f_sessionLink').value.trim()
   };
+  // Only set caseCategory when this save came from a freshly-parsed conciliation-session
+  // notice — leaving the key absent otherwise means Object.assign never overwrites an
+  // existing record's category on unrelated edits (notes, manual saves, etc.).
+  if(currentParsed && currentParsed.isConciliation){
+    caseFields.caseCategory = 'conciliation';
+  }
 
   // Step 1: look up an existing record for this case number.
   // Any failure here (including "key not found" style errors) just means
@@ -2257,25 +2285,43 @@ document.getElementById('saveBtn').addEventListener('click', async () => {
 
   let record;
   let addedNewSession = false;
+  let updatedExistingSession = false;
+  let activityMessage = '';
 
   if(existing){
-    // If logged in and this case belongs to someone else who hasn't shared it, block the edit.
-    const owner = existing.ownerEmail || null;
-    const shared = existing.sharedWithEmails || [];
-    if(currentUserEmail && owner && owner !== currentUserEmail && !shared.includes(currentUserEmail)){
-      showToast('هذي القضية مملوكة لشخص آخر ولم تتم مشاركتها معك.');
+    // Permission check via the current sharing model (owner or full-access collaborator).
+    if(currentUserEmail && !canEdit(existing)){
+      showToast('هذي القضية ما عندك صلاحية تعديل عليها.');
       return;
     }
     record = existing;
     Object.assign(record, caseFields); // case-level fields can be edited/corrected each time
     record.updatedAt = Date.now();
 
-    const latest = getLatestSession(record);
-    if(!latest || latest.date !== date || latest.time !== time){
-      const num = sessionNumberVal ? (isNaN(parseInt(sessionNumberVal,10)) ? sessionNumberVal : parseInt(sessionNumberVal,10)) : suggestNextSessionNumber(record);
-      record.sessions.push({ id: genSessionId(), date, time, addedAt: Date.now(), archived: false, number: num });
-      addedNewSession = true;
-      record.archived = false; // a new session means the case is active again
+    // If this came from a "تغيير موعد الجلسة" notification, find the specific session that
+    // matches the PREVIOUS date and update it in place — instead of adding a brand-new session.
+    let matchedSession = null;
+    if(currentParsed && currentParsed.type === 'rescheduled' && currentParsed.previousDate){
+      matchedSession = [...record.sessions]
+        .filter(s => !s.archived && s.date === currentParsed.previousDate)
+        .sort((a,b) => b.addedAt - a.addedAt)[0] || null;
+    }
+
+    if(matchedSession){
+      const oldDate = matchedSession.date, oldTime = matchedSession.time;
+      matchedSession.date = date;
+      matchedSession.time = time;
+      record.archived = false;
+      updatedExistingSession = true;
+      activityMessage = `عدّل موعد الجلسة رقم ${matchedSession.number} من ${oldDate} (${oldTime || '—'}) إلى ${date} (${time || '—'})`;
+    } else {
+      const latest = getLatestSession(record);
+      if(!latest || latest.date !== date || latest.time !== time){
+        const num = sessionNumberVal ? (isNaN(parseInt(sessionNumberVal,10)) ? sessionNumberVal : parseInt(sessionNumberVal,10)) : suggestNextSessionNumber(record);
+        record.sessions.push({ id: genSessionId(), date, time, addedAt: Date.now(), archived: false, number: num });
+        addedNewSession = true;
+        record.archived = false; // a new session means the case is active again
+      }
     }
   } else {
     const num = isNaN(parseInt(sessionNumberVal,10)) ? sessionNumberVal : parseInt(sessionNumberVal,10);
@@ -2294,8 +2340,8 @@ document.getElementById('saveBtn').addEventListener('click', async () => {
   // Step 2: the actual save. Only this step should report a real error.
   try{
     await saveCaseDoc(caseNumber, record);
-    logActivity(caseNumber, !existing ? 'أضاف القضية' : (addedNewSession ? `أضاف جلسة رقم ${record.sessions[record.sessions.length-1].number}` : 'حدّث بيانات القضية'));
-    showToast(!existing ? 'تمت إضافة القضية إلى السجل.' : (addedNewSession ? 'تمت إضافة جلسة جديدة لنفس القضية.' : 'تم تحديث بيانات القضية.'));
+    logActivity(caseNumber, !existing ? 'أضاف القضية' : (updatedExistingSession ? activityMessage : (addedNewSession ? `أضاف جلسة رقم ${record.sessions[record.sessions.length-1].number}` : 'حدّث بيانات القضية')));
+    showToast(!existing ? 'تمت إضافة القضية إلى السجل.' : (updatedExistingSession ? 'تم تحديث موعد الجلسة.' : (addedNewSession ? 'تمت إضافة جلسة جديدة لنفس القضية.' : 'تم تحديث بيانات القضية.')));
     document.getElementById('rawMessage').value = '';
     document.getElementById('previewPanel').style.display = 'none';
     document.getElementById('parseNote').classList.remove('show');
@@ -2330,6 +2376,7 @@ function normalizeCase(rec){
   if(!rec.pendingShares) rec.pendingShares = [];
   if(!rec.pendingShareEmails) rec.pendingShareEmails = [];
   if(!rec.attachments) rec.attachments = [];
+  if(!rec.caseCategory) rec.caseCategory = 'regular';
   if(!rec.caseStatus) rec.caseStatus = 'pending';
   return rec;
 }
@@ -2445,8 +2492,8 @@ function parseArabicTime(timeStr){
   if(!m) return null;
   let hour = parseInt(m[1], 10);
   const minute = parseInt(m[2], 10);
-  const isPM = /مساء/.test(timeStr);
-  const isAM = /صباح/.test(timeStr);
+  const isPM = /مساء/.test(timeStr) || /pm/i.test(timeStr);
+  const isAM = /صباح/.test(timeStr) || /am/i.test(timeStr);
   if(isPM && hour !== 12) hour += 12;
   if(isAM && hour === 12) hour = 0;
   return { hour, minute };
@@ -2509,57 +2556,16 @@ function dateSortKey(d){
   return `${yyyy.padStart(4,'0')}-${mm.padStart(2,'0')}-${dd.padStart(2,'0')}`;
 }
 
-async function renderList(){
-  const grid = document.getElementById('casesGrid');
-  const empty = document.getElementById('emptyState');
-
-  let rawCases = (await loadAllCases()).map(normalizeCase);
-  // (loadAllCases/fetchMyCases already scopes to owner + full + read-only shares via Firestore queries)
-
-  // This view shows one card per non-archived case, using its latest active session.
-  let items = rawCases
-    .filter(c => !c.archived)
-    .map(c => ({ c, session: getLatestSession(c) }))
-    .filter(x => x.session && !x.session.archived);
-
-  // (session count badge removed — tabs merged into one "الجلسات والقضايا" tab)
-
-  const query = document.getElementById('searchInput').value.trim().toLowerCase();
-  if(query){
-    items = items.filter(({c}) =>
-      (c.caseNumber||'').toLowerCase().includes(query) ||
-      (c.plaintiff||'').toLowerCase().includes(query) ||
-      (c.defendant||'').toLowerCase().includes(query) ||
-      (c.caseType||'').toLowerCase().includes(query) ||
-      (c.notes||'').toLowerCase().includes(query)
-    );
-  }
-
-  const sortMode = document.getElementById('sortSelect').value;
-  if(sortMode === 'added') items.sort((a,b) => b.session.addedAt - a.session.addedAt);
-  else if(sortMode === 'date') items.sort((a,b) => dateSortKey(a.session.date).localeCompare(dateSortKey(b.session.date)));
-  else if(sortMode === 'case') items.sort((a,b) => a.c.caseNumber.localeCompare(b.c.caseNumber));
-
-  if(items.length === 0){
-    grid.innerHTML = '';
-    empty.querySelector('h3').textContent = 'لا توجد قضايا في السجل بعد';
-    empty.querySelector('p').textContent = 'ابدأ بلصق أول إشعار جلسة لإضافته إلى السجل.';
-    empty.style.display = 'block';
-    return;
-  }
-  empty.style.display = 'none';
-
-  grid.innerHTML = items.map(({c, session}) => {
-    const meta = getSessionMeta(session.date, session.time);
-    const chipClass = meta.state === 'past' ? 'past' : (meta.state === 'today' ? 'today' : 'upcoming');
-    const prev = getPreviousActiveSession(c);
-    const sessionNumber = session.number;
-    const statusInfo = caseStatusInfo(c.caseStatus);
-    return `
+function buildSessionCardHtml(c, session){
+  const meta = getSessionMeta(session.date, session.time);
+  const chipClass = meta.state === 'past' ? 'past' : (meta.state === 'today' ? 'today' : 'upcoming');
+  const sessionNumber = session.number;
+  const statusInfo = caseStatusInfo(c.caseStatus);
+  return `
     <div class="card">
       <div class="card-top">
         <div class="seal"><span class="mark"></span></div>
-        <span class="case-number-label">رقم القضية</span>
+        <span class="case-number-label">${c.caseCategory === 'conciliation' ? 'رقم الطلب' : 'رقم القضية'}</span>
         <span class="case-number">${escapeHtml(c.caseNumber)} <span class="session-number-tag">جلسة ${sessionNumber}</span></span>
         <div>
           <span class="status-badge ${statusInfo.cls}">${statusInfo.label}${c.caseStatus === 'non_final' && c.objectionDaysRemaining !== undefined && c.objectionDaysRemaining !== null ? ' (' + c.objectionDaysRemaining + ' يوم للاعتراض)' : ''}</span>
@@ -2618,8 +2624,9 @@ async function renderList(){
       ` : ''}
     </div>
   `;
-  }).join('');
+}
 
+function wireSessionCardEvents(grid, refresh){
   grid.querySelectorAll('.tz-select').forEach(sel => {
     sel.addEventListener('change', () => {
       const resultEl = sel.nextElementSibling;
@@ -2644,7 +2651,7 @@ async function renderList(){
       try{
         await patchCaseDoc(inp.dataset.case, { sessionLink: inp.value.trim() });
         showToast('تم حفظ رابط الجلسة.');
-        renderList();
+        refresh();
       }catch(e){ showToast('تعذّر حفظ الرابط.'); }
     });
   });
@@ -2660,7 +2667,7 @@ async function renderList(){
       }catch(e){}
       await deleteCaseDoc(btn.dataset.case);
       showToast('تم حذف القضية.');
-      renderList();
+      refresh();
     });
   });
 
@@ -2673,7 +2680,7 @@ async function renderList(){
         if(s) s.archived = true;
         await patchCaseDoc(btn.dataset.case, { sessions: rec.sessions });
         showToast('تمت أرشفة الجلسة.');
-        renderList();
+        refresh();
       }catch(e){
         showToast('حدث خطأ. حاول مجددًا.');
       }
@@ -2692,7 +2699,7 @@ async function renderList(){
         await addNotificationDoc(clean, `${currentUserEmail || 'شخص'} يريد مشاركة القضية رقم ${btn.dataset.case} معك (${permission === 'full' ? 'صلاحية تعديل كامل' : 'صلاحية قراءة فقط'}).`, 'share_invite', { caseNumber: btn.dataset.case, permission, fromEmail: currentUserEmail });
         logActivity(btn.dataset.case, `دعا ${clean} للمشاركة (${permission === 'full' ? 'تعديل كامل' : 'قراءة فقط'})`);
         showToast('تم إرسال طلب المشاركة، بانتظار موافقة ' + clean);
-        renderList();
+        refresh();
       }catch(e){
         showToast('تعذّرت المشاركة. حاول مجددًا.');
       }
@@ -2704,11 +2711,71 @@ async function renderList(){
       try{
         await patchCaseDoc(btn.dataset.case, { [btn.dataset.list]: arrayRemove(btn.dataset.email) });
         showToast('تمت إزالة المشاركة.');
-        renderList();
+        refresh();
       }catch(e){
         showToast('حدث خطأ. حاول مجددًا.');
       }
     });
+  });
+}
+
+async function renderCaseCardsList(opts){
+  const grid = document.getElementById(opts.gridId);
+  const empty = document.getElementById(opts.emptyId);
+
+  let rawCases = (await loadAllCases()).map(normalizeCase);
+  // (loadAllCases/fetchMyCases already scopes to owner + full + read-only shares via Firestore queries)
+
+  let items = rawCases
+    .filter(c => !c.archived)
+    .filter(c => opts.categoryFilter(c.caseCategory || 'regular'))
+    .map(c => ({ c, session: getLatestSession(c) }))
+    .filter(x => x.session && !x.session.archived);
+
+  const query = document.getElementById(opts.searchInputId).value.trim().toLowerCase();
+  if(query){
+    items = items.filter(({c}) =>
+      (c.caseNumber||'').toLowerCase().includes(query) ||
+      (c.plaintiff||'').toLowerCase().includes(query) ||
+      (c.defendant||'').toLowerCase().includes(query) ||
+      (c.caseType||'').toLowerCase().includes(query) ||
+      (c.notes||'').toLowerCase().includes(query)
+    );
+  }
+
+  const sortMode = document.getElementById(opts.sortSelectId).value;
+  if(sortMode === 'added') items.sort((a,b) => b.session.addedAt - a.session.addedAt);
+  else if(sortMode === 'date') items.sort((a,b) => dateSortKey(a.session.date).localeCompare(dateSortKey(b.session.date)));
+  else if(sortMode === 'case') items.sort((a,b) => a.c.caseNumber.localeCompare(b.c.caseNumber));
+
+  if(items.length === 0){
+    grid.innerHTML = '';
+    empty.querySelector('h3').textContent = opts.emptyTitle;
+    empty.querySelector('p').textContent = opts.emptyText;
+    empty.style.display = 'block';
+    return;
+  }
+  empty.style.display = 'none';
+
+  grid.innerHTML = items.map(({c, session}) => buildSessionCardHtml(c, session)).join('');
+  wireSessionCardEvents(grid, () => renderCaseCardsList(opts));
+}
+
+function renderList(){
+  return renderCaseCardsList({
+    gridId: 'casesGrid', emptyId: 'emptyState', searchInputId: 'searchInput', sortSelectId: 'sortSelect',
+    categoryFilter: (cat) => cat !== 'conciliation',
+    emptyTitle: 'لا توجد قضايا في السجل بعد',
+    emptyText: 'ابدأ بلصق أول إشعار جلسة لإضافته إلى السجل.'
+  });
+}
+
+function renderSulh(){
+  return renderCaseCardsList({
+    gridId: 'sulhGrid', emptyId: 'sulhEmpty', searchInputId: 'sulhSearchInput', sortSelectId: 'sulhSortSelect',
+    categoryFilter: (cat) => cat === 'conciliation',
+    emptyTitle: 'لا توجد جلسات صلح مسجّلة بعد',
+    emptyText: 'جلسات الصلح المكتشفة تلقائيًا من الإشعارات بتظهر هنا.'
   });
 }
 
@@ -2786,7 +2853,7 @@ async function acceptShareInvite(notifId, caseNumber, permission){
     renderNotifications();
     renderNotifBadge();
     if(document.getElementById('view-home').classList.contains('active')) renderDashboard();
-    if(document.getElementById('view-sessioncases').classList.contains('active')) (scSubView === 'sessions' ? renderList() : renderCasesGrouped());
+    if(document.getElementById('view-sessioncases').classList.contains('active') && scSubView === 'sessions') renderList();
   }catch(e){
     showToast('حدث خطأ أثناء القبول. حاول مجددًا.');
     console.error(e);
@@ -3261,7 +3328,7 @@ async function renderCasesGrouped(){
   }
   cases.sort((a,b) => b.updatedAt - a.updatedAt);
 
-  // (case count badge removed — tabs merged into one "الجلسات والقضايا" tab)
+  // (case count badge removed — tabs merged into one "مرساتك" tab)
 
   if(cases.length === 0){ grid.innerHTML = ''; empty.style.display = 'block'; return; }
   empty.style.display = 'none';
