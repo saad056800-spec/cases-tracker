@@ -110,6 +110,17 @@
     display:flex; flex-direction:column; gap:14px;
   }
   .brand{ display:flex; align-items:center; gap:14px; flex-wrap:wrap; }
+  .topbar-actions{ margin-inline-start:auto; text-align:left; display:flex; align-items:center; gap:10px; }
+  @media (max-width:899px){
+    .brand{ flex-wrap:nowrap; gap:8px; }
+    .topbar-actions{ margin-inline-start:0; gap:4px; }
+    .brand h1{ font-size:17px; }
+    .brand-seal{ width:36px; height:36px; padding:3px; }
+    .brand-seal .mark{ width:24px; height:24px; }
+    .notif-bell{ padding:3px 4px; }
+    #currentUserLabel{ display:none; }
+    #logoutBtn{ padding:5px 8px !important; font-size:11px !important; }
+  }
   .brand-seal{
     width:44px; height:44px; border-radius:10px;
     display:flex; align-items:center; justify-content:center;
@@ -470,9 +481,12 @@
   .day-item .di-sub{ color:var(--ink-soft); font-size:11.5px; margin-top:2px; }
   .calendar-col-cal, .calendar-col-appt{ display:flex; flex-direction:column; gap:20px; }
   .calendar-layout{ display:flex; flex-direction:column; gap:20px; }
+  .calendar-col-cal{ order:1; }
+  .calendar-col-appt{ order:2; }
   @media (min-width:900px){
     .calendar-panel{ max-width:none; margin:0; }
     .calendar-layout{ display:grid; grid-template-columns:1fr 1fr; gap:20px; align-items:stretch; }
+    .calendar-col-cal, .calendar-col-appt{ order:0; }
     .calendar-col-appt > .panel{ flex:1; display:flex; flex-direction:column; }
     .calendar-col-appt > .panel .btn-row{ margin-top:auto; }
     .calendar-col-cal > .calendar-panel{ flex:1; display:flex; flex-direction:column; }
@@ -496,7 +510,7 @@
     font-family:'IBM Plex Sans Arabic',sans-serif; font-size:13.5px; background:var(--surface); color:var(--ink);
   }
 
-  .cases-grid{ display:grid; grid-template-columns: repeat(auto-fill, minmax(310px,1fr)); gap:18px; }
+  .cases-grid{ display:grid; grid-template-columns: repeat(auto-fill, minmax(310px,1fr)); gap:18px; margin-bottom:20px; }
 
   .card{
     background:var(--card-bg); border:1px solid var(--line); border-radius:14px;
@@ -853,7 +867,7 @@
       <div>
         <h1>مرساة الميزان</h1>
       </div>
-      <div class="topbar-actions" style="margin-inline-start:auto; text-align:left; display:flex; align-items:center; gap:10px; position:relative;">
+      <div class="topbar-actions" style="position:relative;">
         <div id="profileWrap" style="position:relative;">
           <button id="profileBtn" class="notif-bell" title="الإعدادات">
             <svg class="icon" viewBox="0 0 24 24"><path d="M12 15.5a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7Z"/><path d="M19.4 13.5a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V19a2 2 0 1 1-4 0v-.09a1.65 1.65 0 0 0-1.08-1.51 1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09a1.65 1.65 0 0 0 1.51-1.08 1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1Z"/></svg>
