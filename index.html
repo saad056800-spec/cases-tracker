@@ -112,14 +112,17 @@
   .brand{ display:flex; align-items:center; gap:14px; flex-wrap:wrap; }
   .topbar-actions{ margin-inline-start:auto; text-align:left; display:flex; align-items:center; gap:10px; }
   @media (max-width:899px){
-    .brand{ flex-wrap:nowrap; gap:8px; }
-    .topbar-actions{ margin-inline-start:0; gap:4px; }
-    .brand h1{ font-size:17px; }
-    .brand-seal{ width:36px; height:36px; padding:3px; }
-    .brand-seal .mark{ width:24px; height:24px; }
-    .notif-bell{ padding:3px 4px; }
+    .brand{ flex-wrap:nowrap; gap:4px; }
+    .brand-title-wrap{ flex-shrink:0; }
+    .brand h1{ font-size:14px; white-space:nowrap; }
+    .topbar-actions{ margin-inline-start:0; gap:1px; flex-shrink:1; }
+    .brand-seal{ width:30px; height:30px; padding:2px; flex-shrink:0; }
+    .brand-seal .mark{ width:20px; height:20px; }
+    .notif-bell{ padding:2px 2px; }
+    .notif-bell .icon{ width:18px; height:18px; }
     #currentUserLabel{ display:none; }
-    #logoutBtn{ padding:5px 8px !important; font-size:11px !important; }
+    #logoutBtn{ padding:5px 6px !important; font-size:0 !important; white-space:nowrap; flex-shrink:0; }
+    #logoutBtn::before{ content:"خروج"; font-size:10px; font-weight:700; }
   }
   .brand-seal{
     width:44px; height:44px; border-radius:10px;
@@ -150,6 +153,7 @@
   }
   .icon{ width:20px; height:20px; stroke:currentColor; fill:none;
          stroke-width:1.7; stroke-linecap:round; stroke-linejoin:round; }
+  #profileBtn .icon{ width:17px; height:17px; }
   .notif-bell{
     background:none; border:none; cursor:pointer; position:relative;
     padding:4px 6px; line-height:1; color:var(--icon); display:flex; align-items:center;
@@ -509,6 +513,17 @@
     padding:10px 12px; border-radius:9px; border:1px solid var(--line);
     font-family:'IBM Plex Sans Arabic',sans-serif; font-size:13.5px; background:var(--surface); color:var(--ink);
   }
+  @media (max-width:899px){
+    .list-toolbar{ flex-wrap:nowrap; gap:5px; }
+    .search-box{ min-width:0; }
+    .search-box input{ padding:7px 8px; font-size:12px; }
+    select.sort-select{ padding:7px 4px; font-size:10.5px; flex-shrink:0; max-width:90px; }
+    .export-toolbar{ flex-wrap:nowrap; gap:5px; }
+    #exportPeriod{ padding:7px 3px !important; font-size:10px !important; flex-shrink:0; max-width:74px; }
+    #exportExcelBtn, #exportPrintBtn{ padding:7px 9px !important; font-size:0 !important; flex-shrink:0; white-space:nowrap; }
+    #exportExcelBtn::before{ content:"Excel"; font-size:12px; font-weight:700; }
+    #exportPrintBtn::before{ content:"PDF"; font-size:12px; font-weight:700; }
+  }
 
   .cases-grid{ display:grid; grid-template-columns: repeat(auto-fill, minmax(310px,1fr)); gap:18px; margin-bottom:20px; }
 
@@ -864,7 +879,7 @@
   <div class="topbar-inner">
     <div class="brand">
       <div class="brand-seal"><span class="mark"></span></div>
-      <div>
+      <div class="brand-title-wrap">
         <h1>مرساة الميزان</h1>
       </div>
       <div class="topbar-actions" style="position:relative;">
