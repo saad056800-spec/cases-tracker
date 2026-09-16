@@ -464,7 +464,11 @@
   .calendar-col-cal, .calendar-col-appt{ display:flex; flex-direction:column; gap:20px; }
   @media (min-width:900px){
     .calendar-panel{ max-width:none; margin:0; }
-    .calendar-layout{ display:grid; grid-template-columns:1fr 1fr; gap:20px; align-items:start; }
+    .calendar-layout{ display:grid; grid-template-columns:1fr 1fr; gap:20px; align-items:stretch; }
+    .calendar-col-appt > .panel{ flex:1; display:flex; flex-direction:column; }
+    .calendar-col-appt > .panel .btn-row{ margin-top:auto; }
+    .calendar-col-cal > .calendar-panel{ flex:1; display:flex; flex-direction:column; }
+    .calendar-col-cal > .calendar-panel .calendar-grid{ flex:1; align-content:center; }
     .cal-day{ font-size:12px; }
     .cal-day .cal-hijri-num{ font-size:10px; }
   }
