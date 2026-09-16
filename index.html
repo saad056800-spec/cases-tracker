@@ -1,6 +1,23 @@
 <!DOCTYPE html>
 <html lang="ar" dir="rtl">
 <head>
+<script>
+  // Apply the cached theme immediately (before first paint) to avoid a flash of the
+  // wrong theme while the full app loads and fetches the real profile from Firebase.
+  (function(){
+    try{
+      var theme = localStorage.getItem('mirsat_theme');
+      if(theme === 'dark' || theme === 'light'){
+        document.documentElement.setAttribute('data-theme', theme);
+      }
+      var fontSize = localStorage.getItem('mirsat_fontSize');
+      var sizeMap = { small: '14px', medium: '15px', large: '17px' };
+      if(fontSize && sizeMap[fontSize]){
+        document.documentElement.style.fontSize = sizeMap[fontSize];
+      }
+    }catch(e){ /* localStorage unavailable — falls back to the default light theme */ }
+  })();
+</script>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>مرساة الميزان</title>
@@ -568,12 +585,12 @@
   }
   .notes-box{ padding:0 18px 14px; }
   .expand-toggle-row{ padding:0 18px 10px; }
-  .expand-details-btn{
+  .expand-details-btn, .wk-expand-details-btn{
     width:100%; background:var(--paper-2); border:1px solid var(--line); border-radius:8px;
     padding:9px 12px; font-size:12.5px; font-weight:700; color:var(--ink-2); cursor:pointer;
     font-family:'IBM Plex Sans Arabic',sans-serif;
   }
-  .expand-details-btn:hover{ background:var(--line); }
+  .expand-details-btn:hover, .wk-expand-details-btn:hover{ background:var(--line); }
   .expanded-details{ padding:4px 0 0; border-top:1px solid var(--line); margin:0 18px 8px; }
   .expanded-details .status-box, .expanded-details .sessions-list, .expanded-details .attachments-box{ padding-inline:0; }
   .status-box{ padding:0 18px 14px; }
@@ -1046,6 +1063,7 @@
         <div class="search-box">
           <input type="text" id="wkSearchInput" placeholder="ابحث برقم الوكالة أو اسم الموكّل أو الوكيل...">
         </div>
+        <button class="btn btn-gold" id="wkJumpToAddBtn" type="button">➕ إضافة وكالة</button>
       </div>
       <div class="cases-grid" id="wkGrid"></div>
       <div class="empty" id="wkEmpty" style="display:none;">
@@ -1053,7 +1071,7 @@
         <h3>لا توجد وكالات مسجّلة بعد</h3>
         <p>الوكالات اللي تضيفها بتظهر هنا مع عدّاد المدة المتبقية.</p>
       </div>
-      <div class="panel">
+      <div class="panel" id="wkFormPanel">
         <h2 id="wkFormTitle">إضافة وكالة</h2>
         <div class="field-grid">
           <div class="field"><label>رقم الوكالة</label><input id="wk_number" dir="ltr" placeholder="رقم الوكالة"></div>
@@ -1669,10 +1687,11 @@ let currentParsed = null;
 let isUpdate = false;
 
 // ---------- View switching ----------
-let scSubView = 'sessions';
+let scSubView = localStorage.getItem('mirsat_lastScSubView') || 'sessions';
 let scShowingArchive = false;
 
 function switchView(view){
+  localStorage.setItem('mirsat_lastView', view);
   ['home','sessioncases','calendar'].forEach(v => {
     document.getElementById('view-' + v).classList.toggle('active', v === view);
   });
@@ -1689,9 +1708,7 @@ function switchView(view){
     document.getElementById('scMainContent').style.display = '';
     document.getElementById('scArchiveContent').style.display = 'none';
     document.getElementById('scArchiveToggleBtn').textContent = 'الأرشيف';
-    if(scSubView === 'sessions') renderList();
-    else if(scSubView === 'sulh') renderSulh();
-    else renderWakalas();
+    setScSubView(scSubView);
   }
   if(view === 'calendar') renderCalendar();
 }
@@ -1713,6 +1730,7 @@ document.getElementById('scArchiveToggleBtn').addEventListener('click', () => {
 
 function setScSubView(view){
   scSubView = view;
+  localStorage.setItem('mirsat_lastScSubView', view);
   const tabs = { sessions: 'scSubSessions', wakalas: 'scSubWakalas', sulh: 'scSubSulh' };
   const panels = { sessions: 'scPanelSessions', wakalas: 'scPanelWakalas', sulh: 'scPanelSulh' };
   Object.keys(tabs).forEach(v => {
@@ -2031,6 +2049,10 @@ function applyAppearance(mode, fontSize){
   document.documentElement.style.fontSize = sizeMap[fontSize] || sizeMap.medium;
   document.getElementById('themeIconSun').style.display = wantsDark ? 'none' : '';
   document.getElementById('themeIconMoon').style.display = wantsDark ? '' : 'none';
+  try{
+    localStorage.setItem('mirsat_theme', wantsDark ? 'dark' : 'light');
+    localStorage.setItem('mirsat_fontSize', fontSize || 'medium');
+  }catch(e){ /* localStorage unavailable — theme just won't be cached for next load */ }
 }
 
 document.getElementById('themeToggleBtn').addEventListener('click', async () => {
@@ -3697,38 +3719,56 @@ async function renderWakalas(){
         <div><span class="status-badge ${badgeCls}">${badgeText}</span></div>
       </div>
       <div class="parties">
-        ${w.principal ? `<div class="party-row"><span class="party-role">الموكّل</span><span class="party-name">${escapeHtml(w.principal)}</span></div>` : ''}
-        ${w.principalId ? `<div class="party-row"><span class="party-role">هوية الموكّل</span><span class="party-name" dir="ltr" style="unicode-bidi:isolate;">${escapeHtml(w.principalId)}</span></div>` : ''}
-        ${w.agent ? `<div class="party-row"><span class="party-role">الوكيل</span><span class="party-name">${escapeHtml(w.agent)}</span></div>` : ''}
-        ${w.source ? `<div class="party-row"><span class="party-role">المصدر</span><span class="party-name">${escapeHtml(w.source)}</span></div>` : ''}
-        ${!w.principal && !w.agent && !w.source ? `<div class="party-row"><span class="party-role">—</span><span class="party-name">لا توجد بيانات أطراف مسجّلة</span></div>` : ''}
+        <div class="party-row"><span class="party-role">الموكّل</span><span class="party-name">${w.principal ? escapeHtml(w.principal) : '—'}</span></div>
       </div>
-      <div class="session-info">
-        <div class="session-block"><span class="lbl">تاريخ الإنشاء</span><span class="val">${escapeHtml(w.createdDate || '—')}</span></div>
-        <div class="session-block"><span class="lbl">تاريخ الانتهاء</span><span class="val">${escapeHtml(w.expiryDate || 'غير محدّد')}</span></div>
+
+      <div class="expand-toggle-row">
+        <button class="wk-expand-details-btn" data-wakala="${w._id}">🔽 عرض كل التفاصيل</button>
       </div>
-      ${w.notes ? `<div class="case-notes">📝 ${escapeHtml(w.notes)}</div>` : ''}
-      <div class="attachments-box">
-        <label>أصل الوكالة</label>
-        ${(w.attachments||[]).length ? (w.attachments||[]).map(a => `
-          <div class="attachment-item">
-            <a href="${escapeHtml(a.url)}" target="_blank" rel="noopener">📄 ${escapeHtml(a.name)}</a>
-            <button class="wk-delete-attachment-btn" data-wakala="${w._id}" data-path="${escapeHtml(a.path)}" data-name="${escapeHtml(a.name)}">×</button>
+      <div class="expanded-details" data-wakala-details="${w._id}" style="display:none;">
+        <div class="parties" style="padding:0 0 10px;">
+          ${w.principalId ? `<div class="party-row"><span class="party-role">هوية الموكّل</span><span class="party-name" dir="ltr" style="unicode-bidi:isolate;">${escapeHtml(w.principalId)}</span></div>` : ''}
+          ${w.agent ? `<div class="party-row"><span class="party-role">الوكيل</span><span class="party-name">${escapeHtml(w.agent)}</span></div>` : ''}
+          ${w.source ? `<div class="party-row"><span class="party-role">المصدر</span><span class="party-name">${escapeHtml(w.source)}</span></div>` : ''}
+          ${!w.principalId && !w.agent && !w.source ? `<div class="party-row"><span class="party-role">—</span><span class="party-name">ما فيه معلومات إضافية مسجّلة</span></div>` : ''}
+        </div>
+        <div class="session-info" style="padding:0 0 14px;">
+          <div class="session-block"><span class="lbl">تاريخ الإنشاء</span><span class="val">${escapeHtml(w.createdDate || '—')}</span></div>
+          <div class="session-block"><span class="lbl">تاريخ الانتهاء</span><span class="val">${escapeHtml(w.expiryDate || 'غير محدّد')}</span></div>
+        </div>
+        ${w.notes ? `<div class="case-notes">📝 ${escapeHtml(w.notes)}</div>` : ''}
+        <div class="attachments-box">
+          <label>أصل الوكالة</label>
+          ${(w.attachments||[]).length ? (w.attachments||[]).map(a => `
+            <div class="attachment-item">
+              <a href="${escapeHtml(a.url)}" target="_blank" rel="noopener">📄 ${escapeHtml(a.name)}</a>
+              <button class="wk-delete-attachment-btn" data-wakala="${w._id}" data-path="${escapeHtml(a.path)}" data-name="${escapeHtml(a.name)}">×</button>
+            </div>
+          `).join('') : '<p class="hint" style="margin:4px 0;">ما فيه مستند مرفوع بعد.</p>'}
+          <input type="file" class="wk-attachment-input" data-wakala="${w._id}" style="display:none;">
+          <button class="btn btn-ghost wk-upload-attachment-btn" data-wakala="${w._id}" style="margin-top:6px; font-size:12px; padding:6px 12px;">📎 رفع أصل الوكالة</button>
+        </div>
+        <div class="card-footer" style="padding:10px 0 0; border-top:none;">
+          <span class="id-holder"></span>
+          <div style="display:flex; gap:6px; align-items:center;">
+            <button class="wk-copy-btn" data-wakala="${w._id}">نسخ المعلومات</button>
+            <button class="wk-edit-btn" data-wakala="${w._id}">تعديل</button>
+            <button class="delete-btn" data-wakala="${w._id}">حذف</button>
           </div>
-        `).join('') : '<p class="hint" style="margin:4px 0;">ما فيه مستند مرفوع بعد.</p>'}
-        <input type="file" class="wk-attachment-input" data-wakala="${w._id}" style="display:none;">
-        <button class="btn btn-ghost wk-upload-attachment-btn" data-wakala="${w._id}" style="margin-top:6px; font-size:12px; padding:6px 12px;">📎 رفع أصل الوكالة</button>
-      </div>
-      <div class="card-footer">
-        <span class="id-holder"></span>
-        <div style="display:flex; gap:6px; align-items:center;">
-          <button class="wk-copy-btn" data-wakala="${w._id}">نسخ المعلومات</button>
-          <button class="wk-edit-btn" data-wakala="${w._id}">تعديل</button>
-          <button class="delete-btn" data-wakala="${w._id}">حذف</button>
         </div>
       </div>
     </div>`;
   }).join('');
+
+  grid.querySelectorAll('.wk-expand-details-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const details = grid.querySelector(`.expanded-details[data-wakala-details="${btn.dataset.wakala}"]`);
+      if(!details) return;
+      const isOpen = details.style.display !== 'none';
+      details.style.display = isOpen ? 'none' : 'block';
+      btn.textContent = btn.textContent.replace(isOpen ? '🔼' : '🔽', isOpen ? '🔽' : '🔼');
+    });
+  });
 
   grid.querySelectorAll('.wk-edit-btn').forEach(btn => {
     btn.addEventListener('click', () => {
@@ -3994,6 +4034,10 @@ function contactButtonsHtml(countryCode, phone){
 
 document.getElementById('searchInput').addEventListener('input', renderList);
 document.getElementById('wkSearchInput').addEventListener('input', renderWakalas);
+document.getElementById('wkJumpToAddBtn').addEventListener('click', () => {
+  document.getElementById('wkFormPanel').scrollIntoView({ behavior: 'smooth', block: 'start' });
+  document.getElementById('wk_number').focus();
+});
 document.getElementById('sortSelect').addEventListener('change', renderList);
 
 // ---------- Toast ----------
@@ -4028,7 +4072,8 @@ async function checkObjectionDeadlineNotifications(){
 function startApp(){
   if(appStarted) return;
   appStarted = true;
-  renderDashboard();
+  const savedView = localStorage.getItem('mirsat_lastView') || 'home';
+  switchView(savedView);
   renderNotifBadge();
   checkObjectionDeadlineNotifications();
   setInterval(() => {
