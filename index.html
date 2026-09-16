@@ -165,9 +165,10 @@
   .notif-filter-chip.active{ background:var(--blue); color:#fff; font-weight:700; }
   .notif-list{ display:flex; flex-direction:column; overflow-y:auto; }
   .notif-item{
-    padding:11px 16px; border-bottom:1px solid var(--line); font-size:12.5px; color:var(--ink);
+    padding:11px 16px; font-size:12.5px; color:var(--ink);
     line-height:1.7; cursor:default; display:flex; gap:10px; align-items:flex-start;
   }
+  .notif-item:not(:first-child){ border-top:1px solid var(--line); }
   .notif-item.unread{ background:var(--paper-2); }
   .notif-item .notif-icon{ flex-shrink:0; color:var(--blue); margin-top:1px; }
   .notif-item .notif-body{ flex:1; min-width:0; }
@@ -314,20 +315,20 @@
 
   .dash-today-scroll{ max-height:214px; overflow-y:auto; }
   .today-row{
-    display:flex; gap:10px; align-items:flex-start; padding:10px 4px; border-bottom:1px solid var(--line);
+    display:flex; gap:10px; align-items:flex-start; padding:10px 4px;
   }
-  .today-row:last-child{ border-bottom:none; }
+  .today-row:not(:first-child){ border-top:1px solid var(--line); }
   .today-dot{ width:8px; height:8px; border-radius:50%; margin-top:6px; flex-shrink:0; }
   .today-row-body{ flex:1; min-width:0; }
   .today-row-top{ font-size:13.5px; color:var(--ink); font-weight:600; }
   .today-row-top .today-time{ color:var(--blue); font-weight:700; margin-inline-end:6px; }
   .today-row-sub{ font-size:11.5px; color:var(--muted); margin-top:2px; }
-  .today-row-alert{ background:var(--alert-bg); border-radius:8px; padding:10px 12px; border-bottom:none; margin-bottom:6px; }
+  .today-row-alert{ background:var(--alert-bg); border-radius:8px; padding:10px 12px; border-top:none !important; margin-bottom:6px; }
   .today-row-alert .today-row-top{ color:var(--alert); }
   .today-row-alert .today-row-sub{ color:var(--alert); opacity:0.85; }
 
-  .upcoming-day{ border-bottom:1px solid var(--line); padding:4px 0; }
-  .upcoming-day:last-child{ border-bottom:none; }
+  .upcoming-day{ padding:0; margin:0; }
+  .upcoming-day:not(:first-child){ border-top:1px solid var(--line); }
   .upcoming-day summary{
     display:flex; align-items:center; justify-content:space-between; padding:10px 4px; cursor:pointer;
     font-size:13.5px; font-weight:600; color:var(--ink); list-style:none; outline:none;
