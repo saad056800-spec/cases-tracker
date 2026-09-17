@@ -888,6 +888,57 @@
   </div>
 </div>
 
+<div id="signupScreen" style="display:none; min-height:100vh; align-items:center; justify-content:center; background:var(--paper); padding:20px;">
+  <div class="panel" style="max-width:380px; width:100%;">
+    <div style="text-align:center; margin-bottom:8px;">
+      <div class="brand-seal" style="margin:0 auto 10px;"><span class="mark"></span></div>
+    </div>
+    <h2 style="text-align:center;">إنشاء حساب جديد</h2>
+    <p class="hint" style="text-align:center;">تعبئة بياناتك تاخذ أقل من دقيقة</p>
+
+    <div class="field" style="margin-bottom:12px;">
+      <label>اسم المستخدم</label>
+      <input id="signupName" placeholder="اسمك الكامل">
+    </div>
+    <div class="field" style="margin-bottom:12px;">
+      <label>البريد الإلكتروني</label>
+      <input id="signupEmail" type="email" dir="ltr" placeholder="name@example.com">
+    </div>
+    <div class="field" style="margin-bottom:6px;">
+      <label>كلمة المرور</label>
+      <input id="signupPassword" type="password" dir="ltr" placeholder="••••••••">
+    </div>
+    <div class="parse-note err" id="signupError" style="display:none;"></div>
+    <div class="btn-row" style="margin-top:14px;">
+      <button class="btn btn-primary" id="signupSubmitBtn" style="width:100%;">إنشاء الحساب</button>
+    </div>
+    <p style="text-align:center; font-size:11.5px; color:var(--ink-soft); margin-top:16px;">
+      بإنشاء الحساب أنت توافق على
+      <a href="#" id="openPrivacyLinkSignup" style="color:var(--green-deep);">سياسة الخصوصية</a>
+    </p>
+    <p style="text-align:center; margin-top:8px;">
+      <a href="#" id="backToLoginLink" style="font-size:11.5px; color:var(--ink-soft);">‹ عندي حساب، تسجيل الدخول</a>
+    </p>
+  </div>
+</div>
+
+<div id="verifyGateScreen" style="display:none; min-height:100vh; align-items:center; justify-content:center; background:var(--paper); padding:20px;">
+  <div class="panel" style="max-width:380px; width:100%; text-align:center;">
+    <div style="text-align:center; margin-bottom:8px;">
+      <div class="brand-seal" style="margin:0 auto 10px;"><span class="mark"></span></div>
+    </div>
+    <h2>تحقّق من بريدك الإلكتروني</h2>
+    <p class="hint">أرسلنا رابط تأكيد إلى<br><b id="verifyGateEmail" style="color:var(--ink); direction:ltr; unicode-bidi:isolate; display:inline-block;"></b><br>افتح بريدك واضغط الرابط، وبعدها ارجع هنا واضغط "تحقّقت من بريدي".</p>
+    <p class="hint" style="font-size:11.5px; color:var(--gold);">ما تشوف الرسالة؟ تأكد من مجلد "البريد غير المرغوب فيه" (Spam / Junk).</p>
+    <div class="parse-note err" id="verifyGateError" style="display:none;"></div>
+    <div class="btn-row" style="margin-top:14px; flex-direction:column; gap:10px;">
+      <button class="btn btn-primary" id="verifyGateRecheckBtn" style="width:100%;">تحقّقت من بريدي</button>
+      <button class="btn btn-ghost" id="verifyGateResendBtn" style="width:100%;">إعادة إرسال رابط التأكيد</button>
+      <button class="btn btn-ghost" id="verifyGateLogoutBtn" style="width:100%;">تسجيل خروج</button>
+    </div>
+  </div>
+</div>
+
 <div id="privacyOverlay" style="display:none; position:fixed; inset:0; background:rgba(11,22,38,0.6); z-index:200; align-items:center; justify-content:center; padding:20px;">
   <div style="background:var(--surface); border-radius:14px; max-width:640px; width:100%; max-height:85vh; overflow-y:auto; padding:26px;">
     <h2 style="font-family:'Amiri',serif; color:var(--ink); margin-top:0;">سياسة الخصوصية — مرساة الميزان</h2>
@@ -1431,15 +1482,30 @@ if(firebaseConfigured()){
 
   let currentAuthUser = null;
   onAuthStateChanged(auth, (user) => {
+    if(user && !user.emailVerified){
+      currentUserEmail = null;
+      currentAuthUser = user;
+      document.getElementById('landingScreen').style.display = 'none';
+      document.getElementById('authScreen').style.display = 'none';
+      document.getElementById('signupScreen').style.display = 'none';
+      document.getElementById('verifyGateScreen').style.display = 'flex';
+      document.getElementById('verifyGateEmail').textContent = user.email;
+      document.querySelector('.topbar').style.display = 'none';
+      document.querySelector('main').style.display = 'none';
+      document.getElementById('bottomNav').classList.remove('logged-in');
+      return;
+    }
     if(user){
       currentUserEmail = user.email;
       currentAuthUser = user;
       document.getElementById('authScreen').style.display = 'none';
+      document.getElementById('signupScreen').style.display = 'none';
+      document.getElementById('verifyGateScreen').style.display = 'none';
       document.querySelector('.topbar').style.display = '';
       document.querySelector('main').style.display = '';
       document.getElementById('bottomNav').classList.add('logged-in');
       document.getElementById('currentUserLabel').textContent = user.email;
-      document.getElementById('verifyEmailBanner').style.display = user.emailVerified ? 'none' : 'flex';
+      document.getElementById('verifyEmailBanner').style.display = 'none';
       fetchMyProfile(user.email).then(profile => {
         applyAppearance((profile && profile.appearanceMode) || 'light', (profile && profile.fontSize) || 'medium');
       });
@@ -1449,6 +1515,8 @@ if(firebaseConfigured()){
       currentAuthUser = null;
       document.getElementById('landingScreen').style.display = 'block';
       document.getElementById('authScreen').style.display = 'none';
+      document.getElementById('signupScreen').style.display = 'none';
+      document.getElementById('verifyGateScreen').style.display = 'none';
       document.querySelector('.topbar').style.display = 'none';
       document.querySelector('main').style.display = 'none';
       document.getElementById('bottomNav').classList.remove('logged-in');
@@ -1477,7 +1545,7 @@ if(firebaseConfigured()){
     if(!currentAuthUser) return;
     try{
       await sendEmailVerification(currentAuthUser);
-      showToast('تم إرسال رابط التأكيد من جديد.');
+      showToast('تم إرسال رابط التأكيد من جديد — تفقّد البريد غير المرغوب فيه لو ما وصلك.');
     }catch(e){
       showToast('تعذّر الإرسال. حاول لاحقًا.');
     }
@@ -1495,19 +1563,68 @@ if(firebaseConfigured()){
       err.style.display = 'block';
     }
   });
-  document.getElementById('authSignupBtn').addEventListener('click', async () => {
-    const email = document.getElementById('authEmail').value.trim();
-    const password = document.getElementById('authPassword').value;
-    const err = document.getElementById('authError');
+  document.getElementById('authSignupBtn').addEventListener('click', () => {
+    document.getElementById('authScreen').style.display = 'none';
+    document.getElementById('signupScreen').style.display = 'flex';
+    document.getElementById('signupName').value = '';
+    document.getElementById('signupEmail').value = document.getElementById('authEmail').value.trim();
+    document.getElementById('signupPassword').value = '';
+    document.getElementById('signupError').style.display = 'none';
+  });
+  document.getElementById('backToLoginLink').addEventListener('click', (e) => {
+    e.preventDefault();
+    document.getElementById('signupScreen').style.display = 'none';
+    document.getElementById('authScreen').style.display = 'flex';
+  });
+  document.getElementById('signupSubmitBtn').addEventListener('click', async () => {
+    const name = document.getElementById('signupName').value.trim();
+    const email = document.getElementById('signupEmail').value.trim();
+    const password = document.getElementById('signupPassword').value;
+    const err = document.getElementById('signupError');
     err.style.display = 'none';
+    if(!name){
+      err.textContent = 'اكتب اسم المستخدم.';
+      err.style.display = 'block';
+      return;
+    }
     try{
       const cred = await createUserWithEmailAndPassword(auth, email, password);
+      try{ await saveMyProfile(email, { name, updatedAt: Date.now() }); }catch(e){}
       try{ await sendEmailVerification(cred.user); }catch(e){}
+      // onAuthStateChanged will now show the verification-gate screen automatically.
     }catch(e){
       err.textContent = 'تعذّر إنشاء الحساب: ' + arabicAuthError(e.code);
       err.style.display = 'block';
     }
   });
+  document.getElementById('openPrivacyLinkSignup').addEventListener('click', openPrivacyOverlay);
+
+  document.getElementById('verifyGateRecheckBtn').addEventListener('click', async () => {
+    const errEl = document.getElementById('verifyGateError');
+    errEl.style.display = 'none';
+    try{
+      await currentAuthUser.reload();
+      if(currentAuthUser.emailVerified){
+        location.reload();
+      } else {
+        errEl.textContent = 'لسه ما تحقّقنا من تأكيدك — تأكد إنك ضغطت الرابط بالبريد، ثم حاول مجددًا.';
+        errEl.style.display = 'block';
+      }
+    }catch(e){
+      errEl.textContent = 'حدث خطأ. حاول مجددًا.';
+      errEl.style.display = 'block';
+    }
+  });
+  document.getElementById('verifyGateResendBtn').addEventListener('click', async () => {
+    if(!currentAuthUser) return;
+    try{
+      await sendEmailVerification(currentAuthUser);
+      showToast('تم إرسال رابط التأكيد من جديد — تفقّد البريد غير المرغوب فيه لو ما وصلك.');
+    }catch(e){
+      showToast('تعذّر الإرسال. حاول لاحقًا.');
+    }
+  });
+  document.getElementById('verifyGateLogoutBtn').addEventListener('click', () => signOut(auth));
   document.getElementById('logoutBtn').addEventListener('click', () => signOut(auth));
 
   document.getElementById('forgotPasswordLink').addEventListener('click', (e) => {
