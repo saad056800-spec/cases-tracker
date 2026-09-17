@@ -584,6 +584,18 @@
     padding:2px 8px; border-radius:999px; margin-inline-start:6px; vertical-align:middle;
   }
   .notes-box{ padding:0 18px 14px; }
+  .wk-compact-row{
+    display:flex; align-items:center; gap:10px; padding:16px 18px 14px; flex-wrap:wrap;
+  }
+  .wk-compact-row .status-badge{ margin-top:0; }
+  .wk-compact-number{
+    font-family:'Amiri',serif; font-weight:700; font-size:17px; color:var(--ink);
+    direction:ltr; unicode-bidi:isolate; flex-shrink:0;
+  }
+  .wk-compact-principal{
+    font-size:13px; color:var(--ink-soft); margin-inline-start:auto; overflow:hidden;
+    text-overflow:ellipsis; white-space:nowrap; max-width:150px;
+  }
   .expand-toggle-row{ padding:0 18px 10px; }
   .expand-details-btn, .wk-expand-details-btn{
     width:100%; background:var(--paper-2); border:1px solid var(--line); border-radius:8px;
@@ -3712,14 +3724,10 @@ async function renderWakalas(){
     }
     return `
     <div class="card">
-      <div class="card-top">
-        <div class="seal"><span class="mark"></span></div>
-        <span class="case-number-label">رقم الوكالة</span>
-        <span class="case-number">${escapeHtml(w.number)}</span>
-        <div><span class="status-badge ${badgeCls}">${badgeText}</span></div>
-      </div>
-      <div class="parties">
-        <div class="party-row"><span class="party-role">الموكّل</span><span class="party-name">${w.principal ? escapeHtml(w.principal) : '—'}</span></div>
+      <div class="wk-compact-row">
+        <span class="wk-compact-number">${escapeHtml(w.number)}</span>
+        <span class="status-badge ${badgeCls}">${badgeText}</span>
+        <span class="wk-compact-principal">${w.principal ? escapeHtml(w.principal) : '—'}</span>
       </div>
 
       <div class="expand-toggle-row">
