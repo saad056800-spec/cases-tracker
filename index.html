@@ -897,8 +897,12 @@
     <p class="hint" style="text-align:center;">تعبئة بياناتك تاخذ أقل من دقيقة</p>
 
     <div class="field" style="margin-bottom:12px;">
-      <label>اسم المستخدم</label>
-      <input id="signupName" placeholder="اسمك الكامل">
+      <label>الاسم الأول</label>
+      <input id="signupFirstName" placeholder="مثال: محمد">
+    </div>
+    <div class="field" style="margin-bottom:12px;">
+      <label>الاسم الأخير (اختياري)</label>
+      <input id="signupLastName" placeholder="مثال: العتيبي">
     </div>
     <div class="field" style="margin-bottom:12px;">
       <label>البريد الإلكتروني</label>
@@ -1566,7 +1570,8 @@ if(firebaseConfigured()){
   document.getElementById('authSignupBtn').addEventListener('click', () => {
     document.getElementById('authScreen').style.display = 'none';
     document.getElementById('signupScreen').style.display = 'flex';
-    document.getElementById('signupName').value = '';
+    document.getElementById('signupFirstName').value = '';
+    document.getElementById('signupLastName').value = '';
     document.getElementById('signupEmail').value = document.getElementById('authEmail').value.trim();
     document.getElementById('signupPassword').value = '';
     document.getElementById('signupError').style.display = 'none';
@@ -1577,19 +1582,21 @@ if(firebaseConfigured()){
     document.getElementById('authScreen').style.display = 'flex';
   });
   document.getElementById('signupSubmitBtn').addEventListener('click', async () => {
-    const name = document.getElementById('signupName').value.trim();
+    const firstNameAr = document.getElementById('signupFirstName').value.trim();
+    const lastNameAr = document.getElementById('signupLastName').value.trim();
     const email = document.getElementById('signupEmail').value.trim();
     const password = document.getElementById('signupPassword').value;
     const err = document.getElementById('signupError');
     err.style.display = 'none';
-    if(!name){
-      err.textContent = 'اكتب اسم المستخدم.';
+    if(!firstNameAr){
+      err.textContent = 'اكتب الاسم الأول.';
       err.style.display = 'block';
       return;
     }
+    const name = [firstNameAr, lastNameAr].filter(Boolean).join(' ');
     try{
       const cred = await createUserWithEmailAndPassword(auth, email, password);
-      try{ await saveMyProfile(email, { name, updatedAt: Date.now() }); }catch(e){}
+      try{ await saveMyProfile(email, { firstNameAr, lastNameAr, name, updatedAt: Date.now() }); }catch(e){}
       try{ await sendEmailVerification(cred.user); }catch(e){}
       // onAuthStateChanged will now show the verification-gate screen automatically.
     }catch(e){
@@ -2441,9 +2448,18 @@ async function parseAndPreview(){
         isUpdate = true;
         const old = normalizeCase(data);
         const latest = getLatestSession(old);
-        const matchedForReschedule = (parsed.type === 'rescheduled' && parsed.previousDate)
-          ? old.sessions.filter(s => !s.archived && s.date === parsed.previousDate).sort((a,b) => b.addedAt - a.addedAt)[0]
-          : null;
+        const oldActiveSessions = old.sessions.filter(s => !s.archived);
+        let matchedForReschedule = null;
+        if(parsed.type === 'rescheduled'){
+          if(parsed.previousDate){
+            matchedForReschedule = oldActiveSessions
+              .filter(s => (s.date || '').trim() === parsed.previousDate.trim())
+              .sort((a,b) => b.addedAt - a.addedAt)[0] || null;
+          }
+          if(!matchedForReschedule && oldActiveSessions.length){
+            matchedForReschedule = [...oldActiveSessions].sort((a,b) => b.addedAt - a.addedAt)[0];
+          }
+        }
         if(matchedForReschedule){
           updateFlag.textContent = `يوجد بالفعل سجل لهذه القضية. الحفظ بيعدّل موعد الجلسة رقم ${matchedForReschedule.number} (كانت بتاريخ ${matchedForReschedule.date} — ${matchedForReschedule.time || '—'}) مباشرة، بدل إضافة جلسة جديدة — والتعديل يُسجَّل بسجل النشاط.`;
         } else {
@@ -2606,10 +2622,20 @@ document.getElementById('saveBtn').addEventListener('click', async () => {
     // If this came from a "تغيير موعد الجلسة" notification, find the specific session that
     // matches the PREVIOUS date and update it in place — instead of adding a brand-new session.
     let matchedSession = null;
-    if(currentParsed && currentParsed.type === 'rescheduled' && currentParsed.previousDate){
-      matchedSession = [...record.sessions]
-        .filter(s => !s.archived && s.date === currentParsed.previousDate)
-        .sort((a,b) => b.addedAt - a.addedAt)[0] || null;
+    if(currentParsed && currentParsed.type === 'rescheduled'){
+      const activeSessions = record.sessions.filter(s => !s.archived);
+      if(currentParsed.previousDate){
+        matchedSession = [...activeSessions]
+          .filter(s => (s.date || '').trim() === currentParsed.previousDate.trim())
+          .sort((a,b) => b.addedAt - a.addedAt)[0] || null;
+      }
+      // Fallback: if the stored date doesn't match exactly (e.g. it was entered manually with
+      // slightly different formatting before this feature existed), a reschedule notice almost
+      // always refers to the single most recent active session for the case — update that one
+      // rather than silently leaving it behind and adding a duplicate.
+      if(!matchedSession && activeSessions.length){
+        matchedSession = [...activeSessions].sort((a,b) => b.addedAt - a.addedAt)[0];
+      }
     }
 
     if(matchedSession){
@@ -3360,7 +3386,8 @@ function dateKey(y, m, d){
 async function renderDashboard(){
   const profile = await fetchMyProfile(currentUserEmail);
   const friendlyName = (profile && profile.name) ? profile.name : (currentUserEmail ? currentUserEmail.split('@')[0] : '');
-  document.getElementById('dashGreeting').textContent = friendlyName ? `مرحبًا، ${friendlyName} 👋` : 'مرحبًا 👋';
+  const greetingPrefix = new Date().getHours() < 12 ? 'صباح الخير' : 'مساء الخير';
+  document.getElementById('dashGreeting').textContent = friendlyName ? `${greetingPrefix}، ${friendlyName} 👋` : `${greetingPrefix} 👋`;
 
   let cases = (await loadAllCases()).map(normalizeCase).filter(c => !c.archived);
   const appts = await fetchMyAppointments(currentUserEmail);
@@ -3449,7 +3476,8 @@ async function renderDashboard(){
     const isPast = dStart < todayStart;
     const isToday = dStart.getTime() === todayStart.getTime();
     const dayItems = [...sessionItems, ...apptItems].filter(x => x.dt >= dStart && x.dt < dEnd).sort((a,b) => a.dt - b.dt);
-    const label = (isToday ? 'اليوم · ' : '') + dayNames[dStart.getDay()] + ' ' + dStart.getDate() + (isPast ? ' (انتهى)' : '');
+    const dHijri = gregorianDateToHijri(dStart);
+    const label = (isToday ? 'اليوم · ' : '') + dayNames[dStart.getDay()] + ' ' + dStart.getDate() + ` (${dHijri.day} ${HIJRI_MONTHS[dHijri.month - 1]})` + (isPast ? ' (انتهى)' : '');
     const bodyHtml = dayItems.length ? dayItems.map(rowHtml).join('') : '<p class="hint" style="margin:6px 0;">ما فيه شي هذا اليوم.</p>';
     upcomingHtml += `<details class="upcoming-day${isPast ? ' upcoming-day-past' : ''}"><summary>${label}<span class="upcoming-badge">${dayItems.length}</span></summary><div class="upcoming-day-body">${bodyHtml}</div></details>`;
   }
