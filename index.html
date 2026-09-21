@@ -597,6 +597,20 @@
     text-overflow:ellipsis; white-space:nowrap; max-width:150px;
   }
   .expand-toggle-row{ padding:0 18px 10px; }
+  .hijri-picker{ width:100%; }
+  .hijri-picker-row{ display:flex; gap:6px; align-items:center; }
+  .hijri-picker-row select{
+    flex:1; min-width:0; padding:9px 6px; border-radius:8px; border:1px solid var(--line);
+    font-family:'IBM Plex Sans Arabic',sans-serif; font-size:12.5px; background:var(--surface); color:var(--ink);
+  }
+  .hijri-picker-row select[data-role="month"]{ flex:1.7; }
+  .hijri-picker-toggle{
+    flex-shrink:0; padding:8px; border-radius:8px; border:1px solid var(--line); background:var(--surface);
+    color:var(--blue); cursor:pointer; display:flex; align-items:center; justify-content:center;
+  }
+  .hijri-picker-toggle:hover{ background:var(--paper-2); }
+  .hijri-picker-toggle svg{ width:16px; height:16px; }
+  .hijri-picker-equiv{ font-size:11px; color:var(--muted); margin:5px 2px 0; }
   .expand-details-btn, .wk-expand-details-btn{
     width:100%; background:var(--paper-2); border:1px solid var(--line); border-radius:8px;
     padding:9px 12px; font-size:12.5px; font-weight:700; color:var(--ink-2); cursor:pointer;
@@ -1062,7 +1076,7 @@
           <div class="field full"><label>نوع القضية (إن وُجد بدل الأطراف)</label><input id="f_caseType" placeholder="مثال: إقامة ولاية على قاصر عقلاً"></div>
           <div class="field full"><label>المدعي</label><input id="f_plaintiff"></div>
           <div class="field full"><label>المدعى عليه</label><input id="f_defendant"></div>
-          <div class="field"><label>تاريخ الجلسة (هـ)</label><input id="f_date" dir="ltr" placeholder="DD/MM/YYYY"><span class="field-note" id="dateGregorianHint"></span></div>
+          <div class="field full"><label>تاريخ الجلسة (هـ)</label><div id="f_date_container"></div></div>
           <div class="field"><label>وقت الجلسة</label><input id="f_time" dir="ltr"></div>
           <div class="field full"><label>ملاحظات</label><textarea id="f_notes" style="min-height:70px; font-size:13.5px; padding:9px 12px; border-radius:8px; border:1px solid var(--line); background:var(--surface);" placeholder="أي ملاحظات خاصة بهذي القضية..."></textarea></div>
           <div class="field full"><label>رابط الجلسة</label><input id="f_sessionLink" dir="ltr" placeholder="https://..." style="font-size:13.5px;"></div>
@@ -1101,10 +1115,18 @@
           <option value="3months">آخر ٣ أشهر</option>
           <option value="custom">فترة مخصّصة</option>
         </select>
-        <input type="date" id="exportFromDate" style="display:none; padding:8px 10px; border-radius:8px; border:1px solid var(--line); font-size:12.5px;">
-        <input type="date" id="exportToDate" style="display:none; padding:8px 10px; border-radius:8px; border:1px solid var(--line); font-size:12.5px;">
         <button class="btn btn-gold" id="exportExcelBtn">📊 تصدير Excel</button>
         <button class="btn btn-ghost" id="exportPrintBtn">🖨️ طباعة / حفظ PDF</button>
+      </div>
+      <div id="exportCustomRangeRow" style="display:none; gap:16px; margin:-8px 0 16px; flex-wrap:wrap;">
+        <div style="flex:1; min-width:180px;">
+          <label class="field-note" style="display:block; margin-bottom:4px;">من تاريخ (هـ)</label>
+          <div id="exportFromDate_container"></div>
+        </div>
+        <div style="flex:1; min-width:180px;">
+          <label class="field-note" style="display:block; margin-bottom:4px;">إلى تاريخ (هـ)</label>
+          <div id="exportToDate_container"></div>
+        </div>
       </div>
       <div class="list-toolbar">
         <div class="search-box">
@@ -1148,7 +1170,7 @@
           <div class="field"><label>مصدر الوكالة (اختياري)</label><input id="wk_source" placeholder="مثال: كتابة العدل، ناجز..."></div>
           <div class="field full">
             <label>تاريخ إنشاء الوكالة (هـ) (اختياري — الافتراضي اليوم)</label>
-            <input id="wk_createdDate" dir="ltr" placeholder="DD/MM/YYYY">
+            <div id="wk_createdDate_container"></div>
           </div>
           <div class="field full">
             <label>المدة المتبقية</label>
@@ -1170,7 +1192,7 @@
           </div>
           <div class="field full" id="wk_exactBox" style="display:none;">
             <label>تاريخ الانتهاء (هـ)</label>
-            <input id="wk_exactDate" dir="ltr" placeholder="DD/MM/YYYY">
+            <div id="wk_exactDate_container"></div>
           </div>
           <div class="field full"><label>ملاحظات</label><textarea id="wk_notes" style="min-height:60px; font-size:13.5px; padding:9px 12px; border-radius:8px; border:1px solid var(--line); background:var(--surface);" placeholder="أي تفاصيل إضافية..."></textarea></div>
         </div>
@@ -1236,7 +1258,7 @@
               </select>
             </div>
             <div class="field full"><label id="apptNameLabel">اسم العميل</label><input id="appt_client" placeholder="اسم العميل"></div>
-            <div class="field"><label>التاريخ</label><input id="appt_date" type="date"></div>
+            <div class="field full"><label>التاريخ (هـ)</label><div id="appt_date_container"></div></div>
             <div class="field">
               <label>الوقت</label>
               <div style="display:flex; gap:6px;">
@@ -1325,7 +1347,7 @@
               <input id="st_phone" dir="ltr" placeholder="5xxxxxxxx" style="flex:1;">
             </div>
           </div>
-          <div class="field"><label>تاريخ الميلاد</label><input id="st_birthDate" type="date"></div>
+          <div class="field full"><label>تاريخ الميلاد (هـ)</label><div id="st_birthDate_container"></div></div>
           <div class="field"><label>سنوات الخبرة</label><input id="st_yearsExperience" type="number" min="0"></div>
           <div class="field"><label>رقم الترخيص (اختياري)</label><input id="st_licenseNumber"></div>
           <div class="field"><label>المدينة</label><input id="st_city"></div>
@@ -2016,11 +2038,14 @@ function getExportDateRange(){
   const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
   const todayEnd = new Date(todayStart); todayEnd.setDate(todayEnd.getDate() + 1);
   if(period === 'custom'){
-    const fromVal = document.getElementById('exportFromDate').value;
-    const toVal = document.getElementById('exportToDate').value;
+    const fromVal = hijriPickerGetValue('exportFromDate');
+    const toVal = hijriPickerGetValue('exportToDate');
     if(!fromVal || !toVal) return 'invalid';
-    const from = new Date(fromVal); from.setHours(0,0,0,0);
-    const to = new Date(toVal); to.setHours(0,0,0,0); to.setDate(to.getDate() + 1); // inclusive end-of-day
+    const from = wakalaDateToGregorian(fromVal);
+    const to = wakalaDateToGregorian(toVal);
+    if(!from || !to || isNaN(from.getTime()) || isNaN(to.getTime())) return 'invalid';
+    from.setHours(0,0,0,0);
+    to.setHours(0,0,0,0); to.setDate(to.getDate() + 1); // inclusive end-of-day
     return { from, to };
   }
   const from = new Date(todayStart);
@@ -2070,8 +2095,7 @@ async function buildExportRows(){
 
 document.getElementById('exportPeriod').addEventListener('change', () => {
   const isCustom = document.getElementById('exportPeriod').value === 'custom';
-  document.getElementById('exportFromDate').style.display = isCustom ? '' : 'none';
-  document.getElementById('exportToDate').style.display = isCustom ? '' : 'none';
+  document.getElementById('exportCustomRangeRow').style.display = isCustom ? 'flex' : 'none';
 });
 
 document.getElementById('exportExcelBtn').addEventListener('click', async () => {
@@ -2225,7 +2249,11 @@ document.getElementById('profileBtn').addEventListener('click', async () => {
   document.getElementById('st_lastNameLatin').value = (profile && profile.lastNameLatin) || '';
   document.getElementById('st_countryCode').value = (profile && profile.countryCode) || '+966';
   document.getElementById('st_phone').value = (profile && profile.phone) || '';
-  document.getElementById('st_birthDate').value = (profile && profile.birthDate) || '';
+  hijriPickerInit('st_birthDate_container', 'st_birthDate', {
+    hijriYearFrom: 1350, hijriYearTo: gregorianDateToHijri(new Date()).year,
+    gregYearFrom: 1930, gregYearTo: new Date().getFullYear(),
+    initialValue: (profile && profile.birthDate) || null
+  });
   document.getElementById('st_yearsExperience').value = (profile && profile.yearsExperience) || '';
   document.getElementById('st_licenseNumber').value = (profile && profile.licenseNumber) || '';
   document.getElementById('st_city').value = (profile && profile.city) || '';
@@ -2268,7 +2296,7 @@ document.getElementById('settingsSaveBtn').addEventListener('click', async () =>
     lastNameLatin: document.getElementById('st_lastNameLatin').value.trim(),
     countryCode: document.getElementById('st_countryCode').value,
     phone: document.getElementById('st_phone').value.trim(),
-    birthDate: document.getElementById('st_birthDate').value,
+    birthDate: hijriPickerGetValue('st_birthDate'),
     yearsExperience: document.getElementById('st_yearsExperience').value ? parseInt(document.getElementById('st_yearsExperience').value, 10) : null,
     licenseNumber: document.getElementById('st_licenseNumber').value.trim(),
     city: document.getElementById('st_city').value.trim(),
@@ -2428,12 +2456,11 @@ async function parseAndPreview(){
   document.getElementById('f_caseType').value = parsed.caseType;
   document.getElementById('f_plaintiff').value = parsed.plaintiff;
   document.getElementById('f_defendant').value = parsed.defendant;
-  document.getElementById('f_date').value = parsed.date;
+  hijriPickerInit('f_date_container', 'f_date', { initialValue: parsed.date });
   document.getElementById('f_time').value = parsed.time;
   document.getElementById('f_notes').value = '';
   document.getElementById('f_sessionLink').value = '';
   document.getElementById('f_sessionNumber').value = '';
-  updateGregorianHint();
 
   // check if case already exists to warn about update
   const updateFlag = document.getElementById('updateFlag');
@@ -2501,12 +2528,13 @@ document.getElementById('manualEntryBtn').addEventListener('click', () => {
   document.getElementById('rawMessage').value = '';
   document.getElementById('parseNote').classList.remove('show');
   document.getElementById('updateFlag').classList.remove('show');
-  document.getElementById('dateGregorianHint').textContent = '';
   currentParsed = null;
   isUpdate = false;
-  ['f_caseNumber','f_idHolder','f_caseType','f_plaintiff','f_defendant','f_date','f_time','f_notes','f_sessionLink','f_sessionNumber'].forEach(id => {
+  ['f_caseNumber','f_idHolder','f_caseType','f_plaintiff','f_defendant','f_time','f_notes','f_sessionLink','f_sessionNumber'].forEach(id => {
     document.getElementById(id).value = '';
   });
+  const todayHijri = gregorianDateToHijri(new Date());
+  hijriPickerInit('f_date_container', 'f_date', { initialValue: `${todayHijri.day}/${todayHijri.month}/${todayHijri.year}` });
   document.getElementById('sessionNumberHint').textContent = 'أدخل رقم الجلسة يدويًا (إلزامي عند أول قضية جديدة).';
   document.getElementById('previewPanel').style.display = 'block';
   document.getElementById('f_caseNumber').focus();
@@ -2540,18 +2568,11 @@ document.getElementById('f_caseNumber').addEventListener('blur', async () => {
   }
 });
 
-function updateGregorianHint(){
-  const hintEl = document.getElementById('dateGregorianHint');
-  const str = hijriDateStrToGregorianStr(document.getElementById('f_date').value.trim());
-  hintEl.textContent = str ? 'الموافق: ' + str : '';
-}
-document.getElementById('f_date').addEventListener('input', updateGregorianHint);
 
 document.getElementById('clearBtn').addEventListener('click', () => {
   document.getElementById('rawMessage').value = '';
   document.getElementById('parseNote').classList.remove('show');
   document.getElementById('previewPanel').style.display = 'none';
-  document.getElementById('dateGregorianHint').textContent = '';
   document.getElementById('f_notes').value = '';
   document.getElementById('f_sessionLink').value = '';
   document.getElementById('f_sessionNumber').value = '';
@@ -2563,7 +2584,7 @@ document.getElementById('discardBtn').addEventListener('click', () => {
 // ---------- Save ----------
 document.getElementById('saveBtn').addEventListener('click', async () => {
   const caseNumber = document.getElementById('f_caseNumber').value.trim();
-  const date = document.getElementById('f_date').value.trim();
+  const date = hijriPickerGetValue('f_date');
   const time = document.getElementById('f_time').value.trim();
   const sessionNumberVal = document.getElementById('f_sessionNumber').value.trim();
   if(!caseNumber || !date){
@@ -3374,6 +3395,160 @@ async function rejectShareInvite(notifId, caseNumber, permission){
 // ---------- Calendar view ----------
 const AR_MONTHS = ['يناير','فبراير','مارس','أبريل','مايو','يونيو','يوليو','أغسطس','سبتمبر','أكتوبر','نوفمبر','ديسمبر'];
 const HIJRI_MONTHS = ['محرم','صفر','ربيع الأول','ربيع الآخر','جمادى الأولى','جمادى الآخرة','رجب','شعبان','رمضان','شوال','ذو القعدة','ذو الحجة'];
+const GREG_MONTHS = ['يناير','فبراير','مارس','أبريل','مايو','يونيو','يوليو','أغسطس','سبتمبر','أكتوبر','نوفمبر','ديسمبر'];
+const HIJRI_PICKER_TOGGLE_ICON = '<svg viewBox="0 0 24 24" stroke="currentColor" fill="none" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M17 2l4 4-4 4"/><path d="M3 11V9a4 4 0 0 1 4-4h14"/><path d="M7 22l-4-4 4-4"/><path d="M21 13v2a4 4 0 0 1-4 4H3"/></svg>';
+
+// A reusable Hijri/Gregorian date-picker widget. Internally it always speaks the app's
+// standard Hijri "DD/MM/YYYY" format — the Gregorian row is purely an alternate INPUT
+// mode for people who know a date in Gregorian; selecting from it still resolves to Hijri.
+function hijriPickerBuildOptions(kind){
+  if(kind === 'day'){
+    return '<option value="">يوم</option>' + Array.from({length:31}, (_,i) => `<option value="${i+1}">${i+1}</option>`).join('');
+  }
+  if(kind === 'hijriMonth'){
+    return '<option value="">شهر</option>' + HIJRI_MONTHS.map((m,i) => `<option value="${i+1}">${m} (${i+1})</option>`).join('');
+  }
+  if(kind === 'gregMonth'){
+    return '<option value="">شهر</option>' + GREG_MONTHS.map((m,i) => `<option value="${i+1}">${m} (${i+1})</option>`).join('');
+  }
+}
+function hijriPickerBuildYearOptions(fromYear, toYear){
+  let out = '<option value="">سنة</option>';
+  for(let y = toYear; y >= fromYear; y--) out += `<option value="${y}">${y}</option>`;
+  return out;
+}
+function hijriPickerBuildHtml(prefix, opts){
+  opts = opts || {};
+  const nowHijriYear = gregorianDateToHijri(new Date()).year;
+  const nowGregYear = new Date().getFullYear();
+  const hijriYears = hijriPickerBuildYearOptions(opts.hijriYearFrom ?? (nowHijriYear - 5), opts.hijriYearTo ?? (nowHijriYear + 5));
+  const gregYears = hijriPickerBuildYearOptions(opts.gregYearFrom ?? (nowGregYear - 5), opts.gregYearTo ?? (nowGregYear + 5));
+  const dayOpts = hijriPickerBuildOptions('day');
+  return `
+    <div class="hijri-picker" id="${prefix}_picker">
+      <div class="hijri-picker-row" data-role="hijri">
+        <select data-role="day">${dayOpts}</select>
+        <select data-role="month">${hijriPickerBuildOptions('hijriMonth')}</select>
+        <select data-role="year">${hijriYears}</select>
+        <button type="button" class="hijri-picker-toggle" data-role="toggle" title="تحويل إلى ميلادي">${HIJRI_PICKER_TOGGLE_ICON}</button>
+      </div>
+      <div class="hijri-picker-row" data-role="gregorian" style="display:none;">
+        <select data-role="day">${dayOpts}</select>
+        <select data-role="month">${hijriPickerBuildOptions('gregMonth')}</select>
+        <select data-role="year">${gregYears}</select>
+        <button type="button" class="hijri-picker-toggle" data-role="toggle" title="تحويل إلى هجري">${HIJRI_PICKER_TOGGLE_ICON}</button>
+      </div>
+      <p class="hijri-picker-equiv" data-role="equiv"></p>
+    </div>
+  `;
+}
+function hijriPickerEnsureYearOption(row, year){
+  const sel = row.querySelector('[data-role="year"]');
+  if(![...sel.options].some(o => parseInt(o.value, 10) === year)){
+    const opt = document.createElement('option');
+    opt.value = String(year); opt.textContent = String(year);
+    sel.appendChild(opt);
+  }
+}
+// Always returns the Hijri "DD/MM/YYYY" value, regardless of which row is currently shown.
+function hijriPickerGetValue(prefix){
+  const container = document.getElementById(prefix + '_picker');
+  if(!container) return '';
+  const gregRow = container.querySelector('[data-role="gregorian"]');
+  const isGregorian = gregRow.style.display !== 'none';
+  if(isGregorian){
+    const day = parseInt(gregRow.querySelector('[data-role="day"]').value, 10);
+    const month = parseInt(gregRow.querySelector('[data-role="month"]').value, 10);
+    const year = parseInt(gregRow.querySelector('[data-role="year"]').value, 10);
+    if(!day || !month || !year) return '';
+    const h = gregorianDateToHijri(new Date(year, month - 1, day));
+    return `${String(h.day).padStart(2,'0')}/${String(h.month).padStart(2,'0')}/${h.year}`;
+  }
+  const hijriRow = container.querySelector('[data-role="hijri"]');
+  const day = parseInt(hijriRow.querySelector('[data-role="day"]').value, 10);
+  const month = parseInt(hijriRow.querySelector('[data-role="month"]').value, 10);
+  const year = parseInt(hijriRow.querySelector('[data-role="year"]').value, 10);
+  if(!day || !month || !year) return '';
+  return `${String(day).padStart(2,'0')}/${String(month).padStart(2,'0')}/${year}`;
+}
+// Populates BOTH rows from a Hijri "DD/MM/YYYY" string (accepts a legacy Gregorian
+// "YYYY-MM-DD" string too, for backward compatibility with older saved records).
+function hijriPickerSetValue(prefix, dateStr){
+  const container = document.getElementById(prefix + '_picker');
+  if(!container || !dateStr) return;
+  let day, month, year;
+  if(dateStr.includes('-')){
+    const g = new Date(dateStr);
+    if(isNaN(g.getTime())) return;
+    const h = gregorianDateToHijri(g);
+    day = h.day; month = h.month; year = h.year;
+  } else {
+    const parts = dateStr.split('/');
+    if(parts.length !== 3) return;
+    day = parseInt(parts[0], 10); month = parseInt(parts[1], 10); year = parseInt(parts[2], 10);
+    if(!day || !month || !year) return;
+  }
+  const hijriRow = container.querySelector('[data-role="hijri"]');
+  hijriPickerEnsureYearOption(hijriRow, year);
+  hijriRow.querySelector('[data-role="day"]').value = day;
+  hijriRow.querySelector('[data-role="month"]').value = month;
+  hijriRow.querySelector('[data-role="year"]').value = year;
+  const g2 = hijriToGregorianExact(day, month, year);
+  const gregRow = container.querySelector('[data-role="gregorian"]');
+  hijriPickerEnsureYearOption(gregRow, g2.getFullYear());
+  gregRow.querySelector('[data-role="day"]').value = g2.getDate();
+  gregRow.querySelector('[data-role="month"]').value = g2.getMonth() + 1;
+  gregRow.querySelector('[data-role="year"]').value = g2.getFullYear();
+  hijriPickerUpdateEquiv(prefix);
+}
+function hijriPickerUpdateEquiv(prefix){
+  const container = document.getElementById(prefix + '_picker');
+  if(!container) return;
+  const equivEl = container.querySelector('[data-role="equiv"]');
+  const hijriVal = hijriPickerGetValue(prefix);
+  if(!hijriVal){ equivEl.textContent = ''; return; }
+  const [day, month, year] = hijriVal.split('/').map(n => parseInt(n, 10));
+  const isGregorian = container.querySelector('[data-role="gregorian"]').style.display !== 'none';
+  if(isGregorian){
+    equivEl.textContent = `يوافق: ${day} ${HIJRI_MONTHS[month - 1]} ${year}هـ`;
+  } else {
+    const g = hijriToGregorianExact(day, month, year);
+    equivEl.textContent = `يوافق: ${g.getDate()} ${GREG_MONTHS[g.getMonth()]} ${g.getFullYear()}م`;
+  }
+}
+function hijriPickerToggle(prefix){
+  const container = document.getElementById(prefix + '_picker');
+  if(!container) return;
+  const hijriRow = container.querySelector('[data-role="hijri"]');
+  const gregRow = container.querySelector('[data-role="gregorian"]');
+  const currentVal = hijriPickerGetValue(prefix);
+  const wasGregorian = gregRow.style.display !== 'none';
+  hijriRow.style.display = wasGregorian ? 'flex' : 'none';
+  gregRow.style.display = wasGregorian ? 'none' : 'flex';
+  if(currentVal) hijriPickerSetValue(prefix, currentVal);
+  else hijriPickerUpdateEquiv(prefix);
+}
+function hijriPickerClear(prefix){
+  const container = document.getElementById(prefix + '_picker');
+  if(!container) return;
+  container.querySelectorAll('select').forEach(sel => { sel.value = ''; });
+  hijriPickerUpdateEquiv(prefix);
+}
+// Renders a picker into containerId and wires its events. opts: {hijriYearFrom, hijriYearTo,
+// gregYearFrom, gregYearTo, initialValue} — all optional.
+function hijriPickerInit(containerId, prefix, opts){
+  const container = document.getElementById(containerId);
+  if(!container) return;
+  container.innerHTML = hijriPickerBuildHtml(prefix, opts);
+  const pickerEl = document.getElementById(prefix + '_picker');
+  pickerEl.querySelectorAll('[data-role="toggle"]').forEach(btn => {
+    btn.addEventListener('click', () => hijriPickerToggle(prefix));
+  });
+  pickerEl.querySelectorAll('select').forEach(sel => {
+    sel.addEventListener('change', () => hijriPickerUpdateEquiv(prefix));
+  });
+  if(opts && opts.initialValue) hijriPickerSetValue(prefix, opts.initialValue);
+}
 let calendarCursor = new Date();
 calendarCursor.setDate(1);
 let selectedDayKey = null;
@@ -3422,9 +3597,9 @@ async function renderDashboard(){
   const apptItems = [];
   appts.forEach(a => {
     if(!a.date) return;
-    const [y,m,d] = a.date.split('-').map(n => parseInt(n,10));
-    if(!y || !m || !d) return;
-    const dt = new Date(y, m-1, d);
+    const dt = wakalaDateToGregorian(a.date);
+    if(!dt || isNaN(dt.getTime())) return;
+    dt.setHours(0,0,0,0);
     if(a.time){
       const t = parseArabicTime(a.time);
       if(t) dt.setHours(t.hour, t.minute, 0, 0);
@@ -3524,7 +3699,10 @@ async function renderCalendar(){
   const appts = await fetchMyAppointments(currentUserEmail);
   appts.forEach(a => {
     if(!a.date) return;
-    addToDay(a.date, 'appts', a);
+    const gDate = wakalaDateToGregorian(a.date);
+    if(!gDate || isNaN(gDate.getTime())) return;
+    const key = dateKey(gDate.getFullYear(), gDate.getMonth(), gDate.getDate());
+    addToDay(key, 'appts', a);
   });
 
   // Build the grid (Sunday-first, matching the "أحد" header) — only as many rows as the
@@ -3639,7 +3817,7 @@ document.getElementById('appt_type').addEventListener('change', () => {
 document.getElementById('apptSaveBtn').addEventListener('click', async () => {
   const type = document.getElementById('appt_type').value;
   const clientName = document.getElementById('appt_client').value.trim();
-  const date = document.getElementById('appt_date').value;
+  const date = hijriPickerGetValue('appt_date');
   const hour = document.getElementById('appt_hour').value;
   const minute = document.getElementById('appt_minute').value;
   const ampm = document.getElementById('appt_ampm').value;
@@ -3655,7 +3833,7 @@ document.getElementById('apptSaveBtn').addEventListener('click', async () => {
     await saveAppointmentDoc({ type, clientName, date, time, countryCode, phone, notes, ownerEmail: currentUserEmail, createdAt: Date.now() });
     showToast('تم حفظ الموعد.');
     document.getElementById('appt_client').value = '';
-    document.getElementById('appt_date').value = '';
+    hijriPickerClear('appt_date');
     document.getElementById('appt_hour').value = '9';
     document.getElementById('appt_minute').value = '0';
     document.getElementById('appt_ampm').value = 'صباحاً';
@@ -3674,15 +3852,25 @@ document.getElementById('wk_durationType').addEventListener('change', () => {
   document.getElementById('wk_customBox').style.display = val === 'custom' ? 'block' : 'none';
   document.getElementById('wk_exactBox').style.display = val === 'exact' ? 'block' : 'none';
 });
+{
+  const todayHijri = gregorianDateToHijri(new Date());
+  hijriPickerInit('wk_createdDate_container', 'wk_createdDate', {
+    initialValue: `${todayHijri.day}/${todayHijri.month}/${todayHijri.year}`
+  });
+  hijriPickerInit('wk_exactDate_container', 'wk_exactDate', {});
+  hijriPickerInit('appt_date_container', 'appt_date', {
+    initialValue: `${todayHijri.day}/${todayHijri.month}/${todayHijri.year}`
+  });
+  hijriPickerInit('exportFromDate_container', 'exportFromDate', {});
+  hijriPickerInit('exportToDate_container', 'exportToDate', {});
+}
 
 function getWakalaBaseDate(){
-  const val = document.getElementById('wk_createdDate').value.trim();
+  const val = hijriPickerGetValue('wk_createdDate');
   if(val){
     const parts = val.split('/');
-    if(parts.length === 3){
-      const day = parseInt(parts[0],10), mon = parseInt(parts[1],10), yr = parseInt(parts[2],10);
-      if(day && mon && yr) return hijriToGregorianExact(day, mon, yr);
-    }
+    const day = parseInt(parts[0],10), mon = parseInt(parts[1],10), yr = parseInt(parts[2],10);
+    if(day && mon && yr) return hijriToGregorianExact(day, mon, yr);
   }
   const today = new Date();
   today.setHours(0,0,0,0);
@@ -3715,13 +3903,7 @@ function wakalaDateToHijriDisplay(dateStr){
 function computeWakalaExpiry(){
   const type = document.getElementById('wk_durationType').value;
   if(type === 'exact'){
-    const val = document.getElementById('wk_exactDate').value.trim();
-    if(!val) return null;
-    const parts = val.split('/');
-    if(parts.length !== 3) return null;
-    const day = parseInt(parts[0],10), mon = parseInt(parts[1],10), yr = parseInt(parts[2],10);
-    if(!day || !mon || !yr) return null;
-    return `${String(day).padStart(2,'0')}/${String(mon).padStart(2,'0')}/${yr}`;
+    return hijriPickerGetValue('wk_exactDate') || null;
   }
   const d = getWakalaBaseDate();
   if(type === '3m') d.setMonth(d.getMonth() + 3);
@@ -3791,14 +3973,14 @@ function resetWakalaForm(){
   document.getElementById('wk_agent').value = '';
   document.getElementById('wk_principalId').value = '';
   document.getElementById('wk_source').value = '';
-  document.getElementById('wk_createdDate').value = '';
+  hijriPickerClear('wk_createdDate');
   document.getElementById('wk_durationType').value = '3m';
   document.getElementById('wk_customBox').style.display = 'none';
   document.getElementById('wk_exactBox').style.display = 'none';
   document.getElementById('wk_customDays').value = '';
   document.getElementById('wk_customMonths').value = '';
   document.getElementById('wk_customYears').value = '';
-  document.getElementById('wk_exactDate').value = '';
+  hijriPickerClear('wk_exactDate');
   document.getElementById('wk_notes').value = '';
 }
 document.getElementById('wkCancelEditBtn').addEventListener('click', resetWakalaForm);
@@ -3813,11 +3995,11 @@ function startEditWakala(w){
   document.getElementById('wk_agent').value = w.agent || '';
   document.getElementById('wk_principalId').value = w.principalId || '';
   document.getElementById('wk_source').value = w.source || '';
-  document.getElementById('wk_createdDate').value = wakalaDateToHijriDisplay(w.createdDate);
+  hijriPickerSetValue('wk_createdDate', wakalaDateToHijriDisplay(w.createdDate));
   document.getElementById('wk_durationType').value = 'exact'; // editing always targets the exact stored expiry date
   document.getElementById('wk_customBox').style.display = 'none';
   document.getElementById('wk_exactBox').style.display = '';
-  document.getElementById('wk_exactDate').value = wakalaDateToHijriDisplay(w.expiryDate);
+  hijriPickerSetValue('wk_exactDate', wakalaDateToHijriDisplay(w.expiryDate));
   document.getElementById('wk_notes').value = w.notes || '';
   document.getElementById('scPanelWakalas').scrollIntoView({ behavior: 'smooth', block: 'end' });
 }
