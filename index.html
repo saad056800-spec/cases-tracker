@@ -333,7 +333,6 @@
   .dash-stat-label{ display:block; font-size:11px; color:var(--muted); margin-top:2px; }
 
   .home-columns{ display:flex; flex-direction:column; gap:20px; }
-  .home-col-right, .home-col-left{ display:flex; flex-direction:column; gap:20px; }
 
   .dash-today-scroll{ max-height:214px; overflow-y:auto; }
   .today-carousel-viewport{ overflow:hidden; }
@@ -375,6 +374,9 @@
     .home-top-row{ display:flex; justify-content:space-between; align-items:center; gap:24px; }
     .dash-stats-box{ grid-template-columns:repeat(4,1fr); max-width:520px; flex:1; }
     .home-columns{ display:grid; grid-template-columns:1fr 1fr; gap:20px; align-items:start; }
+    .home-today-panel{ grid-column:1; grid-row:1; }
+    .home-intake-panel{ grid-column:1; grid-row:2; }
+    .home-week-panel{ grid-column:2; grid-row:1; }
     .dash-today-scroll{ max-height:360px; }
   }
   .contact-btn{
@@ -1031,8 +1033,7 @@
     </div>
 
     <div class="home-columns">
-      <div class="home-col-right">
-        <div class="panel">
+        <div class="panel home-today-panel">
           <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:6px;">
             <h2 id="todayCarouselTitle" style="margin:0;">اليوم</h2>
             <div class="today-carousel-dots" id="todayCarouselDots" style="display:none;">
@@ -1051,23 +1052,21 @@
             </div>
           </div>
         </div>
-      </div>
 
-      <div class="home-col-left">
-        <div class="panel">
+        <div class="panel home-week-panel">
           <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:6px;">
-            <button id="weekNextBtn" class="notif-bell" title="الأسبوع القادم">
-              <svg class="icon" viewBox="0 0 24 24"><path d="M9 6l6 6-6 6"/></svg>
-            </button>
-            <h2 id="upcomingWeekTitle" style="margin:0;">أيام هذا الأسبوع</h2>
             <button id="weekPrevBtn" class="notif-bell" title="الأسبوع الماضي">
               <svg class="icon" viewBox="0 0 24 24"><path d="M15 6l-6 6 6 6"/></svg>
+            </button>
+            <h2 id="upcomingWeekTitle" style="margin:0;">أيام هذا الأسبوع</h2>
+            <button id="weekNextBtn" class="notif-bell" title="الأسبوع القادم">
+              <svg class="icon" viewBox="0 0 24 24"><path d="M9 6l6 6-6 6"/></svg>
             </button>
           </div>
           <div id="dashUpcomingDays"></div>
         </div>
 
-        <div class="intake-grid">
+        <div class="intake-grid home-intake-panel">
       <div class="panel">
         <h2>لصق نص الرسالة</h2>
         <p class="hint">الصق نص إشعار ناجز كاملاً كما وصلك (سواء إشعار جلسة جديدة أو إشعار تغيير موعد)، ثم اضغط «تحليل الرسالة».</p>
@@ -1103,7 +1102,6 @@
         </div>
       </div>
         </div>
-      </div>
     </div>
   </section>
 
