@@ -102,9 +102,12 @@
     color:var(--ink);
     font-family:'IBM Plex Sans Arabic',sans-serif;
     min-height:100vh;
-    background-image:
-      repeating-linear-gradient(45deg, rgba(20,36,59,0.035) 0 3px, transparent 3px 26px),
-      repeating-linear-gradient(-45deg, rgba(20,36,59,0.035) 0 3px, transparent 3px 26px);
+  }
+  body::before{
+    content: ''; position: fixed; inset: 0; z-index: -1; pointer-events: none;
+    background-image: url('assets/logo-mizan.png');
+    background-repeat: repeat; background-size: 220px 220px;
+    opacity: 0.08;
   }
 
   ::selection{ background: var(--gold-light); color:var(--ink); }
@@ -114,9 +117,6 @@
   /* ===== Top bar ===== */
   .topbar{
     background: linear-gradient(180deg, var(--green-deep), var(--green-deeper));
-    background-image:
-      repeating-linear-gradient(45deg, rgba(255,255,255,0.05) 0 10px, transparent 10px 34px),
-      linear-gradient(180deg, var(--green-deep), var(--green-deeper));
     border-bottom: 2px solid transparent;
     border-image: linear-gradient(90deg, #0B3C9E, #4FA3FF) 1;
     padding: 20px 20px 18px;
@@ -329,10 +329,12 @@
   .dash-greeting h2{ font-family:'Amiri',serif; font-size:24px; color:var(--ink); margin:0 0 4px; }
 
   .dash-stats-box{
-    display:grid; grid-template-columns:repeat(2,1fr); gap:1px; background:var(--line);
-    border:1px solid var(--line); border-radius:var(--radius-card); overflow:hidden; box-shadow:var(--shadow);
+    display:grid; grid-template-columns:repeat(2,1fr); gap:10px;
   }
-  .dash-stat-cell{ background:var(--surface); padding:14px 8px; text-align:center; }
+  .dash-stat-cell{
+    background:var(--surface); padding:14px 8px; text-align:center;
+    border:1px solid var(--line); border-radius:var(--radius-card); box-shadow:var(--shadow);
+  }
   .dash-stat-num{ display:block; font-family:'Amiri',serif; font-size:25px; font-weight:600; color:var(--blue); }
   .dash-stat-label{ display:block; font-size:11px; color:var(--muted); margin-top:2px; }
 
@@ -340,6 +342,12 @@
   .home-col-right, .home-col-left{ display:flex; flex-direction:column; gap:20px; }
 
   .dash-today-scroll{ max-height:214px; overflow-y:auto; }
+  .today-carousel-viewport{ overflow:hidden; }
+  .today-carousel-track{ display:flex; direction:ltr; transition:transform 0.4s cubic-bezier(0.22,1,0.36,1); touch-action:pan-y; }
+  .today-carousel-slide{ flex:0 0 100%; min-width:100%; box-sizing:border-box; }
+  .today-carousel-dots{ display:flex; gap:6px; }
+  .today-carousel-dot{ width:7px; height:7px; border-radius:50%; background:var(--line); cursor:pointer; transition:background 0.2s, transform 0.2s; border:none; padding:0; }
+  .today-carousel-dot.active{ background:var(--blue); transform:scale(1.3); }
   .today-row{
     display:flex; gap:10px; align-items:flex-start; padding:10px 4px;
   }
@@ -605,18 +613,19 @@
   }
   .hijri-picker-row select[data-role="month"]{ flex:1.7; }
   .hijri-picker-toggle{
-    flex-shrink:0; padding:8px; border-radius:8px; border:1px solid var(--line); background:var(--surface);
-    color:var(--blue); cursor:pointer; display:flex; align-items:center; justify-content:center;
+    flex-shrink:0; padding:8px 10px; border-radius:8px; border:1px solid var(--line); background:var(--surface);
+    color:var(--blue); cursor:pointer; display:flex; align-items:center; justify-content:center; gap:5px;
+    font-family:'IBM Plex Sans Arabic',sans-serif; font-size:11.5px; font-weight:700; white-space:nowrap;
   }
   .hijri-picker-toggle:hover{ background:var(--paper-2); }
   .hijri-picker-toggle svg{ width:16px; height:16px; }
   .hijri-picker-equiv{ font-size:11px; color:var(--muted); margin:5px 2px 0; }
-  .expand-details-btn, .wk-expand-details-btn{
+  .expand-details-btn, .wk-expand-details-btn, .archive-expand-btn{
     width:100%; background:var(--paper-2); border:1px solid var(--line); border-radius:8px;
     padding:9px 12px; font-size:12.5px; font-weight:700; color:var(--ink-2); cursor:pointer;
     font-family:'IBM Plex Sans Arabic',sans-serif;
   }
-  .expand-details-btn:hover, .wk-expand-details-btn:hover{ background:var(--line); }
+  .expand-details-btn:hover, .wk-expand-details-btn:hover, .archive-expand-btn:hover{ background:var(--line); }
   .expanded-details{ padding:4px 0 0; border-top:1px solid var(--line); margin:0 18px 8px; }
   .expanded-details .status-box, .expanded-details .sessions-list, .expanded-details .attachments-box{ padding-inline:0; }
   .status-box{ padding:0 18px 14px; }
@@ -752,18 +761,8 @@
   }
   .toast.show{ opacity:1; transform:translateX(50%) translateY(-6px); }
 
-  /* ===== Export toolbar & print layout ===== */
+  /* ===== Export toolbar ===== */
   .export-toolbar{ display:flex; gap:8px; margin-bottom:16px; flex-wrap:wrap; }
-  #printArea{ display:none; }
-  @media print{
-    body *{ visibility:hidden; }
-    #printArea, #printArea *{ visibility:visible; }
-    #printArea{ display:block; position:absolute; top:0; right:0; left:0; width:100%; padding:20px; }
-    #printArea h2{ font-family:'Amiri',serif; text-align:center; margin-bottom:16px; }
-    #printArea table{ width:100%; border-collapse:collapse; font-size:11px; }
-    #printArea th, #printArea td{ border:1px solid #999; padding:5px 7px; text-align:right; }
-    #printArea th{ background:#eee; }
-  }
 </style>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 </head>
@@ -1040,14 +1039,37 @@
     <div class="home-columns">
       <div class="home-col-right">
         <div class="panel">
-          <h2>اليوم</h2>
-          <div id="dashTodayList" class="dash-today-scroll"><p class="hint">ما فيه شي مجدول اليوم.</p></div>
+          <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:6px;">
+            <h2 id="todayCarouselTitle" style="margin:0;">اليوم</h2>
+            <div class="today-carousel-dots" id="todayCarouselDots" style="display:none;">
+              <span class="today-carousel-dot active" data-slide="0"></span>
+              <span class="today-carousel-dot" data-slide="1"></span>
+            </div>
+          </div>
+          <div class="today-carousel-viewport" id="todayCarouselViewport">
+            <div class="today-carousel-track" id="todayCarouselTrack">
+              <div class="today-carousel-slide" dir="rtl">
+                <div id="dashTodayList" class="dash-today-scroll"><p class="hint">ما فيه شي مجدول اليوم.</p></div>
+              </div>
+              <div class="today-carousel-slide" dir="rtl">
+                <div id="dashObjectionList" class="dash-today-scroll"></div>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
 
       <div class="home-col-left">
         <div class="panel">
-          <h2>أيام هذا الأسبوع</h2>
+          <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:6px;">
+            <button id="weekNextBtn" class="notif-bell" title="الأسبوع القادم">
+              <svg class="icon" viewBox="0 0 24 24"><path d="M9 6l6 6-6 6"/></svg>
+            </button>
+            <h2 id="upcomingWeekTitle" style="margin:0;">أيام هذا الأسبوع</h2>
+            <button id="weekPrevBtn" class="notif-bell" title="الأسبوع الماضي">
+              <svg class="icon" viewBox="0 0 24 24"><path d="M15 6l-6 6 6 6"/></svg>
+            </button>
+          </div>
           <div id="dashUpcomingDays"></div>
         </div>
 
@@ -1225,10 +1247,7 @@
     </div>
 
     <div id="scArchiveContent" style="display:none;">
-      <div class="tabs" style="background:transparent; padding:0; margin-bottom:18px; border-bottom:1px solid var(--line); gap:0;">
-        <button class="tab-btn archive-subtab active" data-sub="cases" id="archiveSubCases" style="color:var(--ink-soft);">قضايا مؤرشفة</button>
-        <button class="tab-btn archive-subtab" data-sub="sessions" id="archiveSubSessions" style="color:var(--ink-soft);">جلسات مؤرشفة</button>
-      </div>
+      <h2 style="font-family:'Amiri',serif; color:var(--ink); margin:0 0 16px;">الأرشيف</h2>
       <div class="cases-grid" id="archiveGrid"></div>
       <div class="empty" id="archiveEmpty" style="display:none;">
         <div class="glyph"><span class="mark"></span></div>
@@ -1237,8 +1256,6 @@
       </div>
     </div>
   </section>
-
-  <div id="printArea"></div>
 
   <!-- ===== CALENDAR VIEW ===== -->
   <section class="view" id="view-calendar">
@@ -1294,9 +1311,7 @@
             </div>
             <h2 id="calMonthLabel"></h2>
           </div>
-          <div class="calendar-weekdays">
-            <span>أحد</span><span>اثنين</span><span>ثلاثاء</span><span>أربعاء</span><span>خميس</span><span>جمعة</span><span>سبت</span>
-          </div>
+          <div class="calendar-weekdays" id="calendarWeekdaysHeader"></div>
           <div class="calendar-grid" id="calendarGrid"></div>
         </div>
 
@@ -1507,6 +1522,7 @@ if(firebaseConfigured()){
   firebaseReady = true;
 
   let currentAuthUser = null;
+  let currentDateDisplayMode = 'both';
   onAuthStateChanged(auth, (user) => {
     if(user && !user.emailVerified){
       currentUserEmail = null;
@@ -1534,6 +1550,7 @@ if(firebaseConfigured()){
       document.getElementById('verifyEmailBanner').style.display = 'none';
       fetchMyProfile(user.email).then(profile => {
         applyAppearance((profile && profile.appearanceMode) || 'light', (profile && profile.fontSize) || 'medium');
+        currentDateDisplayMode = (profile && profile.dateDisplayMode) || 'both';
       });
       startApp();
     } else {
@@ -1877,6 +1894,29 @@ document.getElementById('bnHome').addEventListener('click', () => switchView('ho
 document.getElementById('bnSessionCases').addEventListener('click', () => switchView('sessioncases'));
 document.getElementById('bnCalendar').addEventListener('click', () => switchView('calendar'));
 document.getElementById('emptyAddBtn').addEventListener('click', () => switchView('home'));
+document.getElementById('weekNextBtn').addEventListener('click', () => { dashWeekOffset++; renderDashboard(); });
+document.getElementById('weekPrevBtn').addEventListener('click', () => { dashWeekOffset--; renderDashboard(); });
+
+// Today/Objections carousel: auto-rotate every 10s (only while there's a second slide worth
+// showing), plus manual dot taps and a simple touch-swipe.
+setInterval(() => {
+  if(!todayCarouselHasObjections) return;
+  setTodayCarouselSlide(todayCarouselIndex === 0 ? 1 : 0);
+}, 10000);
+document.querySelectorAll('.today-carousel-dot').forEach(dot => {
+  dot.addEventListener('click', () => setTodayCarouselSlide(parseInt(dot.dataset.slide, 10)));
+});
+{
+  const viewport = document.getElementById('todayCarouselViewport');
+  let touchStartX = null;
+  viewport.addEventListener('touchstart', (e) => { touchStartX = e.touches[0].clientX; }, { passive: true });
+  viewport.addEventListener('touchend', (e) => {
+    if(touchStartX === null || !todayCarouselHasObjections) return;
+    const dx = e.changedTouches[0].clientX - touchStartX;
+    if(Math.abs(dx) > 40) setTodayCarouselSlide(dx < 0 ? 1 : 0);
+    touchStartX = null;
+  });
+}
 
 document.getElementById('scArchiveToggleBtn').addEventListener('click', () => {
   scShowingArchive = !scShowingArchive;
@@ -1903,19 +1943,6 @@ document.getElementById('scSubSessions').addEventListener('click', () => setScSu
 document.getElementById('scSubWakalas').addEventListener('click', () => setScSubView('wakalas'));
 document.getElementById('scSubSulh').addEventListener('click', () => setScSubView('sulh'));
 
-let archiveSubView = 'cases';
-document.getElementById('archiveSubCases').addEventListener('click', () => {
-  archiveSubView = 'cases';
-  document.getElementById('archiveSubCases').classList.add('active');
-  document.getElementById('archiveSubSessions').classList.remove('active');
-  renderArchive();
-});
-document.getElementById('archiveSubSessions').addEventListener('click', () => {
-  archiveSubView = 'sessions';
-  document.getElementById('archiveSubSessions').classList.add('active');
-  document.getElementById('archiveSubCases').classList.remove('active');
-  renderArchive();
-});
 // ---------- International time zone conversion (session times are always Saudi/Riyadh local time) ----------
 const TIMEZONE_OPTIONS = [
   ['إثيوبيا (أديس أبابا)', 'Africa/Addis_Ababa'],
@@ -2116,17 +2143,39 @@ document.getElementById('exportPrintBtn').addEventListener('click', async () => 
   if(rows === null) return;
   if(rows.length === 0){ showToast('ما فيه بيانات للتصدير بهذي الفترة.'); return; }
   const cols = Object.keys(rows[0]);
-  const printArea = document.getElementById('printArea');
-  printArea.innerHTML = `
-    <h2>مرساة الميزان — ${new Date().toLocaleDateString('ar-SA')}</h2>
-    <table>
-      <thead><tr>${cols.map(c => `<th>${escapeHtml(c)}</th>`).join('')}</tr></thead>
-      <tbody>
-        ${rows.map(r => `<tr>${cols.map(c => `<td>${escapeHtml(String(r[c] ?? ''))}</td>`).join('')}</tr>`).join('')}
-      </tbody>
-    </table>
-  `;
-  window.print();
+  const html = `<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>مرساة الميزان</title>
+<style>
+  body{ font-family:'Tahoma','Segoe UI',sans-serif; padding:20px; color:#12203A; }
+  h2{ font-family:Georgia,serif; text-align:center; margin-bottom:16px; }
+  table{ width:100%; border-collapse:collapse; font-size:12px; }
+  th, td{ border:1px solid #999; padding:6px 8px; text-align:right; }
+  th{ background:#eee; }
+  @media print{ body{ padding:0; } }
+</style>
+</head>
+<body>
+  <h2>مرساة الميزان — ${new Date().toLocaleDateString('ar-SA')}</h2>
+  <table>
+    <thead><tr>${cols.map(c => `<th>${escapeHtml(c)}</th>`).join('')}</tr></thead>
+    <tbody>${rows.map(r => `<tr>${cols.map(c => `<td>${escapeHtml(String(r[c] ?? ''))}</td>`).join('')}</tr>`).join('')}</tbody>
+  </table>
+  <script>window.addEventListener('load', () => { setTimeout(() => window.print(), 200); });<\/script>
+</body>
+</html>`;
+  const blob = new Blob([html], { type: 'text/html' });
+  const url = URL.createObjectURL(blob);
+  const printWindow = window.open(url, '_blank');
+  if(!printWindow){
+    showToast('يرجى السماح بالنوافذ المنبثقة (Popups) بمتصفحك عشان تقدر تصدّر PDF.');
+    URL.revokeObjectURL(url);
+    return;
+  }
+  setTimeout(() => URL.revokeObjectURL(url), 60000);
 });
 
 
@@ -2269,7 +2318,7 @@ document.getElementById('profileBtn').addEventListener('click', async () => {
   document.getElementById('st_quietStart').value = (profile && profile.quietStart) || '';
   document.getElementById('st_quietEnd').value = (profile && profile.quietEnd) || '';
   document.getElementById('st_dateDisplayMode').value = (profile && profile.dateDisplayMode) || 'both';
-  document.getElementById('st_weekStart').value = (profile && profile.weekStart) || 'sunday';
+  document.getElementById('st_weekStart').value = (profile && profile.weekStart) || 'saturday';
   document.getElementById('st_timezone').value = tzZoneToLabel((profile && profile.timezone) || 'Asia/Riyadh');
   document.getElementById('st_shareRestriction').value = (profile && profile.shareRestriction) || 'anyone';
 });
@@ -2320,9 +2369,16 @@ document.getElementById('settingsSaveBtn').addEventListener('click', async () =>
   try{
     await saveMyProfile(currentUserEmail, data);
     applyAppearance(appearanceMode, fontSize);
+    currentDateDisplayMode = data.dateDisplayMode;
     showToast('تم حفظ الإعدادات.');
     document.getElementById('settingsOverlay').classList.remove('open');
     if(document.getElementById('view-home').classList.contains('active')) renderDashboard();
+    if(document.getElementById('view-sessioncases').classList.contains('active')){
+      if(scSubView === 'sessions') renderList();
+      else if(scSubView === 'sulh') renderSulh();
+      else renderWakalas();
+    }
+    if(document.getElementById('view-calendar').classList.contains('active')) renderCalendar();
   }catch(e){
     showToast('تعذّر الحفظ. حاول مجددًا.');
     console.error(e);
@@ -2937,9 +2993,9 @@ function buildSessionCardHtml(c, session){
       <div class="stub"></div>
       <div class="session-info">
         <div class="session-block">
-          <span class="lbl">تاريخ الجلسة (هـ)</span>
-          <span class="val">${escapeHtml(session.date || '—')}</span>
-          ${meta.gregorianStr ? `<span class="greg-sub">${escapeHtml(meta.gregorianStr)}</span>` : ''}
+          <span class="lbl">${currentDateDisplayMode === 'gregorian' ? 'تاريخ الجلسة' : 'تاريخ الجلسة (هـ)'}</span>
+          <span class="val">${escapeHtml(currentDateDisplayMode === 'gregorian' && meta.gregorianStr ? meta.gregorianStr : (session.date || '—'))}</span>
+          ${currentDateDisplayMode === 'both' && meta.gregorianStr ? `<span class="greg-sub">${escapeHtml(meta.gregorianStr)}</span>` : ''}
         </div>
         <div class="session-block">
           <span class="lbl">الوقت (بتوقيت السعودية)</span>
@@ -3395,6 +3451,26 @@ async function rejectShareInvite(notifId, caseNumber, permission){
 // ---------- Calendar view ----------
 const AR_MONTHS = ['يناير','فبراير','مارس','أبريل','مايو','يونيو','يوليو','أغسطس','سبتمبر','أكتوبر','نوفمبر','ديسمبر'];
 const HIJRI_MONTHS = ['محرم','صفر','ربيع الأول','ربيع الآخر','جمادى الأولى','جمادى الآخرة','رجب','شعبان','رمضان','شوال','ذو القعدة','ذو الحجة'];
+function weekStartDayNum(setting){
+  if(setting === 'saturday') return 6;
+  if(setting === 'monday') return 1;
+  return 0; // sunday (default)
+}
+// Formats a stored Hijri "DD/MM/YYYY" date string for display, respecting the user's
+// dateDisplayMode setting ('hijri' | 'gregorian' | 'both'). Falls back to Hijri-only
+// whenever conversion isn't possible.
+function formatDateForUser(hijriDateStr, dateDisplayMode){
+  if(!hijriDateStr) return hijriDateStr;
+  if(dateDisplayMode === 'gregorian' || dateDisplayMode === 'both'){
+    const g = wakalaDateToGregorian(hijriDateStr);
+    if(g && !isNaN(g.getTime())){
+      const gStr = formatGregorian(g);
+      if(dateDisplayMode === 'gregorian') return gStr;
+      return `${hijriDateStr} هـ — ${gStr}`;
+    }
+  }
+  return hijriDateStr;
+}
 const GREG_MONTHS = ['يناير','فبراير','مارس','أبريل','مايو','يونيو','يوليو','أغسطس','سبتمبر','أكتوبر','نوفمبر','ديسمبر'];
 const HIJRI_PICKER_TOGGLE_ICON = '<svg viewBox="0 0 24 24" stroke="currentColor" fill="none" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M17 2l4 4-4 4"/><path d="M3 11V9a4 4 0 0 1 4-4h14"/><path d="M7 22l-4-4 4-4"/><path d="M21 13v2a4 4 0 0 1-4 4H3"/></svg>';
 
@@ -3430,13 +3506,13 @@ function hijriPickerBuildHtml(prefix, opts){
         <select data-role="day">${dayOpts}</select>
         <select data-role="month">${hijriPickerBuildOptions('hijriMonth')}</select>
         <select data-role="year">${hijriYears}</select>
-        <button type="button" class="hijri-picker-toggle" data-role="toggle" title="تحويل إلى ميلادي">${HIJRI_PICKER_TOGGLE_ICON}</button>
+        <button type="button" class="hijri-picker-toggle" data-role="toggle" title="تحويل إلى ميلادي">${HIJRI_PICKER_TOGGLE_ICON}<span>ميلادي</span></button>
       </div>
       <div class="hijri-picker-row" data-role="gregorian" style="display:none;">
         <select data-role="day">${dayOpts}</select>
         <select data-role="month">${hijriPickerBuildOptions('gregMonth')}</select>
         <select data-role="year">${gregYears}</select>
-        <button type="button" class="hijri-picker-toggle" data-role="toggle" title="تحويل إلى هجري">${HIJRI_PICKER_TOGGLE_ICON}</button>
+        <button type="button" class="hijri-picker-toggle" data-role="toggle" title="تحويل إلى هجري">${HIJRI_PICKER_TOGGLE_ICON}<span>هجري</span></button>
       </div>
       <p class="hijri-picker-equiv" data-role="equiv"></p>
     </div>
@@ -3552,6 +3628,17 @@ function hijriPickerInit(containerId, prefix, opts){
 let calendarCursor = new Date();
 calendarCursor.setDate(1);
 let selectedDayKey = null;
+let dashWeekOffset = 0;
+let todayCarouselIndex = 0;
+let todayCarouselHasObjections = false;
+function setTodayCarouselSlide(index){
+  todayCarouselIndex = index;
+  document.getElementById('todayCarouselTrack').style.transform = `translateX(-${index * 100}%)`;
+  document.getElementById('todayCarouselTitle').textContent = index === 0 ? 'اليوم' : 'مهلة الاعتراضات';
+  document.querySelectorAll('.today-carousel-dot').forEach(dot => {
+    dot.classList.toggle('active', parseInt(dot.dataset.slide, 10) === index);
+  });
+}
 
 function dateKey(y, m, d){
   return `${y}-${String(m + 1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
@@ -3571,7 +3658,8 @@ async function renderDashboard(){
   const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
   const todayEnd = new Date(todayStart); todayEnd.setDate(todayEnd.getDate() + 1);
   const todayDow = todayStart.getDay(); // 0=Sun ... 6=Sat
-  const weekStart = new Date(todayStart); weekStart.setDate(weekStart.getDate() - ((todayDow + 1) % 7));
+  const weekStartDow = weekStartDayNum((profile && profile.weekStart) || 'saturday');
+  const weekStart = new Date(todayStart); weekStart.setDate(weekStart.getDate() - ((todayDow - weekStartDow + 7) % 7));
   const weekEnd = new Date(weekStart); weekEnd.setDate(weekEnd.getDate() + 7);
 
   // Build session items with real datetimes (Umm al-Qura Hijri → Gregorian + parsed time)
@@ -3630,7 +3718,8 @@ async function renderDashboard(){
     return `<div class="today-row"><span class="today-dot" style="background:${dotColor(x)}"></span><div class="today-row-body"><div class="today-row-top"><span class="today-time">${escapeHtml(x.time || '')}</span>${apptIcon(x.type)} ${escapeHtml(x.clientName)}</div><div class="today-row-sub">${x.notes ? escapeHtml(x.notes) : ''}</div>${contactButtonsHtml(x.countryCode, x.phone)}</div></div>`;
   }
 
-  // Objection-deadline rows — always pinned first, regardless of what time other items fall at
+  // Objection-deadline rows now live in their own carousel slide instead of being pinned
+  // atop the Today list.
   const objectionRows = cases
     .filter(c => c.caseStatus === 'non_final' && typeof c.objectionDaysRemaining === 'number' && c.objectionDaysRemaining >= 0 && c.objectionDaysRemaining <= 30)
     .sort((a,b) => a.objectionDaysRemaining - b.objectionDaysRemaining)
@@ -3638,15 +3727,28 @@ async function renderDashboard(){
 
   const todayItems = [...sessionsToday, ...apptsToday].sort((a,b) => a.dt - b.dt);
   const todayListEl = document.getElementById('dashTodayList');
-  const combinedTodayHtml = objectionRows.join('') + todayItems.map(rowHtml).join('');
-  todayListEl.innerHTML = combinedTodayHtml || '<p class="hint">ما فيه شي مجدول اليوم.</p>';
+  todayListEl.innerHTML = todayItems.map(rowHtml).join('') || '<p class="hint">ما فيه شي مجدول اليوم.</p>';
+  document.getElementById('dashObjectionList').innerHTML = objectionRows.join('') || '<p class="hint">ما فيه مهل اعتراض قريبة حاليًا.</p>';
+  todayCarouselHasObjections = objectionRows.length > 0;
+  document.getElementById('todayCarouselDots').style.display = todayCarouselHasObjections ? 'flex' : 'none';
+  if(!todayCarouselHasObjections) setTodayCarouselSlide(0);
 
   // This week (Saturday through Friday) — single-open accordion. Past days show dimmed.
+  // A prev/next arrow lets the user browse other weeks via dashWeekOffset.
   const dayNames = ['الأحد','الاثنين','الثلاثاء','الأربعاء','الخميس','الجمعة','السبت'];
   const upcomingEl = document.getElementById('dashUpcomingDays');
+  const viewWeekStart = new Date(weekStart); viewWeekStart.setDate(viewWeekStart.getDate() + dashWeekOffset * 7);
+  const titleEl = document.getElementById('upcomingWeekTitle');
+  if(dashWeekOffset === 0) titleEl.textContent = 'أيام هذا الأسبوع';
+  else if(dashWeekOffset === 1) titleEl.textContent = 'الأسبوع القادم';
+  else if(dashWeekOffset === -1) titleEl.textContent = 'الأسبوع الماضي';
+  else {
+    const rangeEnd = new Date(viewWeekStart); rangeEnd.setDate(rangeEnd.getDate() + 6);
+    titleEl.textContent = `${viewWeekStart.getDate()} ${GREG_MONTHS[viewWeekStart.getMonth()]} — ${rangeEnd.getDate()} ${GREG_MONTHS[rangeEnd.getMonth()]}`;
+  }
   let upcomingHtml = '';
   for(let i = 0; i <= 6; i++){
-    const dStart = new Date(weekStart); dStart.setDate(dStart.getDate() + i);
+    const dStart = new Date(viewWeekStart); dStart.setDate(dStart.getDate() + i);
     const dEnd = new Date(dStart); dEnd.setDate(dEnd.getDate() + 1);
     const isPast = dStart < todayStart;
     const isToday = dStart.getTime() === todayStart.getTime();
@@ -3667,6 +3769,11 @@ async function renderDashboard(){
 async function renderCalendar(){
   const grid = document.getElementById('calendarGrid');
   const label = document.getElementById('calMonthLabel');
+  const profile = await fetchMyProfile(currentUserEmail);
+  const weekStartDow = weekStartDayNum((profile && profile.weekStart) || 'saturday');
+  const dayNamesShort = ['أحد','اثنين','ثلاثاء','أربعاء','خميس','جمعة','سبت'];
+  const orderedDayNames = [...dayNamesShort.slice(weekStartDow), ...dayNamesShort.slice(0, weekStartDow)];
+  document.getElementById('calendarWeekdaysHeader').innerHTML = orderedDayNames.map(n => `<span>${n}</span>`).join('');
   const year = calendarCursor.getFullYear();
   const month = calendarCursor.getMonth();
   const firstHijri = gregorianDateToHijri(new Date(year, month, 1));
@@ -3705,10 +3812,10 @@ async function renderCalendar(){
     addToDay(key, 'appts', a);
   });
 
-  // Build the grid (Sunday-first, matching the "أحد" header) — only as many rows as the
-  // month actually needs, with blank placeholder cells (no adjacent-month dates shown).
+  // Build the grid, starting on the user's configured week-start day — only as many rows as
+  // the month actually needs, with blank placeholder cells (no adjacent-month dates shown).
   const firstOfMonth = new Date(year, month, 1);
-  const startOffset = firstOfMonth.getDay(); // 0 = Sunday
+  const startOffset = (firstOfMonth.getDay() - weekStartDow + 7) % 7;
   const daysInMonth = new Date(year, month + 1, 0).getDate();
   const todayKey = dateKey(new Date().getFullYear(), new Date().getMonth(), new Date().getDate());
   const totalCellsNeeded = Math.ceil((startOffset + daysInMonth) / 7) * 7;
@@ -4068,8 +4175,8 @@ async function renderWakalas(){
           ${!w.principalId && !w.agent && !w.source ? `<div class="party-row"><span class="party-role">—</span><span class="party-name">ما فيه معلومات إضافية مسجّلة</span></div>` : ''}
         </div>
         <div class="session-info" style="padding:0 0 14px;">
-          <div class="session-block"><span class="lbl">تاريخ الإنشاء</span><span class="val">${escapeHtml(w.createdDate || '—')}</span></div>
-          <div class="session-block"><span class="lbl">تاريخ الانتهاء</span><span class="val">${escapeHtml(w.expiryDate || 'غير محدّد')}</span></div>
+          <div class="session-block"><span class="lbl">تاريخ الإنشاء</span><span class="val">${escapeHtml(w.createdDate ? formatDateForUser(w.createdDate, currentDateDisplayMode) : '—')}</span></div>
+          <div class="session-block"><span class="lbl">تاريخ الانتهاء</span><span class="val">${escapeHtml(w.expiryDate ? formatDateForUser(w.expiryDate, currentDateDisplayMode) : 'غير محدّد')}</span></div>
         </div>
         ${w.notes ? `<div class="case-notes">📝 ${escapeHtml(w.notes)}</div>` : ''}
         <div class="attachments-box">
@@ -4211,98 +4318,100 @@ async function renderArchive(){
   let cases = (await loadAllCases()).map(normalizeCase);
   // (loadAllCases/fetchMyCases already scopes to owner + full + read-only shares)
 
-  if(archiveSubView === 'cases'){
-    const archived = cases.filter(c => c.archived).sort((a,b) => b.updatedAt - a.updatedAt);
-    if(archived.length === 0){
-      grid.innerHTML = '';
-      empty.querySelector('h3').textContent = 'لا توجد قضايا مؤرشفة';
-      empty.querySelector('p').textContent = 'القضايا اللي تؤرشفها بالكامل بتظهر هنا.';
-      empty.style.display = 'block';
-      return;
+  // Combine whole archived cases and individually-archived sessions into one unified list,
+  // matching the same compact-card-with-expand pattern used by the active القضايا والجلسات tab.
+  const items = [];
+  cases.forEach(c => {
+    if(c.archived){
+      const latest = getLatestSession(c) || c.sessions[c.sessions.length - 1] || null;
+      items.push({ kind: 'case', c, displaySession: latest, sortAt: c.updatedAt || 0 });
     }
-    empty.style.display = 'none';
-    grid.innerHTML = archived.map(c => {
-      const latest = getLatestSession(c);
-      return `
-      <div class="card">
-        <div class="card-top">
-          <div class="seal"><span class="mark"></span></div>
-          <span class="case-number-label">رقم القضية</span>
-          <span class="case-number">${escapeHtml(c.caseNumber)}</span>
-        </div>
-        <div class="parties">
-          ${ (c.plaintiff || c.defendant) ? `
+    (c.sessions || []).filter(s => s.archived).forEach(s => {
+      items.push({ kind: 'session', c, s, sortAt: s.addedAt || 0 });
+    });
+  });
+  items.sort((a, b) => b.sortAt - a.sortAt);
+
+  if(items.length === 0){
+    grid.innerHTML = '';
+    empty.style.display = 'block';
+    return;
+  }
+  empty.style.display = 'none';
+
+  grid.innerHTML = items.map((item, idx) => {
+    const c = item.c;
+    const uid = `arch_${idx}`;
+    const badgeText = item.kind === 'case' ? 'قضية مؤرشفة بالكامل' : 'جلسة مؤرشفة';
+    const dateLabel = item.kind === 'case' ? 'آخر جلسة مسجّلة' : 'تاريخ الجلسة المؤرشفة';
+    const dateInfo = item.kind === 'case'
+      ? (item.displaySession ? `${item.displaySession.date} — ${item.displaySession.time || '—'}` : '—')
+      : `${item.s.date} — ${item.s.time || '—'}`;
+    return `
+    <div class="card">
+      <div class="wk-compact-row">
+        <span class="wk-compact-number">${escapeHtml(c.caseNumber)}</span>
+        <span class="status-badge final">${badgeText}</span>
+        <span class="wk-compact-principal">${escapeHtml(c.plaintiff || c.caseType || '—')}</span>
+      </div>
+      <div class="expand-toggle-row">
+        <button class="archive-expand-btn" data-uid="${uid}">🔽 عرض كل التفاصيل</button>
+      </div>
+      <div class="expanded-details" data-archive-details="${uid}" style="display:none;">
+        <div class="parties" style="padding:0 0 10px;">
+          ${(c.plaintiff || c.defendant) ? `
             <div class="party-row"><span class="party-role">المدعي</span><span class="party-name">${escapeHtml(c.plaintiff || '—')}</span></div>
             <div class="vs-divider">ضد</div>
             <div class="party-row"><span class="party-role">المدعى عليه</span><span class="party-name">${escapeHtml(c.defendant || '—')}</span></div>
-          ` : `<div class="party-row"><span class="party-role">نوع القضية</span><span class="party-name">${escapeHtml(c.caseType || '—')}</span></div>` }
+          ` : `<div class="party-row"><span class="party-role">نوع القضية</span><span class="party-name">${escapeHtml(c.caseType || '—')}</span></div>`}
         </div>
-        <div class="session-info">
-          <div class="session-block"><span class="lbl">آخر جلسة مسجّلة</span><span class="val">${escapeHtml(latest ? latest.date : '—')}</span></div>
+        <div class="session-info" style="padding:0 0 14px;">
+          <div class="session-block"><span class="lbl">${dateLabel}</span><span class="val">${escapeHtml(dateInfo)}</span></div>
         </div>
-        <div class="card-footer">
+        <div class="card-footer" style="padding:10px 0 0; border-top:none;">
           <span class="id-holder">هوية: ${escapeHtml(c.idHolder || '—')}</span>
-          ${isOwnerOf(c) ? `<button class="restore-case-btn" data-case="${escapeHtml(c.caseNumber)}">استرجاع</button>` : ''}
-        </div>
-      </div>`;
-    }).join('');
-
-    grid.querySelectorAll('.restore-case-btn').forEach(btn => {
-      btn.addEventListener('click', async () => {
-        try{
-          await patchCaseDoc(btn.dataset.case, { archived: false, updatedAt: Date.now() });
-          showToast('تم استرجاع القضية.');
-          renderArchive();
-        }catch(e){ showToast('حدث خطأ. حاول مجددًا.'); }
-      });
-    });
-  } else {
-    // Archived individual sessions, across all (archived or active) cases.
-    const rows = [];
-    cases.forEach(c => {
-      (c.sessions || []).filter(s => s.archived).forEach(s => rows.push({ c, s }));
-    });
-    rows.sort((a,b) => b.s.addedAt - a.s.addedAt);
-
-    if(rows.length === 0){
-      grid.innerHTML = '';
-      empty.querySelector('h3').textContent = 'لا توجد جلسات مؤرشفة';
-      empty.querySelector('p').textContent = 'الجلسات المنتهية اللي تؤرشفها تظهر هنا.';
-      empty.style.display = 'block';
-      return;
-    }
-    empty.style.display = 'none';
-    grid.innerHTML = rows.map(({c, s}) => `
-      <div class="card">
-        <div class="card-top">
-          <div class="seal"><span class="mark"></span></div>
-          <span class="case-number-label">رقم القضية</span>
-          <span class="case-number">${escapeHtml(c.caseNumber)}</span>
-        </div>
-        <div class="session-info">
-          <div class="session-block"><span class="lbl">تاريخ الجلسة المؤرشفة</span><span class="val">${escapeHtml(s.date)} — ${escapeHtml(s.time||'—')}</span></div>
-        </div>
-        <div class="card-footer">
-          <span class="id-holder">${escapeHtml(c.plaintiff || c.caseType || '—')}</span>
-          ${isOwnerOf(c) ? `<button class="restore-session-btn" data-case="${escapeHtml(c.caseNumber)}" data-session="${escapeHtml(s.id)}">استرجاع</button>` : ''}
+          ${isOwnerOf(c) ? (item.kind === 'case'
+            ? `<button class="restore-case-btn" data-case="${escapeHtml(c.caseNumber)}">استرجاع القضية</button>`
+            : `<button class="restore-session-btn" data-case="${escapeHtml(c.caseNumber)}" data-session="${escapeHtml(item.s.id)}">استرجاع الجلسة</button>`
+          ) : ''}
         </div>
       </div>
-    `).join('');
+    </div>`;
+  }).join('');
 
-    grid.querySelectorAll('.restore-session-btn').forEach(btn => {
-      btn.addEventListener('click', async () => {
-        try{
-          const data = await fetchCase(btn.dataset.case);
-          const rec = normalizeCase(data);
-          const s = rec.sessions.find(s => s.id === btn.dataset.session);
-          if(s) s.archived = false;
-          await patchCaseDoc(btn.dataset.case, { sessions: rec.sessions });
-          showToast('تم استرجاع الجلسة.');
-          renderArchive();
-        }catch(e){ showToast('حدث خطأ. حاول مجددًا.'); }
-      });
+  grid.querySelectorAll('.archive-expand-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const details = grid.querySelector(`[data-archive-details="${btn.dataset.uid}"]`);
+      if(!details) return;
+      const isOpen = details.style.display !== 'none';
+      details.style.display = isOpen ? 'none' : 'block';
+      btn.textContent = btn.textContent.replace(isOpen ? '🔼' : '🔽', isOpen ? '🔽' : '🔼');
     });
-  }
+  });
+
+  grid.querySelectorAll('.restore-case-btn').forEach(btn => {
+    btn.addEventListener('click', async () => {
+      try{
+        await patchCaseDoc(btn.dataset.case, { archived: false, updatedAt: Date.now() });
+        showToast('تم استرجاع القضية.');
+        renderArchive();
+      }catch(e){ showToast('حدث خطأ. حاول مجددًا.'); }
+    });
+  });
+
+  grid.querySelectorAll('.restore-session-btn').forEach(btn => {
+    btn.addEventListener('click', async () => {
+      try{
+        const data = await fetchCase(btn.dataset.case);
+        const rec = normalizeCase(data);
+        const s = rec.sessions.find(s => s.id === btn.dataset.session);
+        if(s) s.archived = false;
+        await patchCaseDoc(btn.dataset.case, { sessions: rec.sessions });
+        showToast('تم استرجاع الجلسة.');
+        renderArchive();
+      }catch(e){ showToast('حدث خطأ. حاول مجددًا.'); }
+    });
+  });
 }
 
 function escapeHtml(str){
