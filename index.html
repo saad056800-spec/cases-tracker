@@ -103,12 +103,6 @@
     font-family:'IBM Plex Sans Arabic',sans-serif;
     min-height:100vh;
   }
-  body::before{
-    content: ''; position: fixed; inset: 0; z-index: -1; pointer-events: none;
-    background-image: url('assets/logo-mizan.png');
-    background-repeat: repeat; background-size: 220px 220px;
-    opacity: 0.08;
-  }
 
   ::selection{ background: var(--gold-light); color:var(--ink); }
 
@@ -1506,6 +1500,7 @@ const firebaseConfig = {
 };
 
 let currentUserEmail = null;
+let currentDateDisplayMode = 'both';
 let firebaseReady = false;
 let db = null;
 let storageInstance = null;
@@ -1522,7 +1517,6 @@ if(firebaseConfigured()){
   firebaseReady = true;
 
   let currentAuthUser = null;
-  let currentDateDisplayMode = 'both';
   onAuthStateChanged(auth, (user) => {
     if(user && !user.emailVerified){
       currentUserEmail = null;
