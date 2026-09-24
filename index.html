@@ -616,6 +616,13 @@
   .hijri-picker-toggle:hover{ background:var(--paper-2); }
   .hijri-picker-toggle svg{ width:16px; height:16px; }
   .hijri-picker-equiv{ font-size:11px; color:var(--muted); margin:5px 2px 0; }
+  .weekday-picker{ display:flex; flex-wrap:wrap; gap:6px; }
+  .weekday-chip{
+    padding:8px 13px; border-radius:999px; border:1px solid var(--line); background:var(--surface);
+    font-family:'IBM Plex Sans Arabic',sans-serif; font-size:12.5px; color:var(--ink); cursor:pointer;
+  }
+  .weekday-chip:hover{ background:var(--paper-2); }
+  .weekday-chip.active{ background:var(--blue); color:#fff; border-color:var(--blue); font-weight:700; }
   .expand-details-btn, .wk-expand-details-btn, .archive-expand-btn{
     width:100%; background:var(--paper-2); border:1px solid var(--line); border-radius:8px;
     padding:9px 12px; font-size:12.5px; font-weight:700; color:var(--ink-2); cursor:pointer;
@@ -1418,13 +1425,17 @@
               <option value="both">الاثنين معًا</option>
             </select>
           </div>
-          <div class="field">
+          <div class="field full">
             <label>بداية الأسبوع</label>
-            <select id="st_weekStart">
-              <option value="sunday">الأحد</option>
-              <option value="saturday">السبت</option>
-              <option value="monday">الاثنين</option>
-            </select>
+            <div class="weekday-picker" id="st_weekStart_picker">
+              <button type="button" class="weekday-chip" data-value="sunday">الأحد</button>
+              <button type="button" class="weekday-chip" data-value="monday">الاثنين</button>
+              <button type="button" class="weekday-chip" data-value="tuesday">الثلاثاء</button>
+              <button type="button" class="weekday-chip" data-value="wednesday">الأربعاء</button>
+              <button type="button" class="weekday-chip" data-value="thursday">الخميس</button>
+              <button type="button" class="weekday-chip" data-value="friday">الجمعة</button>
+              <button type="button" class="weekday-chip" data-value="saturday">السبت</button>
+            </div>
           </div>
           <div class="field full">
             <label>المنطقة الزمنية</label>
@@ -2310,7 +2321,7 @@ document.getElementById('profileBtn').addEventListener('click', async () => {
   document.getElementById('st_quietStart').value = (profile && profile.quietStart) || '';
   document.getElementById('st_quietEnd').value = (profile && profile.quietEnd) || '';
   document.getElementById('st_dateDisplayMode').value = (profile && profile.dateDisplayMode) || 'both';
-  document.getElementById('st_weekStart').value = (profile && profile.weekStart) || 'saturday';
+  setWeekdayChipActive((profile && profile.weekStart) || 'saturday');
   document.getElementById('st_timezone').value = tzZoneToLabel((profile && profile.timezone) || 'Asia/Riyadh');
   document.getElementById('st_shareRestriction').value = (profile && profile.shareRestriction) || 'anyone';
 });
@@ -2351,7 +2362,7 @@ document.getElementById('settingsSaveBtn').addEventListener('click', async () =>
     quietStart: document.getElementById('st_quietStart').value,
     quietEnd: document.getElementById('st_quietEnd').value,
     dateDisplayMode: document.getElementById('st_dateDisplayMode').value,
-    weekStart: document.getElementById('st_weekStart').value,
+    weekStart: getActiveWeekdayChip(),
     timezone: resolvedTimezone,
     shareRestriction: document.getElementById('st_shareRestriction').value,
     // keep legacy "name" field (used elsewhere as a fallback greeting) in sync
@@ -3443,11 +3454,22 @@ async function rejectShareInvite(notifId, caseNumber, permission){
 // ---------- Calendar view ----------
 const AR_MONTHS = ['يناير','فبراير','مارس','أبريل','مايو','يونيو','يوليو','أغسطس','سبتمبر','أكتوبر','نوفمبر','ديسمبر'];
 const HIJRI_MONTHS = ['محرم','صفر','ربيع الأول','ربيع الآخر','جمادى الأولى','جمادى الآخرة','رجب','شعبان','رمضان','شوال','ذو القعدة','ذو الحجة'];
+const WEEKDAY_SETTING_TO_NUM = { sunday: 0, monday: 1, tuesday: 2, wednesday: 3, thursday: 4, friday: 5, saturday: 6 };
 function weekStartDayNum(setting){
-  if(setting === 'saturday') return 6;
-  if(setting === 'monday') return 1;
-  return 0; // sunday (default)
+  return WEEKDAY_SETTING_TO_NUM[setting] ?? 6; // default: saturday (established app behavior)
 }
+function setWeekdayChipActive(value){
+  document.querySelectorAll('#st_weekStart_picker .weekday-chip').forEach(chip => {
+    chip.classList.toggle('active', chip.dataset.value === value);
+  });
+}
+function getActiveWeekdayChip(){
+  const active = document.querySelector('#st_weekStart_picker .weekday-chip.active');
+  return active ? active.dataset.value : 'saturday';
+}
+document.querySelectorAll('#st_weekStart_picker .weekday-chip').forEach(chip => {
+  chip.addEventListener('click', () => setWeekdayChipActive(chip.dataset.value));
+});
 // Formats a stored Hijri "DD/MM/YYYY" date string for display, respecting the user's
 // dateDisplayMode setting ('hijri' | 'gregorian' | 'both'). Falls back to Hijri-only
 // whenever conversion isn't possible.
