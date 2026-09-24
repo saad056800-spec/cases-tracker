@@ -376,7 +376,7 @@
     .home-columns{ display:grid; grid-template-columns:1fr 1fr; gap:20px; align-items:start; }
     .home-today-panel{ grid-column:1; grid-row:1; }
     .home-intake-panel{ grid-column:1; grid-row:2; }
-    .home-week-panel{ grid-column:2; grid-row:1; }
+    .home-week-panel{ grid-column:2; grid-row:1 / span 2; align-self:stretch; }
     .dash-today-scroll{ max-height:360px; }
   }
   .contact-btn{
@@ -616,13 +616,17 @@
   .hijri-picker-toggle:hover{ background:var(--paper-2); }
   .hijri-picker-toggle svg{ width:16px; height:16px; }
   .hijri-picker-equiv{ font-size:11px; color:var(--muted); margin:5px 2px 0; }
-  .weekday-picker{ display:flex; flex-wrap:wrap; gap:6px; }
-  .weekday-chip{
+  .chip-picker{ display:flex; flex-wrap:wrap; gap:6px; }
+  .chip-option{
     padding:8px 13px; border-radius:999px; border:1px solid var(--line); background:var(--surface);
     font-family:'IBM Plex Sans Arabic',sans-serif; font-size:12.5px; color:var(--ink); cursor:pointer;
   }
-  .weekday-chip:hover{ background:var(--paper-2); }
-  .weekday-chip.active{ background:var(--blue); color:#fff; border-color:var(--blue); font-weight:700; }
+  .chip-option:hover{ background:var(--paper-2); }
+  .chip-option.active{ background:var(--blue); color:#fff; border-color:var(--blue); font-weight:700; }
+  .chip-picker-stacked{ display:flex; flex-direction:column; gap:8px; }
+  .chip-picker-stacked .chip-option{
+    border-radius:10px; text-align:right; padding:11px 14px; width:100%; line-height:1.5;
+  }
   .expand-details-btn, .wk-expand-details-btn, .archive-expand-btn{
     width:100%; background:var(--paper-2); border:1px solid var(--line); border-radius:8px;
     padding:9px 12px; font-size:12.5px; font-weight:700; color:var(--ink-2); cursor:pointer;
@@ -1063,11 +1067,11 @@
         <div class="panel home-week-panel">
           <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:6px;">
             <button id="weekPrevBtn" class="notif-bell" title="الأسبوع الماضي">
-              <svg class="icon" viewBox="0 0 24 24"><path d="M15 6l-6 6 6 6"/></svg>
+              <svg class="icon" viewBox="0 0 24 24"><path d="M9 6l6 6-6 6"/></svg>
             </button>
             <h2 id="upcomingWeekTitle" style="margin:0;">أيام هذا الأسبوع</h2>
             <button id="weekNextBtn" class="notif-bell" title="الأسبوع القادم">
-              <svg class="icon" viewBox="0 0 24 24"><path d="M9 6l6 6-6 6"/></svg>
+              <svg class="icon" viewBox="0 0 24 24"><path d="M15 6l-6 6 6 6"/></svg>
             </button>
           </div>
           <div id="dashUpcomingDays"></div>
@@ -1373,19 +1377,19 @@
         <div class="field-grid">
           <div class="field full">
             <label>وضع العرض</label>
-            <select id="st_appearanceMode">
-              <option value="light">نهاري</option>
-              <option value="dark">ليلي</option>
-              <option value="auto">تلقائي (حسب النظام)</option>
-            </select>
+            <div class="chip-picker" id="st_appearanceMode_picker">
+              <button type="button" class="chip-option" data-value="light">نهاري</button>
+              <button type="button" class="chip-option" data-value="dark">ليلي</button>
+              <button type="button" class="chip-option" data-value="auto">تلقائي (حسب النظام)</button>
+            </div>
           </div>
           <div class="field full">
             <label>حجم الخط</label>
-            <select id="st_fontSize">
-              <option value="small">صغير</option>
-              <option value="medium">متوسط</option>
-              <option value="large">كبير</option>
-            </select>
+            <div class="chip-picker" id="st_fontSize_picker">
+              <button type="button" class="chip-option" data-value="small">صغير</button>
+              <button type="button" class="chip-option" data-value="medium">متوسط</button>
+              <button type="button" class="chip-option" data-value="large">كبير</button>
+            </div>
           </div>
         </div>
       </section>
@@ -1398,13 +1402,13 @@
         <div class="field" id="st_morningTimeBox" style="display:none;"><label>وقت الملخص الصباحي</label><input id="st_notifMorningSummaryTime" type="time" value="07:00"></div>
         <div class="field">
           <label>تذكير قبل الجلسة</label>
-          <select id="st_notifSessionReminder">
-            <option value="none">بدون</option>
-            <option value="15m">قبل ١٥ دقيقة</option>
-            <option value="30m">قبل ٣٠ دقيقة</option>
-            <option value="1h">قبل ساعة</option>
-            <option value="1d">قبل يوم</option>
-          </select>
+          <div class="chip-picker" id="st_notifSessionReminder_picker">
+            <button type="button" class="chip-option" data-value="none">بدون</button>
+            <button type="button" class="chip-option" data-value="15m">قبل ١٥ دقيقة</button>
+            <button type="button" class="chip-option" data-value="30m">قبل ٣٠ دقيقة</button>
+            <button type="button" class="chip-option" data-value="1h">قبل ساعة</button>
+            <button type="button" class="chip-option" data-value="1d">قبل يوم</button>
+          </div>
         </div>
         <div class="settings-toggle-row"><span>تنبيه اقتراب مهلة الاعتراض</span><span class="toggle" id="st_notifObjectionAlert" role="switch" aria-checked="true" tabindex="0"><i></i></span></div>
         <p class="hint" style="margin:6px 0 10px;">ساعات الهدوء (بدون إشعارات خلالها)</p>
@@ -1419,22 +1423,22 @@
         <div class="field-grid">
           <div class="field full">
             <label>عرض التاريخ</label>
-            <select id="st_dateDisplayMode">
-              <option value="hijri">هجري فقط</option>
-              <option value="gregorian">ميلادي فقط</option>
-              <option value="both">الاثنين معًا</option>
-            </select>
+            <div class="chip-picker" id="st_dateDisplayMode_picker">
+              <button type="button" class="chip-option" data-value="hijri">هجري فقط</button>
+              <button type="button" class="chip-option" data-value="gregorian">ميلادي فقط</button>
+              <button type="button" class="chip-option" data-value="both">الاثنين معًا</button>
+            </div>
           </div>
           <div class="field full">
             <label>بداية الأسبوع</label>
-            <div class="weekday-picker" id="st_weekStart_picker">
-              <button type="button" class="weekday-chip" data-value="sunday">الأحد</button>
-              <button type="button" class="weekday-chip" data-value="monday">الاثنين</button>
-              <button type="button" class="weekday-chip" data-value="tuesday">الثلاثاء</button>
-              <button type="button" class="weekday-chip" data-value="wednesday">الأربعاء</button>
-              <button type="button" class="weekday-chip" data-value="thursday">الخميس</button>
-              <button type="button" class="weekday-chip" data-value="friday">الجمعة</button>
-              <button type="button" class="weekday-chip" data-value="saturday">السبت</button>
+            <div class="chip-picker" id="st_weekStart_picker">
+              <button type="button" class="chip-option" data-value="sunday">الأحد</button>
+              <button type="button" class="chip-option" data-value="monday">الاثنين</button>
+              <button type="button" class="chip-option" data-value="tuesday">الثلاثاء</button>
+              <button type="button" class="chip-option" data-value="wednesday">الأربعاء</button>
+              <button type="button" class="chip-option" data-value="thursday">الخميس</button>
+              <button type="button" class="chip-option" data-value="friday">الجمعة</button>
+              <button type="button" class="chip-option" data-value="saturday">السبت</button>
             </div>
           </div>
           <div class="field full">
@@ -1451,10 +1455,10 @@
         <div class="settings-toggle-row" style="margin-top:8px;"><span>مصادقة ثنائية</span><span class="soon-chip">قريبًا</span></div>
         <p class="hint" style="margin-top:8px;">الأجهزة النشطة: هذا الجهاز فقط.</p>
         <p class="hint">من يقدر يشاركني قضية:</p>
-        <select id="st_shareRestriction" style="width:100%; font-family:'IBM Plex Sans Arabic',sans-serif; font-size:13.5px; padding:10px 12px; border-radius:8px; border:1px solid var(--line); background:var(--surface);">
-          <option value="anyone">أي شخص يعرف بريدي الإلكتروني</option>
-          <option value="none">محد، أوقف استقبال دعوات المشاركة مؤقتًا</option>
-        </select>
+        <div class="chip-picker chip-picker-stacked" id="st_shareRestriction_picker">
+          <button type="button" class="chip-option" data-value="anyone">أي شخص يعرف بريدي الإلكتروني</button>
+          <button type="button" class="chip-option" data-value="none">محد، أوقف استقبال دعوات المشاركة مؤقتًا</button>
+        </div>
       </section>
 
       <section class="settings-section">
@@ -2309,21 +2313,21 @@ document.getElementById('profileBtn').addEventListener('click', async () => {
   document.getElementById('st_yearsExperience').value = (profile && profile.yearsExperience) || '';
   document.getElementById('st_licenseNumber').value = (profile && profile.licenseNumber) || '';
   document.getElementById('st_city').value = (profile && profile.city) || '';
-  document.getElementById('st_appearanceMode').value = (profile && profile.appearanceMode) || 'light';
-  document.getElementById('st_fontSize').value = (profile && profile.fontSize) || 'medium';
+  setChipActive('st_appearanceMode_picker', (profile && profile.appearanceMode) || 'light');
+  setChipActive('st_fontSize_picker', (profile && profile.fontSize) || 'medium');
   document.getElementById('st_notifBrowserPush').setAttribute('aria-checked', String(!!(profile && profile.notifBrowserPush)));
   document.getElementById('st_notifMobilePush').setAttribute('aria-checked', String(!!(profile && profile.notifMobilePush)));
   document.getElementById('st_notifMorningSummary').setAttribute('aria-checked', String(!!(profile && profile.notifMorningSummary)));
   document.getElementById('st_morningTimeBox').style.display = (profile && profile.notifMorningSummary) ? 'block' : 'none';
   document.getElementById('st_notifMorningSummaryTime').value = (profile && profile.notifMorningSummaryTime) || '07:00';
-  document.getElementById('st_notifSessionReminder').value = (profile && profile.notifSessionReminder) || 'none';
+  setChipActive('st_notifSessionReminder_picker', (profile && profile.notifSessionReminder) || 'none');
   document.getElementById('st_notifObjectionAlert').setAttribute('aria-checked', String(profile ? !!profile.notifObjectionAlert : true));
   document.getElementById('st_quietStart').value = (profile && profile.quietStart) || '';
   document.getElementById('st_quietEnd').value = (profile && profile.quietEnd) || '';
-  document.getElementById('st_dateDisplayMode').value = (profile && profile.dateDisplayMode) || 'both';
-  setWeekdayChipActive((profile && profile.weekStart) || 'saturday');
+  setChipActive('st_dateDisplayMode_picker', (profile && profile.dateDisplayMode) || 'both');
+  setChipActive('st_weekStart_picker', (profile && profile.weekStart) || 'saturday');
   document.getElementById('st_timezone').value = tzZoneToLabel((profile && profile.timezone) || 'Asia/Riyadh');
-  document.getElementById('st_shareRestriction').value = (profile && profile.shareRestriction) || 'anyone';
+  setChipActive('st_shareRestriction_picker', (profile && profile.shareRestriction) || 'anyone');
 });
 document.getElementById('settingsCloseBtn').addEventListener('click', () => {
   document.getElementById('settingsOverlay').classList.remove('open');
@@ -2334,8 +2338,8 @@ document.getElementById('settingsOverlay').addEventListener('click', (e) => {
 
 // ---------- Save all settings ----------
 document.getElementById('settingsSaveBtn').addEventListener('click', async () => {
-  const appearanceMode = document.getElementById('st_appearanceMode').value;
-  const fontSize = document.getElementById('st_fontSize').value;
+  const appearanceMode = getActiveChip('st_appearanceMode_picker', 'light');
+  const fontSize = getActiveChip('st_fontSize_picker', 'medium');
   let resolvedTimezone = tzLabelToZone(document.getElementById('st_timezone').value);
   if(!resolvedTimezone){
     const existingProfile = await fetchMyProfile(currentUserEmail);
@@ -2357,14 +2361,14 @@ document.getElementById('settingsSaveBtn').addEventListener('click', async () =>
     notifMobilePush: document.getElementById('st_notifMobilePush').getAttribute('aria-checked') === 'true',
     notifMorningSummary: document.getElementById('st_notifMorningSummary').getAttribute('aria-checked') === 'true',
     notifMorningSummaryTime: document.getElementById('st_notifMorningSummaryTime').value,
-    notifSessionReminder: document.getElementById('st_notifSessionReminder').value,
+    notifSessionReminder: getActiveChip('st_notifSessionReminder_picker', 'none'),
     notifObjectionAlert: document.getElementById('st_notifObjectionAlert').getAttribute('aria-checked') === 'true',
     quietStart: document.getElementById('st_quietStart').value,
     quietEnd: document.getElementById('st_quietEnd').value,
-    dateDisplayMode: document.getElementById('st_dateDisplayMode').value,
-    weekStart: getActiveWeekdayChip(),
+    dateDisplayMode: getActiveChip('st_dateDisplayMode_picker', 'both'),
+    weekStart: getActiveChip('st_weekStart_picker', 'saturday'),
     timezone: resolvedTimezone,
-    shareRestriction: document.getElementById('st_shareRestriction').value,
+    shareRestriction: getActiveChip('st_shareRestriction_picker', 'anyone'),
     // keep legacy "name" field (used elsewhere as a fallback greeting) in sync
     name: [document.getElementById('st_firstNameAr').value.trim(), document.getElementById('st_lastNameAr').value.trim()].filter(Boolean).join(' '),
     updatedAt: Date.now()
@@ -3458,18 +3462,23 @@ const WEEKDAY_SETTING_TO_NUM = { sunday: 0, monday: 1, tuesday: 2, wednesday: 3,
 function weekStartDayNum(setting){
   return WEEKDAY_SETTING_TO_NUM[setting] ?? 6; // default: saturday (established app behavior)
 }
-function setWeekdayChipActive(value){
-  document.querySelectorAll('#st_weekStart_picker .weekday-chip').forEach(chip => {
+// Generic chip-picker helpers, used by every "visible options instead of a dropdown"
+// control in Settings (week start, date display, appearance, font size, reminders, sharing).
+function setChipActive(pickerId, value){
+  document.querySelectorAll(`#${pickerId} .chip-option`).forEach(chip => {
     chip.classList.toggle('active', chip.dataset.value === value);
   });
 }
-function getActiveWeekdayChip(){
-  const active = document.querySelector('#st_weekStart_picker .weekday-chip.active');
-  return active ? active.dataset.value : 'saturday';
+function getActiveChip(pickerId, fallback){
+  const active = document.querySelector(`#${pickerId} .chip-option.active`);
+  return active ? active.dataset.value : fallback;
 }
-document.querySelectorAll('#st_weekStart_picker .weekday-chip').forEach(chip => {
-  chip.addEventListener('click', () => setWeekdayChipActive(chip.dataset.value));
-});
+function wireChipPicker(pickerId){
+  document.querySelectorAll(`#${pickerId} .chip-option`).forEach(chip => {
+    chip.addEventListener('click', () => setChipActive(pickerId, chip.dataset.value));
+  });
+}
+['st_weekStart_picker','st_dateDisplayMode_picker','st_appearanceMode_picker','st_fontSize_picker','st_notifSessionReminder_picker','st_shareRestriction_picker'].forEach(wireChipPicker);
 // Formats a stored Hijri "DD/MM/YYYY" date string for display, respecting the user's
 // dateDisplayMode setting ('hijri' | 'gregorian' | 'both'). Falls back to Hijri-only
 // whenever conversion isn't possible.
