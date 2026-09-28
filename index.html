@@ -679,6 +679,11 @@
     margin:0 18px 14px; padding:8px 12px; background:var(--paper-dim); border-radius:8px; font-size:12px;
   }
   .activity-log summary{ cursor:pointer; font-weight:700; color:var(--ink-soft); outline:none; }
+  .clear-activity-btn{
+    display:block; margin-top:10px; background:none; border:none; color:#B0463A; font-size:12px; font-weight:700;
+    padding:5px 8px; border-radius:6px; cursor:pointer; font-family:'IBM Plex Sans Arabic',sans-serif;
+  }
+  .clear-activity-btn:hover{ background:#FBEBE6; }
   .activity-item{
     padding:6px 0; border-top:1px solid var(--line);
   }
@@ -1051,18 +1056,12 @@
         <div class="panel home-today-panel">
           <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:6px;">
             <h2 id="todayCarouselTitle" style="margin:0;">اليوم</h2>
-            <div class="today-carousel-dots" id="todayCarouselDots" style="display:none;">
-              <span class="today-carousel-dot active" data-slide="0"></span>
-              <span class="today-carousel-dot" data-slide="1"></span>
-            </div>
+            <div class="today-carousel-dots" id="todayCarouselDots" style="display:none;"></div>
           </div>
           <div class="today-carousel-viewport" id="todayCarouselViewport">
             <div class="today-carousel-track" id="todayCarouselTrack">
               <div class="today-carousel-slide" dir="rtl">
                 <div id="dashTodayList" class="dash-today-scroll"><p class="hint">ما فيه شي مجدول اليوم.</p></div>
-              </div>
-              <div class="today-carousel-slide" dir="rtl">
-                <div id="dashObjectionList" class="dash-today-scroll"></div>
               </div>
             </div>
           </div>
@@ -1916,14 +1915,12 @@ document.getElementById('emptyAddBtn').addEventListener('click', () => switchVie
 document.getElementById('weekNextBtn').addEventListener('click', () => { dashWeekOffset++; renderDashboard(); });
 document.getElementById('weekPrevBtn').addEventListener('click', () => { dashWeekOffset--; renderDashboard(); });
 
-// Today/Objections carousel: auto-rotate every 10s (only while there's a second slide worth
-// showing), plus manual dot taps and a simple touch-swipe.
-setInterval(() => {
-  if(!todayCarouselHasObjections) return;
-  setTodayCarouselSlide(todayCarouselIndex === 0 ? 1 : 0);
-}, 10000);
-document.querySelectorAll('.today-carousel-dot').forEach(dot => {
-  dot.addEventListener('click', () => setTodayCarouselSlide(parseInt(dot.dataset.slide, 10)));
+// Today/Objections carousel: "اليوم" is the first slide and every objection deadline gets its own
+// slide after it. It advances to the next slide every 3 seconds (looping), and can also be moved by
+// tapping the dots or swiping. Manual moves restart the 3-second countdown.
+document.getElementById('todayCarouselDots').addEventListener('click', (e) => {
+  const dot = e.target.closest('.today-carousel-dot');
+  if(dot) goTodayCarousel(parseInt(dot.dataset.slide, 10));
 });
 {
   const viewport = document.getElementById('todayCarouselViewport');
@@ -1932,7 +1929,7 @@ document.querySelectorAll('.today-carousel-dot').forEach(dot => {
   viewport.addEventListener('touchend', (e) => {
     if(touchStartX === null || !todayCarouselHasObjections) return;
     const dx = e.changedTouches[0].clientX - touchStartX;
-    if(Math.abs(dx) > 40) setTodayCarouselSlide(dx < 0 ? 1 : 0);
+    if(Math.abs(dx) > 40) goTodayCarousel(todayCarouselIndex + (dx < 0 ? 1 : -1));
     touchStartX = null;
   });
 }
@@ -3052,6 +3049,7 @@ function buildSessionCardHtml(c, session){
                 <span class="ai-meta">${escapeHtml(l.byEmail)} — ${new Date(l.at).toLocaleString('ar-SA')}</span>
               </div>
             `).join('')}
+            ${isOwnerOf(c) ? `<button class="clear-activity-btn" data-case="${escapeHtml(c.caseNumber)}">🗑 حذف سجل النشاط</button>` : ''}
           </details>
         ` : ''}
         <div class="attachments-box">
@@ -3108,6 +3106,17 @@ function wireSessionCardEvents(grid, refresh){
       if(!zone){ resultEl.textContent = ''; return; } // still typing — no exact country match yet
       const converted = convertSessionTimeToTZ(sel.dataset.date, sel.dataset.time, zone);
       resultEl.textContent = converted ? '🌍 ' + converted : 'تعذّر الحساب';
+    });
+  });
+
+  grid.querySelectorAll('.clear-activity-btn').forEach(btn => {
+    btn.addEventListener('click', async () => {
+      if(!confirm('حذف سجل النشاط لهذه القضية نهائيًا؟\nلا يمكن التراجع عن هذا الإجراء.')) return;
+      try{
+        await patchCaseDoc(btn.dataset.case, { activityLog: [] });
+        showToast('تم حذف سجل النشاط.');
+        refresh();
+      }catch(e){ showToast('تعذّر حذف سجل النشاط.'); }
     });
   });
 
@@ -3651,20 +3660,55 @@ let selectedDayKey = null;
 let dashWeekOffset = 0;
 let todayCarouselIndex = 0;
 let todayCarouselHasObjections = false;
+let todayCarouselTimer = null;
+function todayCarouselCount(){ return document.getElementById('todayCarouselTrack').children.length; }
 function syncTodayCarouselHeight(){
   const viewport = document.getElementById('todayCarouselViewport');
-  const slide = document.getElementById('todayCarouselTrack').children[todayCarouselIndex];
-  if(viewport && slide) viewport.style.height = slide.offsetHeight + 'px';
+  const slides = [...document.getElementById('todayCarouselTrack').children];
+  if(!viewport || !slides.length) return;
+  // With objection deadlines the box keeps the height of the tallest slide, so the page below
+  // doesn't jump as the slides rotate. Without any, it just fits "today".
+  const h = todayCarouselHasObjections ? Math.max(...slides.map(sl => sl.offsetHeight)) : slides[0].offsetHeight;
+  viewport.style.height = h + 'px';
 }
+window.addEventListener('resize', syncTodayCarouselHeight);
 function setTodayCarouselSlide(index){
+  const count = todayCarouselCount();
+  index = ((index % count) + count) % count; // wrap around at both ends
   todayCarouselIndex = index;
   syncTodayCarouselHeight();
   document.getElementById('todayCarouselTrack').style.transform = `translateX(-${index * 100}%)`;
-  document.getElementById('todayCarouselTitle').textContent = index === 0 ? 'اليوم' : 'مهلة الاعتراضات';
+  document.getElementById('todayCarouselTitle').textContent = index === 0 ? 'اليوم' : `مهلة الاعتراضات (${index}/${count - 1})`;
   document.querySelectorAll('.today-carousel-dot').forEach(dot => {
     dot.classList.toggle('active', parseInt(dot.dataset.slide, 10) === index);
   });
 }
+function startTodayCarouselTimer(){
+  clearInterval(todayCarouselTimer);
+  todayCarouselTimer = setInterval(() => {
+    if(todayCarouselHasObjections) setTodayCarouselSlide(todayCarouselIndex + 1);
+  }, 3000);
+}
+function goTodayCarousel(index){ setTodayCarouselSlide(index); startTodayCarouselTimer(); }
+// Rebuilds one slide per objection deadline (each entry is the row's HTML) plus the position dots.
+function setTodayCarouselObjections(rows){
+  const track = document.getElementById('todayCarouselTrack');
+  track.querySelectorAll('.obj-slide').forEach(el => el.remove());
+  rows.forEach(rowHtml => {
+    const slide = document.createElement('div');
+    slide.className = 'today-carousel-slide obj-slide';
+    slide.dir = 'rtl';
+    slide.innerHTML = rowHtml;
+    track.appendChild(slide);
+  });
+  todayCarouselHasObjections = rows.length > 0;
+  const count = todayCarouselCount();
+  const dots = document.getElementById('todayCarouselDots');
+  dots.innerHTML = todayCarouselHasObjections ? Array.from({ length: count }, (_, i) => `<span class="today-carousel-dot" data-slide="${i}"></span>`).join('') : '';
+  dots.style.display = todayCarouselHasObjections ? 'flex' : 'none';
+  setTodayCarouselSlide(todayCarouselHasObjections ? Math.min(todayCarouselIndex, count - 1) : 0);
+}
+startTodayCarouselTimer();
 
 function dateKey(y, m, d){
   return `${y}-${String(m + 1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
@@ -3744,8 +3788,7 @@ async function renderDashboard(){
     return `<div class="today-row"><span class="today-dot" style="background:${dotColor(x)}"></span><div class="today-row-body"><div class="today-row-top"><span class="today-time">${escapeHtml(x.time || '')}</span>${apptIcon(x.type)} ${escapeHtml(x.clientName)}</div><div class="today-row-sub">${x.notes ? escapeHtml(x.notes) : ''}</div>${contactButtonsHtml(x.countryCode, x.phone)}</div></div>`;
   }
 
-  // Objection-deadline rows now live in their own carousel slide instead of being pinned
-  // atop the Today list.
+  // Every objection deadline becomes its own carousel slide (after "اليوم").
   const objectionRows = cases
     .filter(c => c.caseStatus === 'non_final' && typeof c.objectionDaysRemaining === 'number' && c.objectionDaysRemaining >= 0 && c.objectionDaysRemaining <= 30)
     .sort((a,b) => a.objectionDaysRemaining - b.objectionDaysRemaining)
@@ -3754,11 +3797,7 @@ async function renderDashboard(){
   const todayItems = [...sessionsToday, ...apptsToday].sort((a,b) => a.dt - b.dt);
   const todayListEl = document.getElementById('dashTodayList');
   todayListEl.innerHTML = todayItems.map(rowHtml).join('') || '<p class="hint">ما فيه شي مجدول اليوم.</p>';
-  document.getElementById('dashObjectionList').innerHTML = objectionRows.join('') || '<p class="hint">ما فيه مهل اعتراض قريبة حاليًا.</p>';
-  todayCarouselHasObjections = objectionRows.length > 0;
-  syncTodayCarouselHeight();
-  document.getElementById('todayCarouselDots').style.display = todayCarouselHasObjections ? 'flex' : 'none';
-  if(!todayCarouselHasObjections) setTodayCarouselSlide(0);
+  setTodayCarouselObjections(objectionRows);
 
   // This week (Saturday through Friday) — single-open accordion. Past days show dimmed.
   // A prev/next arrow lets the user browse other weeks via dashWeekOffset.
