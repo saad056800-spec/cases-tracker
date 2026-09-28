@@ -339,8 +339,8 @@
   .home-intake-panel{ order:3; }
 
   .dash-today-scroll{ max-height:214px; overflow-y:auto; }
-  .today-carousel-viewport{ overflow:hidden; }
-  .today-carousel-track{ display:flex; direction:ltr; transition:transform 0.4s cubic-bezier(0.22,1,0.36,1); touch-action:pan-y; }
+  .today-carousel-viewport{ overflow:hidden; transition:height 0.3s ease; }
+  .today-carousel-track{ display:flex; align-items:flex-start; direction:ltr; transition:transform 0.4s cubic-bezier(0.22,1,0.36,1); touch-action:pan-y; }
   .today-carousel-slide{ flex:0 0 100%; min-width:100%; box-sizing:border-box; }
   .today-carousel-dots{ display:flex; gap:6px; }
   .today-carousel-dot{ width:7px; height:7px; border-radius:50%; background:var(--line); cursor:pointer; transition:background 0.2s, transform 0.2s; border:none; padding:0; }
@@ -696,13 +696,14 @@
   .attachment-item button{
     background:none; border:none; color:#B0463A; font-weight:800; cursor:pointer; font-size:14px; flex-shrink:0;
   }
-  .mini-archive-btn, .archive-case-btn, .restore-case-btn, .restore-session-btn, .wk-edit-btn, .wk-copy-btn{
+  .mini-archive-btn, .archive-case-btn, .restore-case-btn, .restore-session-btn, .wk-edit-btn, .wk-copy-btn, .appt-edit-btn{
     background:none; border:1px solid var(--line); color:var(--ink-soft); font-size:11px; font-weight:700;
     padding:3px 9px; border-radius:999px; cursor:pointer;
   }
   .mini-archive-btn:hover{ background:#FBEBE6; border-color:#E9C6BA; color:#8C3A2B; }
   .archive-case-btn:hover{ background:#FBEBE6; border-color:#E9C6BA; color:#8C3A2B; }
   .wk-edit-btn:hover, .wk-copy-btn:hover{ background:var(--paper-2); }
+  .appt-edit-btn:hover{ background:var(--paper-2); }
   .restore-case-btn, .restore-session-btn{ color:var(--green-deep); border-color:var(--green-mist); }
   .restore-case-btn:hover, .restore-session-btn:hover{ background:var(--green-mist); }
 
@@ -1270,8 +1271,8 @@
   <section class="view" id="view-calendar">
     <div class="calendar-layout">
       <div class="calendar-col-appt">
-        <div class="panel">
-          <h2>إضافة موعد</h2>
+        <div class="panel" id="apptFormPanel">
+          <h2 id="apptFormTitle">إضافة موعد</h2>
           <p class="hint">مواعيد عامة (استشارة، اجتماع، مراجعة...) منفصلة عن جلسات المحكمة.</p>
           <div class="field-grid">
             <div class="field full">
@@ -1307,6 +1308,7 @@
           </div>
           <div class="btn-row">
             <button class="btn btn-primary" id="apptSaveBtn">حفظ الموعد</button>
+            <button class="btn btn-ghost" id="apptCancelEditBtn" style="display:none;">إلغاء التعديل</button>
           </div>
         </div>
       </div>
@@ -1520,6 +1522,8 @@ const firebaseConfig = {
 
 let currentUserEmail = null;
 let currentDateDisplayMode = 'both';
+let auth = null;
+let currentAuthUser = null;
 let firebaseReady = false;
 let db = null;
 let storageInstance = null;
@@ -1530,12 +1534,11 @@ function firebaseConfigured(){
 
 if(firebaseConfigured()){
   const app = initializeApp(firebaseConfig);
-  const auth = getAuth(app);
+  auth = getAuth(app);
   db = getFirestore(app);
   storageInstance = getStorage(app);
   firebaseReady = true;
 
-  let currentAuthUser = null;
   onAuthStateChanged(auth, (user) => {
     if(user && !user.emailVerified){
       currentUserEmail = null;
@@ -1833,6 +1836,9 @@ async function fetchMyAppointments(email){
 }
 async function saveAppointmentDoc(data){
   await setDoc(doc(collection(db, 'appointments')), data);
+}
+async function updateAppointmentDoc(id, data){
+  await updateDoc(doc(db, 'appointments', id), data);
 }
 async function deleteAppointmentDoc(id){
   await deleteDoc(doc(db, 'appointments', id));
@@ -2830,13 +2836,6 @@ function getLatestSession(rec){
   const all = rec.sessions || [];
   return all.length ? all[all.length - 1] : null;
 }
-function getPreviousActiveSession(rec){
-  const active = getActiveSessions(rec);
-  return active.length > 1 ? active[active.length - 2] : null;
-}
-function caseStatusLabel(rec){
-  return (rec.sessions || []).length > 1 ? 'rescheduled' : 'scheduled';
-}
 
 // ---------- Countdown helpers (Umm al-Qura calendar) ----------
 // Fast tabular estimate, used only as a starting point to search from —
@@ -2896,14 +2895,6 @@ function formatGregorian(date){
   const dd = String(date.getDate()).padStart(2, '0');
   const mm = String(date.getMonth() + 1).padStart(2, '0');
   return `${dd}/${mm}/${date.getFullYear()} م`;
-}
-function hijriDateStrToGregorianStr(dateStr){
-  const parts = (dateStr || '').split('/');
-  if(parts.length !== 3) return '';
-  const day = parseInt(parts[0], 10), month = parseInt(parts[1], 10), year = parseInt(parts[2], 10);
-  if(!day || !month || !year) return '';
-  try{ return formatGregorian(hijriToGregorianExact(day, month, year)); }
-  catch(e){ return ''; }
 }
 
 // Parse "12:20 مساءً" / "10:30 صباحاً" style Arabic time into 24h hour/minute.
@@ -3660,8 +3651,14 @@ let selectedDayKey = null;
 let dashWeekOffset = 0;
 let todayCarouselIndex = 0;
 let todayCarouselHasObjections = false;
+function syncTodayCarouselHeight(){
+  const viewport = document.getElementById('todayCarouselViewport');
+  const slide = document.getElementById('todayCarouselTrack').children[todayCarouselIndex];
+  if(viewport && slide) viewport.style.height = slide.offsetHeight + 'px';
+}
 function setTodayCarouselSlide(index){
   todayCarouselIndex = index;
+  syncTodayCarouselHeight();
   document.getElementById('todayCarouselTrack').style.transform = `translateX(-${index * 100}%)`;
   document.getElementById('todayCarouselTitle').textContent = index === 0 ? 'اليوم' : 'مهلة الاعتراضات';
   document.querySelectorAll('.today-carousel-dot').forEach(dot => {
@@ -3759,6 +3756,7 @@ async function renderDashboard(){
   todayListEl.innerHTML = todayItems.map(rowHtml).join('') || '<p class="hint">ما فيه شي مجدول اليوم.</p>';
   document.getElementById('dashObjectionList').innerHTML = objectionRows.join('') || '<p class="hint">ما فيه مهل اعتراض قريبة حاليًا.</p>';
   todayCarouselHasObjections = objectionRows.length > 0;
+  syncTodayCarouselHeight();
   document.getElementById('todayCarouselDots').style.display = todayCarouselHasObjections ? 'flex' : 'none';
   if(!todayCarouselHasObjections) setTodayCarouselSlide(0);
 
@@ -3910,16 +3908,27 @@ function showDayDetail(key, info){
   info.appts.forEach(a => {
     html += `<div class="day-item"><div class="di-title">${apptIcon(a.type)} ${escapeHtml(a.clientName)}</div><div class="di-sub">${escapeHtml(a.time || '')} ${a.notes ? '— ' + escapeHtml(a.notes) : ''}</div>
       <div>${contactButtonsHtml(a.countryCode, a.phone)}</div>
-      <button class="delete-btn" style="margin-top:6px;" data-appt="${a._id}">حذف الموعد</button></div>`;
+      <div style="display:flex; gap:6px; margin-top:6px;">
+        <button class="appt-edit-btn" data-appt-edit="${a._id}">تعديل الموعد</button>
+        <button class="delete-btn" data-appt="${a._id}">حذف الموعد</button>
+      </div></div>`;
   });
   content.innerHTML = html;
   panel.style.display = 'block';
+
+  content.querySelectorAll('[data-appt-edit]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const a = info.appts.find(x => x._id === btn.dataset.apptEdit);
+      if(a) startEditAppt(a);
+    });
+  });
 
   content.querySelectorAll('[data-appt]').forEach(btn => {
     btn.addEventListener('click', async () => {
       if(!confirm('حذف هذا الموعد؟')) return;
       try{
         await deleteAppointmentDoc(btn.dataset.appt);
+        if(editingApptId === btn.dataset.appt) resetApptForm();
         showToast('تم حذف الموعد.');
         renderCalendar();
       }catch(e){ showToast('حدث خطأ. حاول مجددًا.'); }
@@ -3950,6 +3959,60 @@ document.getElementById('appt_type').addEventListener('change', () => {
   document.getElementById('apptNameLabel').textContent = APPT_TYPE_LABELS[document.getElementById('appt_type').value] || 'اسم الموعد';
 });
 
+let editingApptId = null;
+
+function apptTodayHijriValue(){
+  const t = gregorianDateToHijri(new Date());
+  return `${t.day}/${t.month}/${t.year}`;
+}
+function resetApptForm(){
+  editingApptId = null;
+  document.getElementById('apptFormTitle').textContent = 'إضافة موعد';
+  document.getElementById('apptSaveBtn').textContent = 'حفظ الموعد';
+  document.getElementById('apptCancelEditBtn').style.display = 'none';
+  document.getElementById('appt_type').value = 'client';
+  document.getElementById('apptNameLabel').textContent = APPT_TYPE_LABELS.client;
+  document.getElementById('appt_client').value = '';
+  hijriPickerSetValue('appt_date', apptTodayHijriValue());
+  document.getElementById('appt_hour').value = '9';
+  document.getElementById('appt_minute').value = '0';
+  document.getElementById('appt_ampm').value = 'صباحاً';
+  document.getElementById('appt_countryCode').value = '+966';
+  document.getElementById('appt_phone').value = '';
+  document.getElementById('appt_notes').value = '';
+}
+// Loads an existing appointment into the form so a mistake (date, name, time...) can be corrected in place.
+function startEditAppt(a){
+  editingApptId = a._id;
+  document.getElementById('apptFormTitle').textContent = `تعديل الموعد: ${a.clientName || ''}`;
+  document.getElementById('apptSaveBtn').textContent = 'تحديث الموعد';
+  document.getElementById('apptCancelEditBtn').style.display = '';
+  document.getElementById('appt_type').value = a.type || 'client';
+  document.getElementById('apptNameLabel').textContent = APPT_TYPE_LABELS[a.type] || APPT_TYPE_LABELS.client;
+  document.getElementById('appt_client').value = a.clientName || '';
+  hijriPickerSetValue('appt_date', a.date);
+  // stored time looks like "09:30 صباحاً" — split it back into the three selectors
+  const m = (a.time || '').match(/(\d{1,2}):(\d{2})\s*(\S+)?/);
+  if(m){
+    const hour = String(parseInt(m[1], 10)), minute = String(parseInt(m[2], 10));
+    const minSel = document.getElementById('appt_minute');
+    if(![...minSel.options].some(o => o.value === minute)){
+      const opt = document.createElement('option');
+      opt.value = minute; opt.textContent = minute.padStart(2, '0');
+      minSel.appendChild(opt);
+    }
+    document.getElementById('appt_hour').value = hour;
+    minSel.value = minute;
+    document.getElementById('appt_ampm').value = /مساء/.test(m[3] || '') ? 'مساءً' : 'صباحاً';
+  }
+  const cc = document.getElementById('appt_countryCode');
+  cc.value = [...cc.options].some(o => o.value === a.countryCode) ? a.countryCode : '+966';
+  document.getElementById('appt_phone').value = a.phone || '';
+  document.getElementById('appt_notes').value = a.notes || '';
+  document.getElementById('apptFormPanel').scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+document.getElementById('apptCancelEditBtn').addEventListener('click', resetApptForm);
+
 document.getElementById('apptSaveBtn').addEventListener('click', async () => {
   const type = document.getElementById('appt_type').value;
   const clientName = document.getElementById('appt_client').value.trim();
@@ -3966,15 +4029,14 @@ document.getElementById('apptSaveBtn').addEventListener('click', async () => {
     return;
   }
   try{
-    await saveAppointmentDoc({ type, clientName, date, time, countryCode, phone, notes, ownerEmail: currentUserEmail, createdAt: Date.now() });
-    showToast('تم حفظ الموعد.');
-    document.getElementById('appt_client').value = '';
-    hijriPickerClear('appt_date');
-    document.getElementById('appt_hour').value = '9';
-    document.getElementById('appt_minute').value = '0';
-    document.getElementById('appt_ampm').value = 'صباحاً';
-    document.getElementById('appt_phone').value = '';
-    document.getElementById('appt_notes').value = '';
+    if(editingApptId){
+      await updateAppointmentDoc(editingApptId, { type, clientName, date, time, countryCode, phone, notes, updatedAt: Date.now() });
+      showToast('تم تحديث الموعد.');
+    } else {
+      await saveAppointmentDoc({ type, clientName, date, time, countryCode, phone, notes, ownerEmail: currentUserEmail, createdAt: Date.now() });
+      showToast('تم حفظ الموعد.');
+    }
+    resetApptForm();
     renderCalendar();
   }catch(e){
     showToast('حدث خطأ أثناء الحفظ.');
@@ -4036,24 +4098,39 @@ function wakalaDateToHijriDisplay(dateStr){
   return g ? formatHijriDMY(gregorianDateToHijri(g)) : '';
 }
 
+// Number of days (29 or 30) in a given Hijri month, derived from the Um al-Qura conversion.
+function hijriDaysInMonth(year, month){
+  const a = hijriToGregorianExact(1, month, year);
+  const b = month === 12 ? hijriToGregorianExact(1, 1, year + 1) : hijriToGregorianExact(1, month + 1, year);
+  return Math.round((b - a) / 86400000);
+}
+// Adds n Hijri months to {day,month,year}, clamping the day to the target month's length.
+function addHijriMonths(h, n){
+  const idx = h.year * 12 + (h.month - 1) + n;
+  const year = Math.floor(idx / 12), month = (idx % 12) + 1;
+  return { day: Math.min(h.day, hijriDaysInMonth(year, month)), month, year };
+}
 function computeWakalaExpiry(){
   const type = document.getElementById('wk_durationType').value;
   if(type === 'exact'){
     return hijriPickerGetValue('wk_exactDate') || null;
   }
-  const d = getWakalaBaseDate();
-  if(type === '3m') d.setMonth(d.getMonth() + 3);
-  else if(type === '6m') d.setMonth(d.getMonth() + 6);
-  else if(type === '12m') d.setMonth(d.getMonth() + 12);
+  // Durations run on HIJRI months (a "3 month" wakala from 17/04 ends 17/07), not Gregorian ones.
+  const bh = gregorianDateToHijri(getWakalaBaseDate());
+  let months = 0, extraDays = 0;
+  if(type === '3m') months = 3;
+  else if(type === '6m') months = 6;
+  else if(type === '12m') months = 12;
   else if(type === 'custom'){
-    const days = parseInt(document.getElementById('wk_customDays').value, 10) || 0;
-    const months = parseInt(document.getElementById('wk_customMonths').value, 10) || 0;
-    const years = parseInt(document.getElementById('wk_customYears').value, 10) || 0;
-    d.setFullYear(d.getFullYear() + years);
-    d.setMonth(d.getMonth() + months);
-    d.setDate(d.getDate() + days);
+    extraDays = parseInt(document.getElementById('wk_customDays').value, 10) || 0;
+    months = (parseInt(document.getElementById('wk_customMonths').value, 10) || 0)
+           + 12 * (parseInt(document.getElementById('wk_customYears').value, 10) || 0);
   }
-  return formatHijriDMY(gregorianDateToHijri(d));
+  const target = addHijriMonths(bh, months);
+  if(!extraDays) return formatHijriDMY(target);
+  const g = hijriToGregorianExact(target.day, target.month, target.year);
+  g.setDate(g.getDate() + extraDays);
+  return formatHijriDMY(gregorianDateToHijri(g));
 }
 
 let editingWakalaId = null;
