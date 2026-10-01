@@ -644,10 +644,6 @@
     border:1px solid var(--line); background:var(--surface); color:var(--ink);
   }
   .objection-box{ margin-top:10px; }
-  .objection-input{
-    width:100%; font-family:'IBM Plex Sans Arabic',sans-serif; font-size:13px; padding:9px 12px; border-radius:8px;
-    border:1px solid var(--line); background:var(--surface); color:var(--ink);
-  }
   .notes-box label{ display:block; font-size:11.5px; color:var(--ink-soft); margin-bottom:5px; font-weight:600; }
   .notes-textarea{
     width:100%; min-height:56px; resize:vertical; font-family:'IBM Plex Sans Arabic',sans-serif; font-size:13px;
@@ -2802,7 +2798,25 @@ function normalizeCase(rec){
   if(!rec.attachments) rec.attachments = [];
   if(!rec.caseCategory) rec.caseCategory = 'regular';
   if(!rec.caseStatus) rec.caseStatus = 'pending';
+  if(!rec.objectionDeadlineDate && typeof rec.objectionDaysRemaining === 'number' && rec.objectionDaysRemaining >= 0){
+    // Legacy data only ever stored a static "days remaining" count that never moved — that's the
+    // stale-countdown bug. Reconstruct the actual deadline date it implied, using the case's last
+    // update as the best available anchor for when that count was entered.
+    const anchor = new Date(rec.updatedAt || rec.createdAt || Date.now());
+    anchor.setDate(anchor.getDate() + rec.objectionDaysRemaining);
+    rec.objectionDeadlineDate = formatHijriDMY(gregorianDateToHijri(anchor));
+  }
   return rec;
+}
+// Always-live "days remaining until the objection deadline", computed from today's date — never a
+// stored number that goes stale. Returns null when there's nothing to track.
+function getObjectionDaysRemaining(c){
+  if(!c.objectionDeadlineDate) return null;
+  const g = wakalaDateToGregorian(c.objectionDeadlineDate);
+  if(!g || isNaN(g.getTime())) return null;
+  const today = new Date(); today.setHours(0,0,0,0);
+  g.setHours(0,0,0,0);
+  return Math.round((g - today) / 86400000);
 }
 // 'owner' | 'full' | 'readonly' | 'none'
 function getAccessLevel(c){
@@ -2978,7 +2992,7 @@ function buildSessionCardHtml(c, session){
         <span class="case-number-label">${c.caseCategory === 'conciliation' ? 'رقم الطلب' : 'رقم القضية'}</span>
         <span class="case-number">${escapeHtml(c.caseNumber)} <span class="session-number-tag">جلسة ${sessionNumber}</span></span>
         <div>
-          <span class="status-badge ${statusInfo.cls}">${statusInfo.label}${c.caseStatus === 'non_final' && c.objectionDaysRemaining !== undefined && c.objectionDaysRemaining !== null ? ' (' + c.objectionDaysRemaining + ' يوم للاعتراض)' : ''}</span>
+          <span class="status-badge ${statusInfo.cls}">${statusInfo.label}${c.caseStatus === 'non_final' && getObjectionDaysRemaining(c) !== null ? ' (' + getObjectionDaysRemaining(c) + ' يوم للاعتراض)' : ''}</span>
           ${meta.countdownText ? `<span class="countdown-chip ${chipClass}">⏳ ${escapeHtml(meta.countdownText)}</span>` : ''}
         </div>
       </div>
@@ -3027,8 +3041,11 @@ function buildSessionCardHtml(c, session){
             <option value="final" ${c.caseStatus === 'final' ? 'selected' : ''}>محكوم بها بحكم نهائي</option>
           </select>
           <div class="objection-box" style="${c.caseStatus === 'non_final' ? '' : 'display:none;'}">
-            <label>المدة المتبقية للاعتراض على الحكم (باليوم)</label>
-            <input type="number" min="0" class="objection-input" data-case="${escapeHtml(c.caseNumber)}" value="${c.objectionDaysRemaining !== undefined && c.objectionDaysRemaining !== null ? c.objectionDaysRemaining : ''}" placeholder="مثال: 15" ${canEdit(c) ? '' : 'disabled'}>
+            <label>تاريخ انتهاء مهلة الاعتراض على الحكم (هـ)</label>
+            ${canEdit(c)
+              ? `<div class="objection-date-picker" data-case="${escapeHtml(c.caseNumber)}" data-deadline="${escapeHtml(c.objectionDeadlineDate || '')}"></div>`
+              : `<p class="val" style="margin:2px 0;">${c.objectionDeadlineDate ? escapeHtml(c.objectionDeadlineDate) + ' هـ' : 'غير محدّد'}</p>`}
+            ${getObjectionDaysRemaining(c) !== null ? `<p class="hint" style="margin:4px 2px 0;">متبقٍ ${getObjectionDaysRemaining(c)} يوم — يتحدّث يوميًا تلقائيًا.</p>` : ''}
           </div>
         </div>
         <div class="sessions-list">
@@ -3214,13 +3231,21 @@ function wireSessionCardEvents(grid, refresh){
     });
   });
 
-  grid.querySelectorAll('.objection-input').forEach(inp => {
-    inp.addEventListener('blur', async () => {
-      const val = inp.value.trim() === '' ? null : parseInt(inp.value, 10);
-      try{
-        await patchCaseDoc(inp.dataset.case, { objectionDaysRemaining: val });
-        showToast('تم حفظ المدة.');
-      }catch(e){ showToast('تعذّر الحفظ.'); }
+  grid.querySelectorAll('.objection-date-picker').forEach(el => {
+    const caseNumber = el.dataset.case;
+    const prefix = 'objdate_' + caseNumber.replace(/[^\w]/g, '');
+    el.id = prefix + '_container';
+    hijriPickerInit(el.id, prefix, { initialValue: el.dataset.deadline || null });
+    el.querySelectorAll('select').forEach(sel => {
+      sel.addEventListener('change', async () => {
+        const val = hijriPickerGetValue(prefix);
+        if(!val) return;
+        try{
+          await patchCaseDoc(caseNumber, { objectionDeadlineDate: val, objectionDaysRemaining: null });
+          showToast('تم حفظ تاريخ مهلة الاعتراض.');
+          refresh();
+        }catch(e){ showToast('تعذّر الحفظ.'); }
+      });
     });
   });
 
@@ -3790,9 +3815,10 @@ async function renderDashboard(){
 
   // Every objection deadline becomes its own carousel slide (after "اليوم").
   const objectionRows = cases
-    .filter(c => c.caseStatus === 'non_final' && typeof c.objectionDaysRemaining === 'number' && c.objectionDaysRemaining >= 0 && c.objectionDaysRemaining <= 30)
-    .sort((a,b) => a.objectionDaysRemaining - b.objectionDaysRemaining)
-    .map(c => `<div class="today-row today-row-alert"><div class="today-row-body"><div class="today-row-top">تنتهي مهلة الاعتراض بعد ${c.objectionDaysRemaining} يوم/أيام</div><div class="today-row-sub">قضية رقم ${escapeHtml(c.caseNumber)}</div></div></div>`);
+    .map(c => ({ c, days: c.caseStatus === 'non_final' ? getObjectionDaysRemaining(c) : null }))
+    .filter(x => x.days !== null && x.days >= 0 && x.days <= 30)
+    .sort((a,b) => a.days - b.days)
+    .map(x => `<div class="today-row today-row-alert"><div class="today-row-body"><div class="today-row-top">تنتهي مهلة الاعتراض بعد ${x.days} يوم/أيام</div><div class="today-row-sub">قضية رقم ${escapeHtml(x.c.caseNumber)}</div></div></div>`);
 
   const todayItems = [...sessionsToday, ...apptsToday].sort((a,b) => a.dt - b.dt);
   const todayListEl = document.getElementById('dashTodayList');
@@ -4644,14 +4670,17 @@ let appStarted = false;
 async function checkObjectionDeadlineNotifications(){
   try{
     const cases = (await loadAllCases()).map(normalizeCase).filter(c => !c.archived && isOwnerOf(c));
-    const tracked = cases.filter(c => c.caseStatus === 'non_final' && typeof c.objectionDaysRemaining === 'number' && c.objectionDaysRemaining >= 0 && c.objectionDaysRemaining <= 7);
+    const tracked = cases
+      .map(c => ({ c, days: c.caseStatus === 'non_final' ? getObjectionDaysRemaining(c) : null }))
+      .filter(x => x.days !== null && x.days >= 0 && x.days <= 7)
+      .map(x => Object.assign(x.c, { _liveObjectionDays: x.days }));
     if(tracked.length === 0) return;
     const existing = await fetchMyNotifications(currentUserEmail);
     const todayKey = new Date().toDateString();
     for(const c of tracked){
       const already = existing.some(n => n.type === 'objection_deadline' && n.caseNumber === c.caseNumber && new Date(n.createdAt).toDateString() === todayKey);
       if(!already){
-        await addNotificationDoc(currentUserEmail, `تنتهي مهلة الاعتراض على قضية رقم ${c.caseNumber} بعد ${c.objectionDaysRemaining} يوم/أيام.`, 'objection_deadline', { caseNumber: c.caseNumber });
+        await addNotificationDoc(currentUserEmail, `تنتهي مهلة الاعتراض على قضية رقم ${c.caseNumber} بعد ${c._liveObjectionDays} يوم/أيام.`, 'objection_deadline', { caseNumber: c.caseNumber });
       }
     }
     renderNotifBadge();
