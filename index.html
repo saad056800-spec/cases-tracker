@@ -629,6 +629,48 @@
   .chip-picker-stacked .chip-option{
     border-radius:10px; text-align:right; padding:11px 14px; width:100%; line-height:1.5;
   }
+
+  /* ===== Fees / tasks / reports ===== */
+  .fin-box, .tasks-box{ margin-top:12px; padding:12px; border:1px solid var(--line); border-radius:10px; background:var(--surface); }
+  .fin-box > label.fin-title, .tasks-box > label.fin-title{ display:block; font-weight:700; margin-bottom:8px; color:var(--ink); font-size:13.5px; }
+  .fin-row{ display:flex; gap:8px; flex-wrap:wrap; align-items:flex-end; margin-bottom:8px; }
+  .fin-row .fin-field{ flex:1; min-width:120px; display:flex; flex-direction:column; gap:3px; }
+  .fin-row .fin-field span{ font-size:11.5px; color:var(--muted); }
+  .fin-box input, .fin-box select, .tasks-box input[type=text], .status-box .outcome-select{
+    width:100%; box-sizing:border-box; padding:8px 10px; border-radius:8px; border:1px solid var(--line);
+    background:var(--card-bg); font-family:inherit; font-size:13px; color:var(--ink);
+  }
+  .fin-summary{ display:grid; grid-template-columns:repeat(4,1fr); gap:6px; margin:8px 0; }
+  .fin-summary div{ background:var(--card-bg); border:1px solid var(--line); border-radius:8px; padding:6px 8px; text-align:center; }
+  .fin-summary b{ display:block; font-size:14px; color:var(--ink); }
+  .fin-summary small{ font-size:10.5px; color:var(--muted); }
+  .fin-badge{ display:inline-block; padding:2px 10px; border-radius:999px; font-size:11.5px; font-weight:700; }
+  .fin-badge.paid{ background:#E3F3E8; color:#1F6B3A; }
+  .fin-badge.partial{ background:#FBF0DE; color:#8C5A2B; }
+  .fin-badge.unpaid{ background:#FBE7E4; color:#9B2F22; }
+  .pay-item, .task-item{ display:flex; align-items:center; gap:8px; padding:6px 0; border-bottom:1px dashed var(--line); font-size:13px; }
+  .pay-item:last-child, .task-item:last-child{ border-bottom:none; }
+  .pay-item .grow, .task-item .grow{ flex:1; min-width:0; }
+  .pay-item small, .task-item small{ color:var(--muted); display:block; font-size:11.5px; }
+  .mini-x{ background:none; border:none; color:#9B2F22; cursor:pointer; font-size:16px; padding:0 4px; }
+  .task-item.done .task-title-text{ text-decoration:line-through; opacity:.55; }
+  .task-item input[type=checkbox]{ width:18px; height:18px; accent-color:var(--blue); flex-shrink:0; }
+  .task-due.overdue{ color:#9B2F22; font-weight:700; }
+  .task-due.soon{ color:#8C5A2B; font-weight:700; }
+  .fin-actions{ display:flex; gap:8px; flex-wrap:wrap; margin-top:8px; }
+  .home-tasks-panel{ order:4; }
+  .home-tasks-panel .task-item{ padding:8px 0; }
+  .rep-grid{ display:grid; grid-template-columns:repeat(auto-fit,minmax(150px,1fr)); gap:12px; margin-bottom:6px; }
+  .rep-card{ background:var(--card-bg); border:1px solid var(--line); border-radius:12px; padding:14px; text-align:center; box-shadow:var(--shadow); }
+  .rep-card .num{ display:block; font-family:'Amiri',serif; font-size:26px; font-weight:600; color:var(--blue); }
+  .rep-card .lbl{ display:block; font-size:12px; color:var(--muted); margin-top:2px; }
+  .rep-section-title{ font-family:'Amiri',serif; color:var(--ink); margin:22px 0 10px; font-size:19px; }
+  .rep-table{ width:100%; border-collapse:collapse; font-size:13px; background:var(--card-bg); border:1px solid var(--line); border-radius:12px; overflow:hidden; }
+  .rep-table th, .rep-table td{ padding:9px 12px; text-align:right; border-bottom:1px solid var(--line); }
+  .rep-table th{ background:var(--surface); font-weight:700; color:var(--muted); font-size:12px; }
+  .rep-note{ font-size:12px; color:var(--muted); margin-top:6px; }
+  @media (max-width:520px){ .fin-summary{ grid-template-columns:repeat(2,1fr); } }
+
   .expand-details-btn, .wk-expand-details-btn, .archive-expand-btn{
     width:100%; background:var(--paper-2); border:1px solid var(--line); border-radius:8px;
     padding:9px 12px; font-size:12.5px; font-weight:700; color:var(--ink-2); cursor:pointer;
@@ -636,6 +678,9 @@
   }
   .expand-details-btn:hover, .wk-expand-details-btn:hover, .archive-expand-btn:hover{ background:var(--line); }
   .expanded-details{ padding:4px 0 0; border-top:1px solid var(--line); margin:0 18px 8px; }
+  .card.case-card{ max-height:560px; overflow-y:auto; overscroll-behavior:contain; }
+  .card.case-card > *{ flex-shrink:0; }
+  .card.case-card::-webkit-scrollbar{ width:6px; } .card.case-card::-webkit-scrollbar-thumb{ background:var(--line); border-radius:6px; }
   .expanded-details .status-box, .expanded-details .sessions-list, .expanded-details .attachments-box{ padding-inline:0; }
   .status-box{ padding:0 18px 14px; }
   .status-box label{ display:block; font-size:11.5px; color:var(--ink-soft); margin-bottom:5px; font-weight:600; }
@@ -729,8 +774,13 @@
 
   .card-footer{
     padding:10px 18px; border-top:1px solid var(--line);
-    display:flex; justify-content:space-between; align-items:center;
+    display:flex; justify-content:flex-end; align-items:center;
   }
+  .archive-session-btn{
+    background:var(--green-mist); border:1px solid var(--line); color:var(--green-deep);
+    font-family:inherit; font-size:12px; font-weight:700; padding:4px 12px; border-radius:999px; cursor:pointer;
+  }
+  .archive-session-btn:hover{ background:var(--paper-2); }
   .id-holder{ font-size:11.5px; color:var(--ink-soft); direction:ltr; unicode-bidi:isolate;}
   .delete-btn{
     background:none; border:none; color:#B0463A; font-size:12.5px; font-weight:700;
@@ -1019,7 +1069,7 @@
     <div class="tabs">
       <button class="tab-btn active" data-view="home" id="tabHome">الرئيسية</button>
       <button class="tab-btn" data-view="sessioncases" id="tabSessionCases">مرساتك</button>
-      <button class="tab-btn" data-view="calendar" id="tabCalendar">التقويم</button>
+      <button class="tab-btn" data-view="calendar" id="tabCalendar">التقويم والتقارير</button>
     </div>
   </div>
 </div>
@@ -1113,6 +1163,10 @@
             </button>
           </div>
           <div id="dashUpcomingDays"></div>
+        </div>
+        <div class="panel home-tasks-panel" id="homeTasksPanel">
+          <h2 style="margin-top:0;">المهام المفتوحة</h2>
+          <div id="dashTasksList"></div>
         </div>
       </div>
     </div>
@@ -1264,6 +1318,11 @@
 
   <!-- ===== CALENDAR VIEW ===== -->
   <section class="view" id="view-calendar">
+    <div class="tabs" style="background:transparent; padding:0; margin-bottom:18px; border-bottom:1px solid var(--line); gap:0;">
+      <button class="tab-btn cal-subtab active" data-sub="calendar" id="calSubCalendar" style="color:var(--ink-soft);">التقويم</button>
+      <button class="tab-btn cal-subtab" data-sub="reports" id="calSubReports" style="color:var(--ink-soft);">التقارير</button>
+    </div>
+    <div id="calPanelCalendar">
     <div class="calendar-layout">
       <div class="calendar-col-appt">
         <div class="panel" id="apptFormPanel">
@@ -1327,6 +1386,10 @@
         </div>
       </div>
     </div>
+    </div>
+    <div id="calPanelReports" style="display:none;">
+      <div id="reportsContent"><p class="hint">جاري التحميل...</p></div>
+    </div>
   </section>
 
 </main>
@@ -1341,7 +1404,7 @@
   </button>
   <button class="bn-item" id="bnCalendar">
     <svg class="icon" viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M16 3v4M8 3v4M3 10h18"/></svg>
-    <span>التقويم</span>
+    <span>التقويم والتقارير</span>
   </button>
 </nav>
 
@@ -1419,6 +1482,40 @@
           <div class="field"><label>من</label><input id="st_quietStart" type="time"></div>
           <div class="field"><label>إلى</label><input id="st_quietEnd" type="time"></div>
         </div>
+      </section>
+
+      <section class="settings-section">
+        <h3>ترويسة المكتب (تظهر في بيان الأتعاب)</h3>
+        <div class="field-grid">
+          <div class="field full"><label>اسم المكتب</label><input id="st_officeName" placeholder="مثال: مكتب العتيبي للمحاماة"></div>
+          <div class="field full"><label>العنوان</label><input id="st_officeAddress" placeholder="المدينة، الحي، الشارع"></div>
+          <div class="field"><label>رقم التواصل</label><input id="st_officePhone" dir="ltr" placeholder="05xxxxxxxx"></div>
+          <div class="field"><label>البريد الإلكتروني</label><input id="st_officeEmail" dir="ltr" placeholder="office@example.com"></div>
+          <div class="field full"><label>الرقم الضريبي (إن وُجد)</label><input id="st_officeVat" dir="ltr" placeholder="3xxxxxxxxxxxxxx"></div>
+          <div class="field full">
+            <label>شعار المكتب (اختياري)</label>
+            <div style="display:flex; align-items:center; gap:10px; flex-wrap:wrap;">
+              <img id="st_officeLogoPreview" alt="" style="display:none; max-height:56px; max-width:140px; border:1px solid var(--line); border-radius:8px; background:#fff; padding:4px;">
+              <input type="file" id="st_officeLogoInput" accept="image/png,image/jpeg,image/webp" style="display:none;">
+              <button type="button" class="btn btn-ghost" id="st_officeLogoBtn" style="padding:7px 12px; font-size:12.5px;">رفع شعار</button>
+              <button type="button" class="btn btn-ghost" id="st_officeLogoRemoveBtn" style="padding:7px 12px; font-size:12.5px; display:none;">إزالة</button>
+            </div>
+          </div>
+        </div>
+        <div class="field-grid" style="margin-top:6px;">
+          <div class="field full">
+            <label>ترويسة جاهزة بصيغة PDF (اختياري — تُكتب الفاتورة عليها)</label>
+            <div style="display:flex; align-items:center; gap:10px; flex-wrap:wrap;">
+              <img id="st_lhPreview" alt="" style="display:none; max-height:96px; border:1px solid var(--line); border-radius:6px; background:#fff;">
+              <input type="file" id="st_lhInput" accept="application/pdf" style="display:none;">
+              <button type="button" class="btn btn-ghost" id="st_lhBtn" style="padding:7px 12px; font-size:12.5px;">رفع ترويسة PDF</button>
+              <button type="button" class="btn btn-ghost" id="st_lhRemoveBtn" style="padding:7px 12px; font-size:12.5px; display:none;">إزالة</button>
+            </div>
+          </div>
+          <div class="field"><label>مسافة الترويسة من الأعلى (مم)</label><input id="st_lhTop" type="number" min="0" max="120" dir="ltr" value="45"></div>
+          <div class="field"><label>مسافة التذييل من الأسفل (مم)</label><input id="st_lhBottom" type="number" min="0" max="120" dir="ltr" value="30"></div>
+        </div>
+        <p class="hint" style="margin-top:6px;">تُستخدم أول صفحة من ملف الـPDF كخلفية بمقاس A4، وتُكتب البيانات في المساحة الفاضية بينها. زِد المسافتين لو تداخل النص مع الترويسة أو التذييل. اضغط «حفظ الإعدادات» بعد التعديل.</p>
       </section>
 
       <section class="settings-section">
@@ -1899,8 +1996,20 @@ function switchView(view){
     document.getElementById('scArchiveToggleBtn').textContent = 'الأرشيف';
     setScSubView(scSubView);
   }
-  if(view === 'calendar') renderCalendar();
+  if(view === 'calendar') setCalSubView(calSubView);
 }
+let calSubView = localStorage.getItem('mirsat_lastCalSubView') || 'calendar';
+function setCalSubView(view){
+  calSubView = view;
+  localStorage.setItem('mirsat_lastCalSubView', view);
+  document.getElementById('calSubCalendar').classList.toggle('active', view === 'calendar');
+  document.getElementById('calSubReports').classList.toggle('active', view === 'reports');
+  document.getElementById('calPanelCalendar').style.display = view === 'calendar' ? '' : 'none';
+  document.getElementById('calPanelReports').style.display = view === 'reports' ? '' : 'none';
+  if(view === 'calendar') renderCalendar(); else renderReports();
+}
+document.getElementById('calSubCalendar').addEventListener('click', () => setCalSubView('calendar'));
+document.getElementById('calSubReports').addEventListener('click', () => setCalSubView('reports'));
 document.getElementById('tabHome').addEventListener('click', () => switchView('home'));
 document.getElementById('tabSessionCases').addEventListener('click', () => switchView('sessioncases'));
 document.getElementById('tabCalendar').addEventListener('click', () => switchView('calendar'));
@@ -2318,6 +2427,15 @@ document.getElementById('profileBtn').addEventListener('click', async () => {
   document.getElementById('st_yearsExperience').value = (profile && profile.yearsExperience) || '';
   document.getElementById('st_licenseNumber').value = (profile && profile.licenseNumber) || '';
   document.getElementById('st_city').value = (profile && profile.city) || '';
+  document.getElementById('st_officeName').value = (profile && profile.officeName) || '';
+  document.getElementById('st_officeAddress').value = (profile && profile.officeAddress) || '';
+  document.getElementById('st_officePhone').value = (profile && profile.officePhone) || '';
+  document.getElementById('st_officeEmail').value = (profile && profile.officeEmail) || '';
+  document.getElementById('st_officeVat').value = (profile && profile.officeVat) || '';
+  setOfficeLogo((profile && profile.officeLogo) || '');
+  setOfficeLetterhead((profile && profile.officeLetterhead) || '');
+  document.getElementById('st_lhTop').value = (profile && profile.officeLhTop != null) ? profile.officeLhTop : 45;
+  document.getElementById('st_lhBottom').value = (profile && profile.officeLhBottom != null) ? profile.officeLhBottom : 30;
   setChipActive('st_appearanceMode_picker', (profile && profile.appearanceMode) || 'light');
   setChipActive('st_fontSize_picker', (profile && profile.fontSize) || 'medium');
   document.getElementById('st_notifBrowserPush').setAttribute('aria-checked', String(!!(profile && profile.notifBrowserPush)));
@@ -2342,6 +2460,91 @@ document.getElementById('settingsOverlay').addEventListener('click', (e) => {
 });
 
 // ---------- Save all settings ----------
+let settingsOfficeLetterhead = '';
+function setOfficeLetterhead(dataUrl){
+  settingsOfficeLetterhead = dataUrl || '';
+  const img = document.getElementById('st_lhPreview');
+  img.style.display = settingsOfficeLetterhead ? '' : 'none';
+  if(settingsOfficeLetterhead) img.src = settingsOfficeLetterhead; else img.removeAttribute('src');
+  document.getElementById('st_lhRemoveBtn').style.display = settingsOfficeLetterhead ? '' : 'none';
+}
+const PDFJS_VER = '3.11.174';
+function loadPdfJs(){
+  if(window.pdfjsLib) return Promise.resolve(window.pdfjsLib);
+  return new Promise((resolve, reject) => {
+    const sc = document.createElement('script');
+    sc.src = `https://cdnjs.cloudflare.com/ajax/libs/pdf.js/${PDFJS_VER}/pdf.min.js`;
+    sc.onload = () => {
+      window.pdfjsLib.GlobalWorkerOptions.workerSrc = `https://cdnjs.cloudflare.com/ajax/libs/pdf.js/${PDFJS_VER}/pdf.worker.min.js`;
+      resolve(window.pdfjsLib);
+    };
+    sc.onerror = () => reject(new Error('pdfjs load failed'));
+    document.head.appendChild(sc);
+  });
+}
+// Renders page 1 of the uploaded PDF to a JPEG (A4 @ ~150dpi) so it can sit behind the printed statement.
+async function pdfFirstPageToJpeg(file){
+  const lib = await loadPdfJs();
+  const pdf = await lib.getDocument({ data: await file.arrayBuffer() }).promise;
+  const page = await pdf.getPage(1);
+  const base = page.getViewport({ scale: 1 });
+  const vp = page.getViewport({ scale: 1240 / base.width });
+  const cv = document.createElement('canvas');
+  cv.width = Math.round(vp.width); cv.height = Math.round(vp.height);
+  const ctx = cv.getContext('2d');
+  ctx.fillStyle = '#fff'; ctx.fillRect(0, 0, cv.width, cv.height);
+  await page.render({ canvasContext: ctx, viewport: vp }).promise;
+  let q = 0.85, url = cv.toDataURL('image/jpeg', q);
+  while(url.length > 650000 && q > 0.4){ q -= 0.1; url = cv.toDataURL('image/jpeg', q); }
+  if(url.length > 700000) throw new Error('too large');
+  return url;
+}
+document.getElementById('st_lhBtn').addEventListener('click', () => document.getElementById('st_lhInput').click());
+document.getElementById('st_lhRemoveBtn').addEventListener('click', () => setOfficeLetterhead(''));
+document.getElementById('st_lhInput').addEventListener('change', async (ev) => {
+  const file = ev.target.files[0];
+  ev.target.value = '';
+  if(!file) return;
+  if(file.type !== 'application/pdf' && !/\.pdf$/i.test(file.name)){ showToast('اختر ملف PDF.'); return; }
+  showToast('جاري تجهيز الترويسة...');
+  try{
+    setOfficeLetterhead(await pdfFirstPageToJpeg(file));
+    showToast('تم تجهيز الترويسة. اضغط «حفظ الإعدادات».');
+  }catch(e){
+    console.error(e);
+    showToast('تعذّر قراءة الـPDF أو حجمه كبير. جرّب ملف أبسط.');
+  }
+});
+let settingsOfficeLogo = '';
+function setOfficeLogo(dataUrl){
+  settingsOfficeLogo = dataUrl || '';
+  const img = document.getElementById('st_officeLogoPreview');
+  img.style.display = settingsOfficeLogo ? '' : 'none';
+  if(settingsOfficeLogo) img.src = settingsOfficeLogo; else img.removeAttribute('src');
+  document.getElementById('st_officeLogoRemoveBtn').style.display = settingsOfficeLogo ? '' : 'none';
+}
+document.getElementById('st_officeLogoBtn').addEventListener('click', () => document.getElementById('st_officeLogoInput').click());
+document.getElementById('st_officeLogoRemoveBtn').addEventListener('click', () => setOfficeLogo(''));
+document.getElementById('st_officeLogoInput').addEventListener('change', (ev) => {
+  const file = ev.target.files[0];
+  if(!file) return;
+  const reader = new FileReader();
+  reader.onload = () => {
+    const im = new Image();
+    im.onload = () => {
+      const maxW = 360, maxH = 160;
+      const k = Math.min(1, maxW / im.width, maxH / im.height);
+      const cv = document.createElement('canvas');
+      cv.width = Math.round(im.width * k); cv.height = Math.round(im.height * k);
+      cv.getContext('2d').drawImage(im, 0, 0, cv.width, cv.height);
+      setOfficeLogo(cv.toDataURL('image/png'));
+    };
+    im.onerror = () => showToast('تعذّر قراءة الصورة.');
+    im.src = reader.result;
+  };
+  reader.readAsDataURL(file);
+  ev.target.value = '';
+});
 document.getElementById('settingsSaveBtn').addEventListener('click', async () => {
   const appearanceMode = getActiveChip('st_appearanceMode_picker', 'light');
   const fontSize = getActiveChip('st_fontSize_picker', 'medium');
@@ -2361,6 +2564,15 @@ document.getElementById('settingsSaveBtn').addEventListener('click', async () =>
     yearsExperience: document.getElementById('st_yearsExperience').value ? parseInt(document.getElementById('st_yearsExperience').value, 10) : null,
     licenseNumber: document.getElementById('st_licenseNumber').value.trim(),
     city: document.getElementById('st_city').value.trim(),
+    officeName: document.getElementById('st_officeName').value.trim(),
+    officeAddress: document.getElementById('st_officeAddress').value.trim(),
+    officePhone: document.getElementById('st_officePhone').value.trim(),
+    officeEmail: document.getElementById('st_officeEmail').value.trim(),
+    officeVat: document.getElementById('st_officeVat').value.trim(),
+    officeLogo: settingsOfficeLogo,
+    officeLetterhead: settingsOfficeLetterhead,
+    officeLhTop: parseFloat(document.getElementById('st_lhTop').value) || 0,
+    officeLhBottom: parseFloat(document.getElementById('st_lhBottom').value) || 0,
     appearanceMode, fontSize,
     notifBrowserPush: document.getElementById('st_notifBrowserPush').getAttribute('aria-checked') === 'true',
     notifMobilePush: document.getElementById('st_notifMobilePush').getAttribute('aria-checked') === 'true',
@@ -2796,6 +3008,9 @@ function normalizeCase(rec){
   if(!rec.pendingShares) rec.pendingShares = [];
   if(!rec.pendingShareEmails) rec.pendingShareEmails = [];
   if(!rec.attachments) rec.attachments = [];
+  if(!Array.isArray(rec.payments)) rec.payments = [];
+  if(!Array.isArray(rec.tasks)) rec.tasks = [];
+  if(!rec.feeVat) rec.feeVat = 'none';
   if(!rec.caseCategory) rec.caseCategory = 'regular';
   if(!rec.caseStatus) rec.caseStatus = 'pending';
   if(!rec.objectionDeadlineDate && typeof rec.objectionDaysRemaining === 'number' && rec.objectionDaysRemaining >= 0){
@@ -2808,6 +3023,490 @@ function normalizeCase(rec){
   }
   return rec;
 }
+// ---------- Fees, payments, tasks, outcome ----------
+const VAT_RATE = 0.15;
+const openCaseDetails = new Set(); // keeps a card's details open across re-renders
+const OUTCOME_LABELS = { won: 'كسب', lost: 'خسارة', settled: 'صلح', other: 'أخرى' };
+function feeBaseAmount(c){
+  if(c.feeType === 'percent') return (Number(c.feeJudgment) || 0) * (Number(c.feePercent) || 0) / 100;
+  return Number(c.feeAmount) || 0;
+}
+function computeFee(c){
+  const amt = feeBaseAmount(c);
+  const mode = c.feeVat || 'none';
+  let net = amt, vat = 0, total = amt;
+  if(mode === 'add'){ vat = amt * VAT_RATE; total = amt + vat; }
+  else if(mode === 'included'){ net = amt / (1 + VAT_RATE); vat = amt - net; total = amt; }
+  const paid = (c.payments || []).reduce((s, p) => s + (Number(p.amount) || 0), 0);
+  const remaining = Math.max(total - paid, 0);
+  // Percentage fee whose judgment amount isn't known yet: the total can't be computed.
+  const unknown = c.feeType === 'percent' && !(Number(c.feeJudgment) > 0);
+  let status = 'none';
+  if(total > 0) status = paid >= total - 0.005 ? 'paid' : (paid > 0 ? 'partial' : 'unpaid');
+  return { amt, mode, net, vat, total, paid, remaining, status, unknown };
+}
+function feeDescription(c){
+  if(c.feeType === 'percent'){
+    const pct = Number(c.feePercent) || 0, j = Number(c.feeJudgment) || 0;
+    return j > 0 ? `${pct}% من ${fmtMoney(j)}` : `نسبة ${pct}%`;
+  }
+  return 'مبلغ محدد';
+}
+function fmtMoney(n){
+  return (Math.round((Number(n) || 0) * 100) / 100).toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 2 });
+}
+function todayHijriStr(){ return formatHijriDMY(gregorianDateToHijri(new Date())); }
+function daysUntilHijri(str){
+  if(!str) return null;
+  const g = wakalaDateToGregorian(str);
+  if(!g || isNaN(g.getTime())) return null;
+  const today = new Date(); today.setHours(0,0,0,0); g.setHours(0,0,0,0);
+  return Math.round((g - today) / 86400000);
+}
+function taskDueInfo(t){
+  if(!t.due) return { text: 'بدون موعد', cls: '' };
+  const d = daysUntilHijri(t.due);
+  if(d === null) return { text: t.due + ' هـ', cls: '' };
+  let rel, cls = '';
+  if(t.done){ rel = ''; }
+  else if(d < 0){ rel = ` — متأخرة ${-d} يوم`; cls = 'overdue'; }
+  else if(d === 0){ rel = ' — اليوم'; cls = 'soon'; }
+  else if(d === 1){ rel = ' — غدًا'; cls = 'soon'; }
+  else { rel = ` — بعد ${d} يوم`; if(d <= 3) cls = 'soon'; }
+  return { text: t.due + ' هـ' + rel, cls };
+}
+function newLocalId(prefix){ return prefix + '_' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6); }
+async function mutateCase(caseNumber, fn){
+  const data = await fetchCase(caseNumber);
+  const rec = normalizeCase(data);
+  const patch = fn(rec);
+  await patchCaseDoc(caseNumber, patch);
+}
+
+function financeBoxHtml(c){
+  if(!isOwnerOf(c)) return ''; // fees are private to the case owner
+  const f = computeFee(c);
+  const cn = escapeHtml(c.caseNumber);
+  const badges = { paid: 'مدفوع بالكامل', partial: 'مدفوع جزئيًا', unpaid: 'غير مدفوع' };
+  const pays = [...(c.payments || [])].sort((a, b) => (a.addedAt || 0) - (b.addedAt || 0));
+  return `
+    <div class="fin-box" data-fin-case="${cn}">
+      <label class="fin-title">💰 الأتعاب والتحصيل ${f.status !== 'none' ? `<span class="fin-badge ${f.status}">${badges[f.status]}</span>` : ''}</label>
+      <div class="fin-row">
+        <div class="fin-field"><span>اسم الموكل (اختياري)</span><input type="text" class="fee-client" value="${escapeHtml(c.clientName || '')}" placeholder="${escapeHtml(c.plaintiff || '')}"></div>
+      </div>
+      <div class="fin-row">
+        <div class="fin-field"><span>طريقة احتساب الأتعاب</span>
+          <select class="fee-type">
+            <option value="fixed" ${c.feeType !== 'percent' ? 'selected' : ''}>مبلغ محدد</option>
+            <option value="percent" ${c.feeType === 'percent' ? 'selected' : ''}>نسبة من مبلغ الحكم</option>
+          </select>
+        </div>
+      </div>
+      <div class="fin-row fee-fixed-row" style="${c.feeType === 'percent' ? 'display:none;' : ''}">
+        <div class="fin-field"><span>مبلغ الأتعاب (ر.س)</span><input type="number" min="0" step="any" inputmode="decimal" class="fee-amount" dir="ltr" value="${c.feeAmount ? escapeHtml(String(c.feeAmount)) : ''}"></div>
+      </div>
+      <div class="fin-row fee-percent-row" style="${c.feeType === 'percent' ? '' : 'display:none;'}">
+        <div class="fin-field"><span>مبلغ الحكم (ر.س)</span><input type="number" min="0" step="any" inputmode="decimal" class="fee-judgment" dir="ltr" value="${c.feeJudgment ? escapeHtml(String(c.feeJudgment)) : ''}"></div>
+        <div class="fin-field"><span>النسبة %</span><input type="number" min="0" max="100" step="any" inputmode="decimal" class="fee-percent" dir="ltr" value="${c.feePercent ? escapeHtml(String(c.feePercent)) : ''}"></div>
+      </div>
+      <p class="hint fee-calc-hint" style="margin:0 0 8px;${c.feeType === 'percent' ? '' : 'display:none;'}">الأتعاب = ${fmtMoney(feeBaseAmount(c))} ر.س (قبل الضريبة)</p>
+      <div class="fin-row">
+        <div class="fin-field"><span>ضريبة القيمة المضافة 15%</span>
+          <select class="fee-vat">
+            <option value="none" ${f.mode === 'none' ? 'selected' : ''}>بدون ضريبة</option>
+            <option value="add" ${f.mode === 'add' ? 'selected' : ''}>تُضاف على المبلغ</option>
+            <option value="included" ${f.mode === 'included' ? 'selected' : ''}>المبلغ شامل الضريبة</option>
+          </select>
+        </div>
+        <button class="btn btn-ghost fee-save-btn" data-case="${cn}" style="padding:8px 14px; font-size:12.5px;">حفظ الأتعاب</button>
+      </div>
+      ${f.unknown ? `
+        <p class="hint" style="margin:0 0 8px;">مبلغ الحكم غير محدد بعد — يُحسب الإجمالي والمتبقي عند إدخاله.${f.paid > 0 ? ` المدفوع حتى الآن: <b>${fmtMoney(f.paid)} ر.س</b>` : ''}</p>` : ''}
+      ${f.total > 0 ? `
+        <div class="fin-summary">
+          <div><b>${fmtMoney(f.total)}</b><small>الإجمالي${f.vat > 0 ? ' (بالضريبة)' : ''}</small></div>
+          <div><b>${fmtMoney(f.vat)}</b><small>الضريبة</small></div>
+          <div><b>${fmtMoney(f.paid)}</b><small>المدفوع</small></div>
+          <div><b>${fmtMoney(f.remaining)}</b><small>المتبقي</small></div>
+        </div>` : ''}
+      <div class="pay-list">
+        ${pays.map(p => `
+          <div class="pay-item">
+            <div class="grow"><b>${fmtMoney(p.amount)} ر.س</b><small>${escapeHtml(p.date || '')} هـ${p.note ? ' — ' + escapeHtml(p.note) : ''}</small></div>
+            <button class="mini-x pay-del-btn" data-case="${cn}" data-pay="${escapeHtml(p.id)}" title="حذف الدفعة">×</button>
+          </div>`).join('')}
+      </div>
+      <div class="fin-row" style="margin-top:8px;">
+        <div class="fin-field"><span>دفعة مستلمة (ر.س)</span><input type="number" min="0" step="any" inputmode="decimal" class="pay-amount" dir="ltr"></div>
+        <div class="fin-field"><span>ملاحظة (اختياري)</span><input type="text" class="pay-note" placeholder="مثال: الدفعة الأولى"></div>
+      </div>
+      <div class="fin-field"><span style="font-size:11.5px; color:var(--muted);">تاريخ الدفعة</span><div class="pay-date-picker" data-case="${cn}"></div></div>
+      <div class="fin-actions">
+        <button class="btn btn-gold pay-add-btn" data-case="${cn}" style="padding:8px 14px; font-size:12.5px;">+ تسجيل الدفعة</button>
+        ${f.total > 0 ? `<button class="btn btn-ghost fee-statement-btn" data-case="${cn}" style="padding:8px 14px; font-size:12.5px;">🧾 بيان أتعاب (PDF)</button>` : ''}
+      </div>
+    </div>`;
+}
+
+function tasksBoxHtml(c){
+  const cn = escapeHtml(c.caseNumber);
+  const edit = canEdit(c);
+  const tasks = [...(c.tasks || [])].sort((a, b) => {
+    if(!!a.done !== !!b.done) return a.done ? 1 : -1;
+    const da = daysUntilHijri(a.due), db = daysUntilHijri(b.due);
+    return (da === null ? 99999 : da) - (db === null ? 99999 : db);
+  });
+  return `
+    <div class="tasks-box" data-tasks-case="${cn}">
+      <label class="fin-title">✅ المهام (${tasks.filter(t => !t.done).length} مفتوحة)</label>
+      ${tasks.length ? tasks.map(t => {
+        const info = taskDueInfo(t);
+        return `
+        <div class="task-item ${t.done ? 'done' : ''}">
+          <input type="checkbox" class="task-check" data-case="${cn}" data-task="${escapeHtml(t.id)}" ${t.done ? 'checked' : ''} ${edit ? '' : 'disabled'}>
+          <div class="grow"><span class="task-title-text">${escapeHtml(t.title)}</span><small class="task-due ${t.done ? '' : info.cls}">${escapeHtml(info.text)}</small></div>
+          ${edit ? `<button class="mini-x task-del-btn" data-case="${cn}" data-task="${escapeHtml(t.id)}" title="حذف المهمة">×</button>` : ''}
+        </div>`;
+      }).join('') : '<p class="hint" style="margin:4px 0;">ما فيه مهام لهذي القضية.</p>'}
+      ${edit ? `
+        <div class="fin-row" style="margin-top:8px;">
+          <div class="fin-field"><span>مهمة جديدة</span><input type="text" class="task-title-input" placeholder="مثال: تجهيز لائحة الاعتراض"></div>
+        </div>
+        <div class="fin-field"><span style="font-size:11.5px; color:var(--muted);">موعد الاستحقاق (اختياري)</span><div class="task-date-picker" data-case="${cn}"></div></div>
+        <div class="fin-actions"><button class="btn btn-gold task-add-btn" data-case="${cn}" style="padding:8px 14px; font-size:12.5px;">+ إضافة المهمة</button></div>
+      ` : ''}
+    </div>`;
+}
+
+function outcomeBoxHtml(c){
+  const cn = escapeHtml(c.caseNumber);
+  return `
+    <div class="outcome-box" style="margin-top:10px;">
+      <label>نتيجة القضية</label>
+      <select class="outcome-select" data-case="${cn}" ${canEdit(c) ? '' : 'disabled'}>
+        <option value="">غير محددة</option>
+        ${Object.entries(OUTCOME_LABELS).map(([k, v]) => `<option value="${k}" ${c.outcome === k ? 'selected' : ''}>${v}</option>`).join('')}
+      </select>
+    </div>`;
+}
+
+function wireFinanceTaskEvents(grid, refresh){
+  grid.querySelectorAll('.fin-box').forEach(box => {
+    const typeSel = box.querySelector('.fee-type');
+    const update = () => {
+      const pc = typeSel.value === 'percent';
+      box.querySelector('.fee-fixed-row').style.display = pc ? 'none' : '';
+      box.querySelector('.fee-percent-row').style.display = pc ? '' : 'none';
+      const hint = box.querySelector('.fee-calc-hint');
+      hint.style.display = pc ? '' : 'none';
+      const j = parseFloat(box.querySelector('.fee-judgment').value) || 0, pr = parseFloat(box.querySelector('.fee-percent').value) || 0;
+      hint.textContent = `الأتعاب = ${fmtMoney(j * pr / 100)} ر.س (قبل الضريبة)`;
+    };
+    typeSel.addEventListener('change', update);
+    box.querySelector('.fee-judgment').addEventListener('input', update);
+    box.querySelector('.fee-percent').addEventListener('input', update);
+  });
+  grid.querySelectorAll('.pay-date-picker').forEach(el => {
+    const prefix = 'paydate_' + el.dataset.case.replace(/[^\w]/g, '');
+    el.id = prefix + '_container';
+    hijriPickerInit(el.id, prefix, { initialValue: todayHijriStr() });
+  });
+  grid.querySelectorAll('.task-date-picker').forEach(el => {
+    const prefix = 'taskdate_' + el.dataset.case.replace(/[^\w]/g, '');
+    el.id = prefix + '_container';
+    hijriPickerInit(el.id, prefix, {});
+  });
+
+  grid.querySelectorAll('.fee-save-btn').forEach(btn => {
+    btn.addEventListener('click', async () => {
+      const box = btn.closest('.fin-box');
+      const num = sel => { const v = box.querySelector(sel).value.trim(); return v === '' ? 0 : parseFloat(v); };
+      const type = box.querySelector('.fee-type').value;
+      const amountRaw = num('.fee-amount'), judgment = num('.fee-judgment'), pct = num('.fee-percent');
+      if([amountRaw, judgment, pct].some(n => isNaN(n) || n < 0) || pct > 100){ showToast('أدخل أرقامًا صحيحة (النسبة من 0 إلى 100).'); return; }
+      const vat = box.querySelector('.fee-vat').value;
+      const client = box.querySelector('.fee-client').value.trim();
+      const amount = type === 'percent' ? judgment * pct / 100 : amountRaw;
+      try{
+        await patchCaseDoc(btn.dataset.case, { feeType: type, feeAmount: amountRaw, feeJudgment: judgment, feePercent: pct, feeVat: vat, clientName: client });
+        logActivity(btn.dataset.case, type === 'percent' ? `حدّد الأتعاب: ${pct}% من ${fmtMoney(judgment)} ر.س = ${fmtMoney(amount)} ر.س` : `حدّد الأتعاب: ${fmtMoney(amount)} ر.س`);
+        showToast('تم حفظ الأتعاب.');
+        refresh();
+      }catch(e){ showToast('تعذّر حفظ الأتعاب.'); }
+    });
+  });
+
+  grid.querySelectorAll('.pay-add-btn').forEach(btn => {
+    btn.addEventListener('click', async () => {
+      const box = btn.closest('.fin-box');
+      const amount = parseFloat(box.querySelector('.pay-amount').value);
+      if(isNaN(amount) || amount <= 0){ showToast('أدخل مبلغ الدفعة.'); return; }
+      const note = box.querySelector('.pay-note').value.trim();
+      const prefix = 'paydate_' + btn.dataset.case.replace(/[^\w]/g, '');
+      const date = hijriPickerGetValue(prefix) || todayHijriStr();
+      try{
+        await mutateCase(btn.dataset.case, rec => ({ payments: [...rec.payments, { id: newLocalId('pay'), amount, date, note, addedAt: Date.now() }] }));
+        logActivity(btn.dataset.case, `سجّل دفعة ${fmtMoney(amount)} ر.س`);
+        showToast('تم تسجيل الدفعة.');
+        refresh();
+      }catch(e){ showToast('تعذّر تسجيل الدفعة.'); }
+    });
+  });
+
+  grid.querySelectorAll('.pay-del-btn').forEach(btn => {
+    btn.addEventListener('click', async () => {
+      if(!confirm('حذف هذي الدفعة؟')) return;
+      try{
+        await mutateCase(btn.dataset.case, rec => ({ payments: rec.payments.filter(p => p.id !== btn.dataset.pay) }));
+        showToast('تم حذف الدفعة.');
+        refresh();
+      }catch(e){ showToast('تعذّر الحذف.'); }
+    });
+  });
+
+  grid.querySelectorAll('.fee-statement-btn').forEach(btn => {
+    btn.addEventListener('click', async () => {
+      try{
+        const rec = normalizeCase(await fetchCase(btn.dataset.case));
+        openFeeStatement(rec);
+      }catch(e){ showToast('تعذّر إنشاء البيان.'); }
+    });
+  });
+
+  grid.querySelectorAll('.task-add-btn').forEach(btn => {
+    btn.addEventListener('click', async () => {
+      const box = btn.closest('.tasks-box');
+      const title = box.querySelector('.task-title-input').value.trim();
+      if(!title){ showToast('اكتب عنوان المهمة.'); return; }
+      const prefix = 'taskdate_' + btn.dataset.case.replace(/[^\w]/g, '');
+      const due = hijriPickerGetValue(prefix) || '';
+      try{
+        await mutateCase(btn.dataset.case, rec => ({ tasks: [...rec.tasks, { id: newLocalId('task'), title, due, done: false, createdAt: Date.now() }] }));
+        showToast('تمت إضافة المهمة.');
+        refresh();
+      }catch(e){ showToast('تعذّر إضافة المهمة.'); }
+    });
+  });
+
+  grid.querySelectorAll('.task-check').forEach(cb => {
+    cb.addEventListener('change', async () => {
+      try{
+        await mutateCase(cb.dataset.case, rec => ({ tasks: rec.tasks.map(t => t.id === cb.dataset.task ? { ...t, done: cb.checked, doneAt: cb.checked ? Date.now() : null } : t) }));
+        refresh();
+      }catch(e){ showToast('تعذّر تحديث المهمة.'); cb.checked = !cb.checked; }
+    });
+  });
+
+  grid.querySelectorAll('.task-del-btn').forEach(btn => {
+    btn.addEventListener('click', async () => {
+      if(!confirm('حذف هذي المهمة؟')) return;
+      try{
+        await mutateCase(btn.dataset.case, rec => ({ tasks: rec.tasks.filter(t => t.id !== btn.dataset.task) }));
+        showToast('تم حذف المهمة.');
+        refresh();
+      }catch(e){ showToast('تعذّر الحذف.'); }
+    });
+  });
+
+  grid.querySelectorAll('.outcome-select').forEach(sel => {
+    sel.addEventListener('change', async () => {
+      try{
+        await patchCaseDoc(sel.dataset.case, { outcome: sel.value });
+        logActivity(sel.dataset.case, sel.value ? `سجّل نتيجة القضية: ${OUTCOME_LABELS[sel.value]}` : 'ألغى نتيجة القضية');
+        showToast('تم حفظ نتيجة القضية.');
+      }catch(e){ showToast('تعذّر الحفظ.'); }
+    });
+  });
+}
+
+async function openFeeStatement(c){
+  const f = computeFee(c);
+  const profile = await fetchMyProfile(currentUserEmail);
+  const pr = profile || {};
+  const lawyer = pr.officeName || pr.name || currentUserEmail || '';
+  const contactBits = [pr.officeAddress, pr.officePhone && ('هاتف: ' + pr.officePhone), pr.officeEmail, pr.officeVat && ('الرقم الضريبي: ' + pr.officeVat)].filter(Boolean);
+  const lhImg = pr.officeLetterhead || '';
+  const lhTop = pr.officeLhTop != null ? pr.officeLhTop : 45, lhBottom = pr.officeLhBottom != null ? pr.officeLhBottom : 30;
+  const letterhead = lhImg ? '' : `<div class="lh">${pr.officeLogo ? `<img src="${pr.officeLogo}" alt="" class="lh-logo">` : ''}<div class="lh-name">${escapeHtml(lawyer)}</div>${contactBits.length ? `<div class="lh-contact">${contactBits.map(escapeHtml).join(' &nbsp;|&nbsp; ')}</div>` : ''}</div>`;
+  const client = c.clientName || c.plaintiff || '—';
+  const pays = [...(c.payments || [])].sort((a, b) => (a.addedAt || 0) - (b.addedAt || 0));
+  const vatLabel = f.mode === 'none' ? 'بدون ضريبة' : (f.mode === 'add' ? 'الضريبة 15% (مضافة)' : 'الضريبة 15% (مشمولة)');
+  const html = `<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>بيان أتعاب — قضية ${escapeHtml(c.caseNumber)}</title>
+<style>
+  body{ font-family:'Tahoma','Segoe UI',sans-serif; padding:28px; color:#12203A; max-width:760px; margin:0 auto; }
+  h2{ text-align:center; margin:0 0 4px; }
+  .lh{ text-align:center; border-bottom:2px solid #12203A; padding-bottom:12px; margin-bottom:20px; }
+  .lh-logo{ max-height:70px; max-width:200px; display:block; margin:0 auto 6px; }
+  .lh-name{ font-size:20px; font-weight:700; }
+  .lh-contact{ font-size:12px; color:#555; margin-top:4px; }
+  .sub{ text-align:center; color:#666; font-size:12.5px; margin-bottom:22px; }
+  table{ width:100%; border-collapse:collapse; font-size:13.5px; margin-bottom:18px; }
+  th, td{ border:1px solid #bbb; padding:8px 10px; text-align:right; }
+  th{ background:#f0eee6; }
+  .meta td{ border:none; padding:3px 0; }
+  .total td{ font-weight:700; background:#f7f5ee; }
+  .note{ font-size:11.5px; color:#777; margin-top:22px; }
+  @media print{ body{ padding:0; } }
+  ${lhImg ? `
+  @page{ size:A4; margin:0; }
+  html, body{ -webkit-print-color-adjust:exact; print-color-adjust:exact; }
+  body{ padding:0 !important; max-width:210mm; }
+  .lh-bg{ position:fixed; top:0; left:50%; transform:translateX(-50%); width:210mm; height:297mm; z-index:-1; }
+  table.wrap{ width:100%; margin:0; }
+  table.wrap > thead > tr > td, table.wrap > tbody > tr > td, table.wrap > tfoot > tr > td{ border:none; padding:0 16mm; background:none; }
+  @media print{ .lh-bg{ left:0; transform:none; } }` : ''}
+</style>
+</head>
+<body>
+  ${lhImg ? `<img class="lh-bg" src="${lhImg}" alt="">
+  <table class="wrap"><thead><tr><td><div style="height:${lhTop}mm"></div></td></tr></thead><tfoot><tr><td><div style="height:${lhBottom}mm"></div></td></tr></tfoot><tbody><tr><td>` : ''}
+  ${letterhead}
+  <h2>بيان أتعاب</h2>
+  <div class="sub">${new Date().toLocaleDateString('ar-SA')}</div>
+  <table class="meta">
+    <tr><td><b>الموكل:</b> ${escapeHtml(client)}</td><td><b>رقم القضية:</b> ${escapeHtml(c.caseNumber)}</td></tr>
+  </table>
+  <table>
+    <tr><th>البند</th><th>المبلغ (ر.س)</th></tr>
+    <tr><td>الأتعاب قبل الضريبة</td><td>${fmtMoney(f.net)}</td></tr>
+    <tr><td>${vatLabel}</td><td>${fmtMoney(f.vat)}</td></tr>
+    <tr class="total"><td>الإجمالي</td><td>${fmtMoney(f.total)}</td></tr>
+  </table>
+  ${pays.length ? `<table>
+    <tr><th>الدفعات المستلمة</th><th>التاريخ (هـ)</th><th>المبلغ (ر.س)</th></tr>
+    ${pays.map(p => `<tr><td>${escapeHtml(p.note || 'دفعة')}</td><td>${escapeHtml(p.date || '')}</td><td>${fmtMoney(p.amount)}</td></tr>`).join('')}
+    <tr><td colspan="2"><b>إجمالي المدفوع</b></td><td><b>${fmtMoney(f.paid)}</b></td></tr>
+  </table>` : ''}
+  <table><tr class="total"><td>المتبقي</td><td>${fmtMoney(f.remaining)} ر.س</td></tr></table>
+  ${lhImg ? '</td></tr></tbody></table>' : ''}
+  <script>window.addEventListener('load', () => { setTimeout(() => window.print(), 200); });<\/script>
+</body>
+</html>`;
+  const blob = new Blob([html], { type: 'text/html' });
+  const url = URL.createObjectURL(blob);
+  const w = window.open(url, '_blank');
+  if(!w){
+    showToast('يرجى السماح بالنوافذ المنبثقة (Popups) بمتصفحك عشان يفتح البيان.');
+    URL.revokeObjectURL(url);
+    return;
+  }
+  setTimeout(() => URL.revokeObjectURL(url), 60000);
+}
+
+// Open tasks across all active cases, shown on the home page (overdue first).
+function renderHomeTasks(cases){
+  const panel = document.getElementById('homeTasksPanel');
+  const list = document.getElementById('dashTasksList');
+  const rows = [];
+  cases.forEach(c => (c.tasks || []).forEach(t => { if(!t.done) rows.push({ c, t, d: daysUntilHijri(t.due) }); }));
+  if(!rows.length){ list.innerHTML = '<p class="hint" style="margin:4px 0;">لا يوجد مهام معلقة.</p>'; return; }
+  rows.sort((a, b) => (a.d === null ? 99999 : a.d) - (b.d === null ? 99999 : b.d));
+  const MAX = 8;
+  list.innerHTML = rows.slice(0, MAX).map(({ c, t }) => {
+    const info = taskDueInfo(t);
+    return `<div class="task-item">
+      <input type="checkbox" class="home-task-check" data-case="${escapeHtml(c.caseNumber)}" data-task="${escapeHtml(t.id)}" ${canEdit(c) ? '' : 'disabled'}>
+      <div class="grow"><span class="task-title-text">${escapeHtml(t.title)}</span><small>قضية رقم ${escapeHtml(c.caseNumber)} — <span class="task-due ${info.cls}">${escapeHtml(info.text)}</span></small></div>
+    </div>`;
+  }).join('') + (rows.length > MAX ? `<p class="hint" style="margin:8px 0 0;">+ ${rows.length - MAX} مهام أخرى داخل القضايا.</p>` : '');
+  list.querySelectorAll('.home-task-check').forEach(cb => {
+    cb.addEventListener('change', async () => {
+      try{
+        await mutateCase(cb.dataset.case, rec => ({ tasks: rec.tasks.map(t => t.id === cb.dataset.task ? { ...t, done: true, doneAt: Date.now() } : t) }));
+        renderDashboard();
+      }catch(e){ showToast('تعذّر تحديث المهمة.'); cb.checked = false; }
+    });
+  });
+}
+
+async function renderReports(){
+  const el = document.getElementById('reportsContent');
+  const all = (await loadAllCases()).map(normalizeCase);
+  const active = all.filter(c => !c.archived);
+  const archivedCount = all.length - active.length;
+  const now = new Date();
+  let sessionsMonth = 0;
+  active.forEach(c => {
+    if(c.caseCategory === 'conciliation') return;
+    getActiveSessions(c).forEach(s => {
+      const p = (s.date || '').split('/');
+      if(p.length !== 3) return;
+      const d = parseInt(p[0], 10), m = parseInt(p[1], 10), y = parseInt(p[2], 10);
+      if(!d || !m || !y) return;
+      const g = hijriToGregorianExact(d, m, y);
+      if(g.getFullYear() === now.getFullYear() && g.getMonth() === now.getMonth()) sessionsMonth++;
+    });
+  });
+  let openTasks = 0, overdueTasks = 0;
+  active.forEach(c => (c.tasks || []).forEach(t => {
+    if(t.done) return;
+    openTasks++;
+    const d = daysUntilHijri(t.due);
+    if(d !== null && d < 0) overdueTasks++;
+  }));
+
+  const mine = all.filter(isOwnerOf);
+  let billed = 0, collected = 0, outstanding = 0;
+  const rows = [];
+  mine.forEach(c => {
+    const f = computeFee(c);
+    if(f.total > 0){
+      billed += f.total; collected += f.paid; outstanding += f.remaining;
+      if(f.remaining > 0.005) rows.push({ c, f });
+    } else if((f.unknown && Number(c.feePercent) > 0) || f.paid > 0){
+      // percentage fee with no judgment amount yet (or payments without a fixed total): still listed
+      collected += f.paid;
+      rows.push({ c, f });
+    }
+  });
+  rows.sort((a, b) => (b.f.remaining - a.f.remaining));
+  const hasUnknown = rows.some(r => r.f.total <= 0);
+
+  const oc = { won: 0, lost: 0, settled: 0, other: 0 };
+  all.forEach(c => { if(oc[c.outcome] !== undefined) oc[c.outcome]++; });
+  const decided = oc.won + oc.lost;
+  const winRate = decided ? Math.round(oc.won / decided * 100) + '%' : '—';
+  const card = (num, lbl) => `<div class="rep-card"><span class="num">${num}</span><span class="lbl">${lbl}</span></div>`;
+
+  el.innerHTML = `
+    <h3 class="rep-section-title">القضايا والمهام</h3>
+    <div class="rep-grid">
+      ${card(active.length, 'قضايا نشطة')}
+      ${card(archivedCount, 'قضايا مؤرشفة')}
+      ${card(sessionsMonth, 'جلسات هذا الشهر (ميلادي)')}
+      ${card(openTasks, 'مهام مفتوحة')}
+      ${card(overdueTasks, 'مهام متأخرة')}
+    </div>
+    <h3 class="rep-section-title">الأتعاب والتحصيل</h3>
+    <div class="rep-grid">
+      ${card(fmtMoney(billed), 'إجمالي الأتعاب (ر.س)')}
+      ${card(fmtMoney(collected), 'المحصّل (ر.س)')}
+      ${card(fmtMoney(outstanding), 'المستحق عند الموكلين (ر.س)')}
+    </div>
+    ${rows.length ? `
+      <table class="rep-table" style="margin-top:12px;">
+        <thead><tr><th>القضية</th><th>الموكل</th><th>الأتعاب</th><th>الإجمالي</th><th>المدفوع</th><th>المتبقي</th></tr></thead>
+        <tbody>${rows.slice(0, 15).map(({ c, f }) => `<tr><td>${escapeHtml(c.caseNumber)}</td><td>${escapeHtml(c.clientName || c.plaintiff || '—')}</td><td>${escapeHtml(feeDescription(c))}</td><td>${f.total > 0 ? fmtMoney(f.total) : 'غير محدد'}</td><td>${fmtMoney(f.paid)}</td><td><b>${f.total > 0 ? fmtMoney(f.remaining) : '—'}</b></td></tr>`).join('')}</tbody>
+      </table>
+      ${hasUnknown ? '<p class="rep-note">«غير محدد» = أتعاب بنسبة لم يُحدد مبلغ الحكم لها بعد؛ تظهر هنا والمدفوع منها محسوب في المحصّل، وتدخل في الإجمالي والمستحق عند إدخال مبلغ الحكم.</p>' : ''}` : '<p class="rep-note">ما فيه مبالغ مستحقة حاليًا (أو ما سجّلت أتعاب بعد).</p>'}
+    <h3 class="rep-section-title">نتائج القضايا</h3>
+    <div class="rep-grid">
+      ${card(winRate, 'نسبة الكسب')}
+      ${card(oc.won, 'كسب')}
+      ${card(oc.lost, 'خسارة')}
+      ${card(oc.settled, 'صلح')}
+      ${card(oc.other, 'أخرى')}
+    </div>
+    <p class="rep-note">نسبة الكسب = كسب ÷ (كسب + خسارة)، وتُحسب من القضايا اللي سجّلت نتيجتها فقط (حقل «نتيجة القضية» داخل تفاصيل القضية).</p>
+  `;
+}
+
 // Always-live "days remaining until the objection deadline", computed from today's date — never a
 // stored number that goes stale. Returns null when there's nothing to track.
 function getObjectionDaysRemaining(c){
@@ -2986,7 +3685,7 @@ function buildSessionCardHtml(c, session){
   const statusInfo = caseStatusInfo(c.caseStatus);
   const allSessions = [...c.sessions].sort((a,b) => a.addedAt - b.addedAt);
   return `
-    <div class="card">
+    <div class="card case-card">
       <div class="card-top">
         <div class="seal"><span class="mark"></span></div>
         <span class="case-number-label">${c.caseCategory === 'conciliation' ? 'رقم الطلب' : 'رقم القضية'}</span>
@@ -3029,10 +3728,7 @@ function buildSessionCardHtml(c, session){
         ${c.sessionLink ? `<a href="${escapeHtml(c.sessionLink)}" target="_blank" rel="noopener" class="link-open">فتح الرابط ↗</a>` : ''}
       </div>
 
-      <div class="expand-toggle-row">
-        <button class="expand-details-btn" data-case="${escapeHtml(c.caseNumber)}">🔽 عرض كل التفاصيل (${allSessions.length} جلسة/جلسات)</button>
-      </div>
-      <div class="expanded-details" data-case-details="${escapeHtml(c.caseNumber)}" style="display:none;">
+      <div class="expanded-details" data-case-details="${escapeHtml(c.caseNumber)}">
         <div class="status-box">
           <label>حالة القضية</label>
           <select class="status-select" data-case="${escapeHtml(c.caseNumber)}" ${canEdit(c) ? '' : 'disabled'}>
@@ -3047,6 +3743,7 @@ function buildSessionCardHtml(c, session){
               : `<p class="val" style="margin:2px 0;">${c.objectionDeadlineDate ? escapeHtml(c.objectionDeadlineDate) + ' هـ' : 'غير محدّد'}</p>`}
             ${getObjectionDaysRemaining(c) !== null ? `<p class="hint" style="margin:4px 2px 0;">متبقٍ ${getObjectionDaysRemaining(c)} يوم — يتحدّث يوميًا تلقائيًا.</p>` : ''}
           </div>
+          ${outcomeBoxHtml(c)}
         </div>
         <div class="sessions-list">
           ${allSessions.map(s => `
@@ -3069,6 +3766,8 @@ function buildSessionCardHtml(c, session){
             ${isOwnerOf(c) ? `<button class="clear-activity-btn" data-case="${escapeHtml(c.caseNumber)}">🗑 حذف سجل النشاط</button>` : ''}
           </details>
         ` : ''}
+        ${financeBoxHtml(c)}
+        ${tasksBoxHtml(c)}
         <div class="attachments-box">
           <label>المستندات المرفقة</label>
           ${(c.attachments||[]).length ? (c.attachments||[]).map(a => `
@@ -3086,7 +3785,6 @@ function buildSessionCardHtml(c, session){
       </div>
 
       <div class="card-footer">
-        <span class="id-holder">هوية: ${escapeHtml(c.idHolder || '—')}</span>
         <div style="display:flex; gap:6px; align-items:center;">
           ${isOwnerOf(c) ? `<button class="share-btn" data-case="${escapeHtml(c.caseNumber)}">مشاركة</button>` : (c.ownerEmail ? `<span class="shared-tag">${getAccessLevel(c) === 'readonly' ? 'قراءة فقط — مشتركة من' : 'مشتركة من'} ${escapeHtml(c.ownerEmail)}</span>` : '')}
           ${canEdit(c) ? `<button class="archive-session-btn" data-case="${escapeHtml(c.caseNumber)}" data-session="${escapeHtml(session.id)}">أرشفة الجلسة</button>` : ''}
@@ -3105,12 +3803,14 @@ function buildSessionCardHtml(c, session){
 }
 
 function wireSessionCardEvents(grid, refresh){
+  wireFinanceTaskEvents(grid, refresh);
   grid.querySelectorAll('.expand-details-btn').forEach(btn => {
     btn.addEventListener('click', () => {
       const details = grid.querySelector(`.expanded-details[data-case-details="${btn.dataset.case}"]`);
       if(!details) return;
       const isOpen = details.style.display !== 'none';
       details.style.display = isOpen ? 'none' : 'block';
+      if(isOpen) openCaseDetails.delete(btn.dataset.case); else openCaseDetails.add(btn.dataset.case);
       btn.textContent = btn.textContent.replace(isOpen ? '🔼' : '🔽', isOpen ? '🔽' : '🔼');
     });
   });
@@ -3824,6 +4524,7 @@ async function renderDashboard(){
   const todayListEl = document.getElementById('dashTodayList');
   todayListEl.innerHTML = todayItems.map(rowHtml).join('') || '<p class="hint">ما فيه شي مجدول اليوم.</p>';
   setTodayCarouselObjections(objectionRows);
+  renderHomeTasks(cases);
 
   // This week (Saturday through Friday) — single-open accordion. Past days show dimmed.
   // A prev/next arrow lets the user browse other weeks via dashWeekOffset.
