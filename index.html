@@ -891,6 +891,28 @@
   .card.case-card .tasks-box{ background:var(--band-b); }
   .card.case-card .expanded-details .attachments-box{ background:var(--band-a); }
   .card.case-card .sessions-list .session-row.is-current{ background:var(--band-b); }
+
+  /* case card: related sections share one band color; neighbours alternate */
+  .card.case-card .parties{ background:var(--band-b); margin-bottom:0; border-radius:10px 10px 0 0; }
+  .card.case-card .session-info{ background:var(--band-b); margin-top:0; border-radius:0 0 10px 10px; border-top:1px dashed var(--band-edge); }
+  .card.case-card .notes-box{ background:var(--band-a); margin-bottom:0; border-radius:10px 10px 0 0; }
+  .card.case-card .notes-box + .notes-box{ background:var(--band-a); margin-top:0; margin-bottom:6px; border-radius:0 0 10px 10px; border-top:1px dashed var(--band-edge); }
+  .card.case-card .expanded-details .status-box{ background:var(--band-b); }
+  .card.case-card .expanded-details .sessions-list{ background:var(--band-a); }
+  .card.case-card .expanded-details .sessions-list:has(+ .activity-log){ margin-bottom:0; border-radius:10px 10px 0 0; }
+  .card.case-card .expanded-details .sessions-list + .activity-log{ background:var(--band-a); margin-top:0; border-radius:0 0 10px 10px; border-top:1px dashed var(--band-edge); }
+  .card.case-card .fin-box{ background:var(--band-b); }
+  .card.case-card .tasks-box{ background:var(--band-a); }
+  .card.case-card .expanded-details .attachments-box{ background:var(--band-b); }
+  .card.case-card .outcome-select:disabled{ opacity:.55; cursor:not-allowed; }
+
+  /* case card order: tasks > status > sessions+activity > fees > attachments (alternating tones) */
+  .card.case-card .tasks-box{ background:var(--band-b); }
+  .card.case-card .expanded-details .status-box{ background:var(--band-a); }
+  .card.case-card .expanded-details .sessions-list{ background:var(--band-b); }
+  .card.case-card .expanded-details .sessions-list + .activity-log{ background:var(--band-b); }
+  .card.case-card .fin-box{ background:var(--band-a); }
+  .card.case-card .expanded-details .attachments-box{ background:var(--band-b); }
 </style>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 </head>
@@ -3158,7 +3180,7 @@ function financeBoxHtml(c){
   const pays = [...(c.payments || [])].sort((a, b) => (a.addedAt || 0) - (b.addedAt || 0));
   return `
     <div class="fin-box" data-fin-case="${cn}">
-      <label class="fin-title">💰 الأتعاب والتحصيل ${f.status !== 'none' ? `<span class="fin-badge ${f.status}">${badges[f.status]}</span>` : ''}</label>
+      <label class="fin-title">الأتعاب ${f.status !== 'none' ? `<span class="fin-badge ${f.status}">${badges[f.status]}</span>` : ''}</label>
       <div class="fin-row">
         <div class="fin-field"><span>اسم الموكل (اختياري)</span><input type="text" class="fee-client" value="${escapeHtml(c.clientName || '')}" placeholder="${escapeHtml(c.plaintiff || '')}"></div>
       </div>
@@ -3226,7 +3248,7 @@ function tasksBoxHtml(c){
   });
   return `
     <div class="tasks-box" data-tasks-case="${cn}">
-      <label class="fin-title">✅ المهام (${tasks.filter(t => !t.done).length} مفتوحة)</label>
+      <label class="fin-title">المهام (${tasks.filter(t => !t.done).length} مفتوحة)</label>
       ${tasks.length ? tasks.map(t => {
         const info = taskDueInfo(t);
         return `
@@ -3251,10 +3273,11 @@ function outcomeBoxHtml(c){
   return `
     <div class="outcome-box" style="margin-top:10px;">
       <label>نتيجة القضية</label>
-      <select class="outcome-select" data-case="${cn}" ${canEdit(c) ? '' : 'disabled'}>
+      <select class="outcome-select" data-case="${cn}" ${canEdit(c) && c.caseStatus === 'final' ? '' : 'disabled'}>
         <option value="">غير محددة</option>
         ${Object.entries(OUTCOME_LABELS).map(([k, v]) => `<option value="${k}" ${c.outcome === k ? 'selected' : ''}>${v}</option>`).join('')}
       </select>
+      <small class="outcome-hint" style="display:${c.caseStatus === 'final' ? 'none' : 'block'}; color:var(--muted); font-size:11px; margin-top:3px;">تُفتح عند اختيار «محكوم بحكم نهائي».</small>
     </div>`;
 }
 
@@ -3796,6 +3819,7 @@ function buildSessionCardHtml(c, session){
       </div>
 
       <div class="expanded-details" data-case-details="${escapeHtml(c.caseNumber)}">
+        ${tasksBoxHtml(c)}
         <div class="status-box">
           <label>حالة القضية</label>
           <select class="status-select" data-case="${escapeHtml(c.caseNumber)}" ${canEdit(c) ? '' : 'disabled'}>
@@ -3834,7 +3858,6 @@ function buildSessionCardHtml(c, session){
           </details>
         ` : ''}
         ${financeBoxHtml(c)}
-        ${tasksBoxHtml(c)}
         <div class="attachments-box">
           <label>المستندات المرفقة</label>
           ${(c.attachments||[]).length ? (c.attachments||[]).map(a => `
@@ -3990,6 +4013,12 @@ function wireSessionCardEvents(grid, refresh){
     sel.addEventListener('change', async () => {
       const box = sel.closest('.status-box').querySelector('.objection-box');
       box.style.display = sel.value === 'non_final' ? '' : 'none';
+      const outSel = sel.closest('.status-box').querySelector('.outcome-select');
+      if(outSel){
+        outSel.disabled = sel.value !== 'final';
+        const hint = sel.closest('.status-box').querySelector('.outcome-hint');
+        if(hint) hint.style.display = sel.value === 'final' ? 'none' : 'block';
+      }
       try{
         await patchCaseDoc(sel.dataset.case, { caseStatus: sel.value });
         logActivity(sel.dataset.case, `غيّر حالة القضية إلى: ${caseStatusInfo(sel.value).label}`);
