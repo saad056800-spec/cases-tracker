@@ -336,6 +336,7 @@
   .home-col-right, .home-col-left{ display:contents; }
   .home-today-panel{ order:1; }
   .home-week-panel{ order:2; }
+  .conc-tag{ display:inline-block; font-size:.7rem; padding:1px 8px; margin-inline-start:6px; border-radius:999px; background:var(--green-mist); color:var(--blue-deep); border:1px solid var(--gold); vertical-align:middle; }
   .home-intake-panel{ order:3; }
 
   .dash-today-scroll{ max-height:214px; overflow-y:auto; }
@@ -3523,7 +3524,6 @@ async function renderReports(){
   const now = new Date();
   let sessionsMonth = 0;
   active.forEach(c => {
-    if(c.caseCategory === 'conciliation') return;
     getActiveSessions(c).forEach(s => {
       const p = (s.date || '').split('/');
       if(p.length !== 3) return;
@@ -4554,10 +4554,9 @@ async function renderDashboard(){
   const weekEnd = new Date(weekStart); weekEnd.setDate(weekEnd.getDate() + 7);
 
   // Build session items with real datetimes (Umm al-Qura Hijri → Gregorian + parsed time)
-  // Conciliation-session cases are excluded here — they live in their own "جلسات الصلح" tab,
-  // and shouldn't be double-counted as regular court sessions on the dashboard.
+  // Conciliation sessions are included alongside court sessions (flagged with isConc so they get a small tag).
   const sessionItems = [];
-  cases.filter(c => c.caseCategory !== 'conciliation').forEach(c => {
+  cases.forEach(c => {
     getActiveSessions(c).forEach(s => {
       const parts = (s.date || '').split('/');
       if(parts.length !== 3) return;
@@ -4568,7 +4567,7 @@ async function renderDashboard(){
       dt.setHours(0,0,0,0);
       const t = parseArabicTime(s.time);
       if(t) dt.setHours(t.hour, t.minute, 0, 0);
-      sessionItems.push({ caseNumber: c.caseNumber, label: c.plaintiff || c.caseType || c.caseNumber, time: s.time, dt, kind: 'session' });
+      sessionItems.push({ caseNumber: c.caseNumber, label: c.plaintiff || c.caseType || c.caseNumber, time: s.time, dt, kind: 'session', isConc: c.caseCategory === 'conciliation' });
     });
   });
 
@@ -4604,7 +4603,7 @@ async function renderDashboard(){
   }
   function rowHtml(x){
     if(x.kind === 'session'){
-      return `<div class="today-row"><span class="today-dot" style="background:${dotColor(x)}"></span><div class="today-row-body"><div class="today-row-top"><span class="today-time">${escapeHtml(x.time || '')}</span>قضية رقم ${escapeHtml(x.caseNumber)}</div><div class="today-row-sub">${escapeHtml(x.label)}</div></div></div>`;
+      return `<div class="today-row"><span class="today-dot" style="background:${dotColor(x)}"></span><div class="today-row-body"><div class="today-row-top"><span class="today-time">${escapeHtml(x.time || '')}</span>${x.isConc ? 'طلب رقم' : 'قضية رقم'} ${escapeHtml(x.caseNumber)}${x.isConc ? ' <span class="conc-tag">صلح</span>' : ''}</div><div class="today-row-sub">${escapeHtml(x.label)}</div></div></div>`;
     }
     return `<div class="today-row"><span class="today-dot" style="background:${dotColor(x)}"></span><div class="today-row-body"><div class="today-row-top"><span class="today-time">${escapeHtml(x.time || '')}</span>${apptIcon(x.type)} ${escapeHtml(x.clientName)}</div><div class="today-row-sub">${x.notes ? escapeHtml(x.notes) : ''}</div>${contactButtonsHtml(x.countryCode, x.phone)}</div></div>`;
   }
